@@ -61,7 +61,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each release is tagged to match the OpenClaw version it documents:
-- `v2026.2.15` — Updated for v2026.2.15 (880 commits, security hardening, Discord Component v2, nested subagents, multi-image, cron webhooks)
+- `v2026.2.15` (2026-02-16) — Updated for v2026.2.15: 7 security hardening fixes, Discord Components v2 UI tool, nested subagent orchestration (depth 2, max 5 children), plugin LLM input/output hooks, per-channel ackReaction config, major channel deduplication refactor, 10 analysis files updated
 - `v2026.2.14` — Initial release, documenting OpenClaw v2026.2.14
 
 When a new OpenClaw version is released, the documentation is re-analyzed and a new version is tagged.

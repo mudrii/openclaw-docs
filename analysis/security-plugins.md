@@ -1,9 +1,16 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 
+> Updated: 2026-02-16 | Version: v2026.2.15
+
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
 ### Purpose
 Comprehensive security audit framework, content sanitization, skill/plugin code scanning, and filesystem permission hardening. The central defense-in-depth layer.
+
+#### v2026.2.15 Changes
+- **Skill scanner updates** — updated detection rules in `skill-scanner.ts` for broader pattern coverage
+- **Redact sensitive status for non-admin** — `status.ts` now redacts sensitive fields when queried by non-admin users
+- **Restrict skill download target paths** — new `src/infra/install-safe-path.ts` sanitizes install target directory names with `unscopedPackageName()`, `safeDirName()`, `safePathSegmentHashed()`; new `src/infra/path-safety.ts` provides `resolveSafeBaseDir()` and `isWithinDir()` for cross-platform path containment
 
 ### Key Files
 
@@ -24,6 +31,9 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 | `secret-equal.ts` | Timing-safe string comparison via `crypto.timingSafeEqual` |
 | `skill-scanner.ts` | Static analysis scanner for skill/plugin code — detects dangerous patterns (eval, exec, fetch) |
 | `windows-acl.ts` | Windows-specific ACL inspection via `icacls` |
+| **New (src/infra/)** | |
+| `install-safe-path.ts` | Sanitize skill/plugin install target paths — `unscopedPackageName()`, `safeDirName()`, `safePathSegmentHashed()` |
+| `path-safety.ts` | Cross-platform path containment — `resolveSafeBaseDir()`, `isWithinDir()` |
 
 ### Exported API
 - `runSecurityAudit()` → `SecurityAuditReport` (findings with severity: critical/warn/info)
@@ -53,6 +63,13 @@ External content → detectSuspiciousPatterns → wrapExternalContent → safe L
 
 ### Purpose
 Full plugin lifecycle: discovery, loading, validation, registration, hook execution, CLI commands, HTTP routes, config schema validation, install/uninstall/update.
+
+#### v2026.2.15 Changes
+- **LLM input/output hook payloads (#16724)** — `PluginHookLlmInputEvent` now includes `runId`, `sessionId`, `provider`, `model`, `systemPrompt`, `prompt`, `historyMessages`, `imagesCount`; `PluginHookLlmOutputEvent` includes `runId`, `sessionId`, `provider`, `model`, `assistantTexts`, `lastAssistant`, `usage` (with input/output/cacheRead/cacheWrite/total); both fired via `runVoidHook` in `hooks.ts`; new test file `wired-hooks-llm.test.ts`
+- **Lazy-create jiti loader** — `loader.ts` now lazily initializes the `jiti` TypeScript/ESM loader on first use rather than eagerly at module load
+- **Reuse `createEmptyPluginRegistry()`** — `registry.ts` now exports `createEmptyPluginRegistry()` for reuse (e.g., in tests and loader initialization)
+- **Share plugin-sdk helpers** — see plugin-sdk section below for new shared helpers (auth, status, webhook paths)
+- **Clear plugin manifest cache after install** — manifest registry now invalidates cached manifests after plugin install/uninstall to pick up changes immediately
 
 ### Key Files
 
@@ -89,6 +106,7 @@ Full plugin lifecycle: discovery, loading, validation, registration, hook execut
 | `types.ts` | All plugin type definitions (hooks, commands, config schema, etc.) |
 | `uninstall.ts` | Uninstall plugins |
 | `update.ts` | Update plugins |
+| `wired-hooks-llm.test.ts` | Tests for LLM input/output hook wiring (new in v2026.2.15) |
 
 ### Exported API
 - `loadOpenClawPlugins()` → `PluginRegistry`
@@ -118,6 +136,13 @@ extensions/ dirs + config → discovery → manifest loading → jiti module loa
 ### Purpose
 Utility library re-exported for plugin authors. Provides helpers without coupling plugins to internal modules.
 
+#### v2026.2.15 Changes
+- **New shared helper utilities:**
+  - `status-helpers.ts` — `createDefaultChannelRuntimeState()`, `buildBaseChannelStatusSummary()` for standardized channel status reporting
+  - `webhook-path.ts` — `normalizeWebhookPath()`, `resolveWebhookPath()` for consistent webhook URL/path handling
+  - `agent-media-payload.ts` — `AgentMediaPayload` type and `buildAgentMediaPayload()` for structured media payloads
+  - `provider-auth-result.ts` — `buildOauthProviderAuthResult()` for standardized OAuth provider auth results
+
 ### Key Files
 
 | File | Role |
@@ -129,6 +154,10 @@ Utility library re-exported for plugin authors. Provides helpers without couplin
 | `file-lock.ts` | File-based mutex lock (PID-aware, stale detection, reentrant) |
 | `onboarding.ts` | `promptAccountId()` — interactive account selection for setup wizards |
 | `text-chunking.ts` | `chunkTextForOutbound()` — split long messages at word/line boundaries |
+| `status-helpers.ts` | `createDefaultChannelRuntimeState()`, `buildBaseChannelStatusSummary()` — standardized channel status (new) |
+| `webhook-path.ts` | `normalizeWebhookPath()`, `resolveWebhookPath()` — webhook URL/path handling (new) |
+| `agent-media-payload.ts` | `AgentMediaPayload` type, `buildAgentMediaPayload()` — structured media payloads (new) |
+| `provider-auth-result.ts` | `buildOauthProviderAuthResult()` — OAuth provider auth result builder (new) |
 
 ### Dependencies
 Imports from: `channels/plugins/`, `config/`, `routing/`, `wizard/`

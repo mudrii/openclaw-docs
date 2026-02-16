@@ -1,6 +1,6 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 
-> Generated: 2026-02-15 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-02-16 | Version: v2026.2.15 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1513,3 +1513,26 @@ User types: openclaw <command> [args]
 ---
 
 *Analysis complete. 952 TypeScript files across 8 modules analyzed.*
+
+---
+
+## v2026.2.15 Changes
+
+### CLI
+- **Account selector for pairing commands**: `nodes-cli/register.pairing.ts` — pairing commands now support selecting which account to pair with
+- **Share configure section runner**: `configure.shared.ts` — extracted shared configure section runner to reduce duplication across `configure.channels.ts`, `configure.daemon.ts`, `configure.gateway.ts`
+- **Dedupe daemon install**: `daemon-cli/install.ts` + `daemon-install-helpers.ts` — consolidated duplicate daemon installation logic
+- **Share browser resize**: `browser-cli-shared.ts` — shared browser resize logic across browser CLI subcommands
+
+### Config
+- **Share agent model/sandbox schemas**: `zod-schema.agents.ts`, `zod-schema.agent-defaults.ts` — extracted shared Zod schemas for agent model and sandbox config to avoid duplication between agent-level and defaults-level schemas
+- **Dedupe bindings migrations**: `legacy.migrations.part-3.ts` — consolidated duplicate bindings migration rules
+- **Merge config.patch object arrays by id**: `merge-patch.ts` — `config.patch` now merges object arrays by `id` field instead of replacing, enabling incremental agent/binding patches
+
+### Infra
+- **Extract json file + async lock helpers**: `json-file.ts` (atomic JSON read/write), `json-files.ts` (multi-file JSON operations) — extracted from inline implementations across pairing, device-auth, and session stores
+- **Share jsonl transcript reader**: Consolidated JSONL transcript reading logic (previously duplicated in session store and memory sync)
+- **Dedupe device pairing token updates**: `device-pairing.ts`, `pairing-token.ts` — removed duplicate token update logic
+- **Centralize openclaw root candidate scan**: `openclaw-root.ts` — unified OpenClaw installation root detection across CLI, daemon, and node-host
+- **Share `isTailnetIPv4`**: `tailnet.ts` — exported shared Tailnet IPv4 detection (100.x.y.z range) used by networking, bind resolution, and node matching
+- **Replace deprecated SHA-1 in sandbox config hash**: `sandbox/config-hash.ts` — replaced SHA-1 with SHA-256 for sandbox configuration change detection

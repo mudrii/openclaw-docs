@@ -881,4 +881,44 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 ---
 
+## v2026.2.15 Changes (2026-02-16)
+
+### Security (7 fixes)
+
+1. **Sandbox bind validation** — Docker bind-mount paths are now validated against an allowlist; rejects traversal attempts and symlink escapes in `agents/sandbox/`
+2. **Prompt path sanitization** — Directory traversal sequences (`../`) in prompt file paths are stripped before resolution, preventing reads outside agent workspaces
+3. **Control UI XSS** — The gateway Control UI no longer renders untrusted HTML; status endpoint switched to JSON-only + Content-Security-Policy headers locked down
+4. **Skill download path restriction** — `infra/install-safe-path.ts` confines skill artifact extraction to `~/.openclaw/skills/`; writes outside are rejected
+5. **Sensitive field redaction** — Telegram bot tokens and other secrets are now redacted in error messages and non-admin status responses (`config/redact-snapshot.ts`, `logging/redact.ts`)
+6. **Session tool scoping** — Tools and webhook-secret fallback are scoped to the owning session, preventing cross-session leakage
+7. **Pairing account isolation** — `pairing/pairing-store.ts` scopes stores and channel allowlists (Telegram, WhatsApp) per account ID
+
+### New Features
+
+- **Discord Components v2 UI** — Rich interactive messages via `discord/components.ts`, `components-registry.ts`, and `send.components.ts`; supports buttons, selects, modals, media galleries, and containers
+- **Per-channel `ackReaction`** — Configurable acknowledgment reaction emoji per channel in `messages.inbound.byChannel`
+- **Plugin LLM hooks** — Plugins can register `before_llm_call` / `after_llm_call` hooks for request/response interception (e.g., logging, guardrails)
+- **Multi-image tool calls** — The `image` tool now accepts an array of up to 20 images in a single call for batch vision analysis
+- **Nested subagent orchestration** — Subagents can spawn their own children (depth 2, max 5 per parent) via `agents/subagent-registry.ts`; results auto-announce upward
+- **Account selector for pairing** — Device pairing flow now prompts for target account when multiple accounts exist on a channel
+- **Cross-platform skill install fallback** — Skill install detects OS package manager (brew/apt/choco) and falls back gracefully with manual instructions
+- **`messages.suppressToolErrors`** — New config flag to hide tool-call error details from end users (errors still logged)
+
+### Major Refactor
+
+- **Channel deduplication** — Shared helpers extracted from per-channel send/normalize code into `channels/plugins/outbound/shared.ts` and `channels/plugins/normalize/shared.ts`; reduces duplicated media-upload, markdown-conversion, and chunk-splitting logic across Telegram, Discord, Slack, LINE, and Signal
+
+### Performance
+
+- **Cache-busting skip for bundled hooks** — Bundled hook files (shipped with OpenClaw) skip filesystem mtime checks on load, avoiding unnecessary `stat()` calls
+- **Mtime-based workspace hook caching** — User workspace hooks are cached by file mtime; only re-evaluated when the file actually changes, eliminating redundant `jiti` loads
+
+### Bug Fixes
+
+- **`before_tool_call` hook double-fire** — Guard added in `agents/pi-tools.before-tool-call.ts` to prevent the hook from firing twice per tool invocation
+- **Cron spin-loop floor** — `cron/service/timer.ts` enforces a minimum 1-second floor on `setTimeout` delay, preventing CPU spin when `nextRunAtMs` is in the past
+- **Stale SQLite WAL connection** — `memory/` now detects and reconnects stale WAL-mode SQLite connections that silently stop returning results after long idle periods
+
+---
+
 *End of OpenClaw Master Architecture Document*

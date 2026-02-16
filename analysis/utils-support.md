@@ -1,8 +1,8 @@
 # Utilities & Support Modules — Comprehensive Analysis
 
-**Generated:** 2026-02-15  
+**Updated:** 2026-02-16 | **Version:** v2026.2.15  
 **Cluster:** Utilities & Support Modules  
-**Total files analyzed:** ~325 .ts files across 14 modules
+**Total files analyzed:** ~330 .ts files across 14 modules
 
 ---
 
@@ -802,3 +802,24 @@ Shared test utilities and mock factories.
 - `stripReasoningTagsFromText()` (src/shared/text/reasoning-tags) — used in reply normalization
 - `resolveNodeIdFromCandidates()` (src/shared/node-match) — used in node tools
 - `normalizeStringList()` (src/shared/frontmatter) — used in skill/plugin metadata parsing
+
+---
+
+## v2026.2.15 Changes
+
+### Auto-Reply
+- **Expose inbound message identifiers in trusted metadata**: `reply/inbound-meta.ts` — inbound message IDs (platform-specific) are now included in trusted metadata, enabling reply-to-specific-message workflows
+- **Share directive handling**: `reply/directive-handling.shared.ts` — extracted shared directive formatting/acknowledgment logic (`formatDirectiveAck()`) used across multiple directive handlers
+- **Dedupe on/off/full normalization**: Consolidated boolean/tri-state normalization (`"on"/"off"/"full"`) that was duplicated across thinking, verbose, elevated, and reasoning directive handlers
+- **Preserve queued items on drain retries**: `reply/queue/drain.ts` — when a followup queue drain fails, queued items are now preserved for retry instead of being lost. Related commit: `2a8360928`
+- **Share abort persistence**: `reply/abort.ts` — extracted shared abort signal persistence logic used by both reply abort and queue cleanup
+
+### Logging
+- **Split diagnostic session state module**: `logging/diagnostic-session-state.ts` — extracted `diagnosticSessionStates` Map, `getDiagnosticSessionState()`, and `pruneDiagnosticSessionStates()` from `diagnostic.ts` into a dedicated module for cleaner separation
+- **Skip eager debug formatting**: `logging/subsystem.ts` — debug/trace log messages now skip expensive string formatting when the log level is not enabled, reducing overhead in production
+
+### Pairing
+- **Account-scoped stores**: `pairing/pairing-store.ts` — pairing request stores are now scoped per account, supporting multi-account setups where different bot accounts have independent pairing flows
+- **`infra/pairing-files.ts`** (new): Extracted pairing file path resolution from inline logic in pairing-store and device-pairing
+- **`infra/device-auth-store.ts`** (new): Extracted device auth token store with atomic JSON read/write via `json-file.ts`
+- **Legacy telegram `allowFrom` migration**: Migrates legacy `channels.telegram.allowFrom` config to the new account-scoped pairing store format

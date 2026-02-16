@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 
-> Generated: 2026-02-15 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Generated: 2026-02-16 | Version: v2026.2.15 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -21,7 +21,17 @@
 ### Module Overview
 Central security audit, remediation, and content-safety module. Provides comprehensive security auditing of OpenClaw configurations, filesystem permissions, external content sanitization (prompt injection defense), skill/plugin code scanning, and auto-fix capabilities. Entry points: `runSecurityAudit()` (audit.ts), `fixSecurityFootguns()` (fix.ts).
 
-### File Inventory (22 files)
+#### v2026.2.15 Changes
+- **Sandbox docker config hardening** — new validation tests (`config.sandbox-docker.test.ts`) for `resolveSandboxBrowserConfig` / `validateConfigObject`
+- **Prompt path sanitization** — new `src/infra/path-safety.ts` with `resolveSafeBaseDir()` and `isWithinDir()` for cross-platform path containment
+- **Restrict skill download paths** — new `src/infra/install-safe-path.ts` provides `unscopedPackageName()`, `safeDirName()`, `safePathSegmentHashed()` to sanitize install target paths
+- **Scope session tools/webhook** — session-scoped tool/process isolation via `resolveSandboxScopeKey()` (`src/agents/sandbox/shared.ts`)
+- **Preserve control-UI scopes in bypass mode** — device pairing preserves existing token scopes when rotating without scopes
+- **Harden chat.send input sanitization** — tighter validation on outbound message parameters
+- **Control UI XSS fix** — JSON endpoint + CSP lockdown in `src/infra/control-ui-assets.ts`
+- **Skill scanner updates** — updated detection rules in `skill-scanner.ts`
+
+### File Inventory (22 files + 2 new infra files)
 
 | File | Description |
 |------|-------------|
@@ -40,6 +50,11 @@ Central security audit, remediation, and content-safety module. Provides compreh
 | `secret-equal.ts` | Timing-safe secret comparison using `crypto.timingSafeEqual` |
 | `skill-scanner.ts` | Static analysis scanner for skill/plugin code — detects dangerous exec, eval, network, fs patterns |
 | `windows-acl.ts` | Windows-specific ACL inspection/remediation via icacls |
+| **New in v2026.2.15 (src/infra/)** | |
+| `install-safe-path.ts` | Sanitize skill/plugin install target paths — `unscopedPackageName()`, `safeDirName()`, `safePathSegmentHashed()` |
+| `install-safe-path.test.ts` | Tests for install path sanitization |
+| `path-safety.ts` | Cross-platform path containment — `resolveSafeBaseDir()`, `isWithinDir()` |
+| `path-safety.test.ts` | Tests for path safety checks |
 | `audit.test.ts` | Tests for main audit orchestrator |
 | `audit-extra.sync.test.ts` | Tests for sync audit collectors |
 | `external-content.test.ts` | Tests for prompt injection detection and content wrapping |
@@ -150,6 +165,10 @@ Central security audit, remediation, and content-safety module. Provides compreh
 
 ### Module Overview
 WhatsApp Web integration module using `@whiskeysockets/baileys`. Handles WhatsApp authentication, session management, inbound message monitoring, outbound message sending, auto-reply orchestration, heartbeat scheduling, media handling, and group policy enforcement. Entry points: `loginWeb()`, `monitorWebInbox()`, `monitorWebChannel()`, `sendMessageWhatsApp()`.
+
+#### v2026.2.15 Changes
+- **Disallow workspace-\* roots without explicit localRoots** — image tool now requires explicit `localRoots` config to access workspace-prefixed directories (`src/agents/tools/image-tool.ts`)
+- **Omit direct conversation labels from inbound metadata** — direct chats no longer inject conversation labels into inbound metadata to prevent metadata leakage
 
 ### File Inventory (non-test, 35+ source files)
 
@@ -302,6 +321,12 @@ WhatsApp Web integration module using `@whiskeysockets/baileys`. Handles WhatsAp
 
 ### Module Overview
 Browser automation module providing a local HTTP control server for Playwright and Chrome DevTools Protocol (CDP) based browser control. Supports multiple browser profiles, Chrome extension relay, screenshots, DOM/ARIA snapshots, page interactions, storage management, and AI-assisted browser actions. Entry points: `startBrowserControlServerFromConfig()`, `browserStatus()`, `browserAct()`.
+
+#### v2026.2.15 Changes
+- **Stop LLM retry loop when browser control unavailable** — `client-fetch.ts` now returns a clear "browser is currently unavailable" message instead of letting the LLM retry indefinitely
+- **Share CDP fetch helpers** — extracted `cdp.helpers.ts` as shared module with `getHeadersWithAuth()`, `CdpSendFn` type, WebSocket helpers, and loopback detection (previously inlined)
+- **Share common server middleware** — new `server-middleware.ts` extracts `installBrowserCommonMiddleware()` (abort signal, JSON parsing, CSRF guard) and `installBrowserAuthMiddleware()` from server.ts
+- **Isolate profile hot-reload config refresh** — new `resolved-config-refresh.ts` extracts `refreshResolvedBrowserConfigFromDisk()` and `applyResolvedConfig()` for cleaner hot-reload lifecycle
 
 ### File Inventory (non-test, ~60 source files)
 

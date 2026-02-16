@@ -892,4 +892,49 @@ Agent tool call: message(action="send", target="...", message="...")
 
 ---
 
+## v2026.2.15 Changes (2026-02-16)
+
+### Telegram
+- **Per-channel ackReaction config** (`#17092`, thanks @zerone0x) — ackReaction scope can now be set per channel/group, not just globally
+- **Simplified send/dispatch/target handling** (`#17819`) — refactored outbound send path
+- **Block streaming fix** (`#17704`) — stop block streaming from splitting messages when `streamMode` is off
+- **No-op editMessage fix** — treat no-op editMessage as success instead of error
+- **Account-scoped pairing allowlists** — pairing allowlists now correctly scoped per account
+- **Shared allowFrom normalization** — deduplicated with other channels
+
+### Discord
+- **Components v2 UI tool** (`#16364`, `#17419`) — full Discord Components v2 support: containers, sections, galleries, separators, text displays, thumbnails, media galleries. Two PRs: initial CV2 implementation and follow-up UI tool support
+- **Component parsing & modal field typing fix** — fixed component parsing and modal field typing issues
+- **Message action send parameter alignment** — aligned send parameters across action handlers
+- **File/buffer attachments** — file and buffer-based attachment support in send actions
+- **Channel session key fix** (`#17622`) — preserve channel session keys via `channel_id` fallbacks
+
+### Channels (shared infrastructure)
+- **Plugin LLM input/output hooks** (`#16724`, thanks @SecondThread) — channel plugins can now hook into LLM input/output payloads for preprocessing and postprocessing
+- **Lazy jiti loader for plugins** — `jiti` loader is now lazily created, improving startup performance
+- **chat.send input sanitization** — hardened `chat.send` message input sanitization in the gateway
+- **Shared allowlist helpers** — deduplicated allowlist resolution, user entry collection, and config patching across all channels
+- **Shared threading tool context** — deduplicated threading context across channels
+- **Shared directory allowFrom parsing** — consolidated directory allowFrom parsing
+- **Shared outbound hook handling** (Slack) — deduplicated outbound hook handling
+
+### Signal
+- **Outbound media limit deduplication** — shared media limit resolution with other channels
+
+### LINE
+- **Webhook auth hardening** — fail closed when webhook auth is missing (security fix)
+- **Test pruning** — extensive removal of redundant/low-signal test cases (~50 commits)
+
+### Slack
+- **Outbound send deduplication** — shared outbound send flow
+- **Onboarding token prompt deduplication** — shared with other channels
+- **Test performance** — sped up slash handler tests
+
+### Cross-Channel
+- **Probe/token base type deduplication** (`#16986`, thanks @iyoda)
+- **Consolidated test suites** — channel action, plugin, and misc test suites consolidated for performance
+- **Onboarding config patching** — shared across Discord and Slack
+
+---
+
 *End of analysis. Total files analyzed: ~451 across 8 modules.*

@@ -974,4 +974,53 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ---
 
+## v2026.2.15 Changes (2026-02-16)
+
+~816 commits across core engine modules since v2026.1.27. Key changes by sub-module:
+
+### Agents
+- **Nested subagent orchestration** — depth-2 nesting with max 5 children per agent; deterministic idempotency keys to prevent duplicate announces; announce queue retry on send failure (`b8f66c260`, `ade11ec89`, `bbbec7a5c`, `2a8360928`)
+- **before_tool_call hook double-fire fix** — deduplicated hook dispatch in `toToolDefinitions` and embedded runtime; hooks now fire from both tool execution paths without duplication (`8c3cc793b`, `534e4213a`, `d34138dfe`)
+- **Compaction improvements** — prevent double compaction from cache-TTL guard bypass; stabilize overflow compaction retries and session context accounting; preserve per-agent exec overrides after compaction; session lock deadlock prevention during compaction timeout (`dcb921944`, `957b88308`, `3b5a9c14d`, `e6f67d5f3`)
+- **Agent-isolated QMD collections** — prevent QMD scope deny bypass; eager-init QMD backend on startup; reuse default model cache; throttle embed + citations auto + restore --force; clamp QMD citations to injected budget (`f9bb748a6`, `efc79f69a`, `e4651d6af`, `9df78b337`, `1861e7636`)
+- **Skill-filter normalization** — normalize skill-filter snapshots in cron; split isolated run helpers (`aef1d5530`)
+- **Transcript hardening** — harden transcript tool-call block sanitization; resolve transcript paths with explicit agent context (`aa56045b4`, `cab0abf52`)
+- **Empty-chunk timeout failover** — classify empty-chunk stream failures as timeout for proper failover behavior (`eb846c95b`)
+- **Sandbox improvements** — centralize sha256 helpers, replace deprecated SHA-1; preserve array order in config hashing; clarify container-vs-host workspace paths in prompt; allow registry entries without agent scope (`d1fca442b`, `559c8d993`, `41ded303b`, `799049f58`, `b567ba5df`)
+
+### Gateway
+- **Sandbox bind validation** — tighten sandbox bind validation and harden docker config validation (`a7cbce1b3`, `887b209db`)
+- **Control UI XSS fix** — serve Control UI bootstrap config and lock down CSP; share bootstrap contract; preserve control-ui scopes in bypass mode (`adc818db4`, `c6e6023e3`, `eed02a2b5`)
+- **Session tool/webhook scoping** — scope session tools and webhook secret fallback for security (`c6c53437f`)
+- **Sensitive field redaction** — redact sensitive status details for non-admin scopes (`fac040cb1`)
+- **Per-channel ackReaction** — support per-channel `ackReaction` config (`b6069fc68`, community contrib @zerone0x)
+- **Cron webhook** — add cron finished-run webhook (`115cfb443`)
+- **Session persistence** — preserve session mapping across gateway restarts; keep boot sessions ephemeral (`b562aa662`, `a90e007d5`)
+- **Control UI partial output** — preserve partial output on abort (`14fb2c05b`)
+- **Prompt path sanitization** — harden prompt path sanitization for security (`6254e96ac`)
+
+### Sessions
+- **Transcript improvements** — resolve transcript paths with explicit agent context; archive old transcript files on `/new` and `/reset`; fix non-default agent session transcript path resolution; split access and resolution helpers (`cab0abf52`, `31537c669`, `ac4117653`, `1a03aad24`)
+- **Session list caching** — cache session list transcript fields for performance (`3bbd29bef`)
+
+### Hooks
+- **Plugin LLM hooks** — expose LLM input/output hook payloads for plugins (`7c822d039`, community contrib @SecondThread)
+- **Compaction/reset hooks** — Plugin API compaction/reset hooks, bootstrap file globs, memory plugin status (`ab71fdf82`)
+
+### Providers
+- **model_not_found failover** — handle 400 status in failover to enable model fallback (`71b4be879`)
+- **OpenAI reasoning replay IDs** — preserve openai reasoning replay ids (`68ea06395`)
+
+### Routing
+- **Binding matching normalization** — normalize binding matching and harden QMD boot-update tests (`2583de530`)
+
+### Cross-cutting
+- **Security hardening** — restrict skill download target paths; harden untrusted web tool transcripts; sandbox allow-all semantics preservation (`2363e1b08`, `da55d70fb`, `4d9e310da`)
+- **Discord** — component v2 UI tool support; preserve channel session keys via `channel_id` fallbacks; apply historyLimit to channel/group sessions (`a61c2dc4b`, `09566b169`, `5378583da`)
+- **Skills** — cross-platform install fallback for non-brew environments (`d19b74692`)
+- **Memory** — harden context window cache collisions (`cbf58d993`)
+- **Test infrastructure** — massive test consolidation and deduplication (~100+ commits); shared env snapshot helpers; folded mini-suites into larger test files for faster CI
+
+---
+
 *End of Core Engine Analysis*

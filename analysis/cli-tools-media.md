@@ -1,5 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 
+> Updated: 2026-02-16 | Version: v2026.2.15
+
 ## Overview
 
 | Module | Files | Lines | Purpose |
@@ -759,3 +761,17 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
               ────► src/media/ (attachment handling)
               ────► src/tts/ (voice notes)
 ```
+
+---
+
+## v2026.2.15 Changes
+
+### Tools
+- **Multi-image in image tool** (#17512): `agents/tools/image-tool.ts` + `image-tool.helpers.ts` — accepts array of up to 20 images per call. See agent-system.md for full details.
+- **Normalize structured write/edit text params**: Tool definitions for write/edit now normalize `oldText`/`newText` vs `old_string`/`new_string` parameter variants consistently
+- **Harden transcript tool-call block sanitization**: `utils/transcript-tools.ts` — improved sanitization of tool-call blocks in transcripts to prevent injection or malformed content
+
+### Media
+- **Share outbound attachment resolver**: `media/outbound-attachment.ts` — extracted shared logic for resolving outbound attachments (file path → hosted URL) previously duplicated across channel plugins
+- **Base64 mime sniff helper**: `media/sniff-mime-from-base64.ts` — new utility to detect MIME type from base64-encoded data by inspecting magic bytes after decoding
+- **Binary application mimes as non-text**: `media/mime.ts` — `application/octet-stream` and similar binary MIME types now correctly classified as non-text, preventing binary content from being treated as readable text in tool results

@@ -1,6 +1,6 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 
-> Generated: 2026-02-15 | Codebase: ~/src/openclaw
+> Generated: 2026-02-16 | Codebase: ~/src/openclaw | Version: v2026.2.15
 
 ---
 
@@ -26,7 +26,17 @@ The memory module provides **semantic search over markdown files and session tra
 - `index.ts` — re-exports `MemoryIndexManager`, `getMemorySearchManager`
 - `search-manager.ts` — `getMemorySearchManager()` factory (selects builtin vs qmd backend)
 
-### File Inventory (61 files)
+### v2026.2.15 Changes
+- **Isolate managed collections per agent** — QMD collections are now scoped per-agent to prevent cross-agent leaks
+- **Rebind drifted collection paths** — auto-corrects collection paths that drifted from expected locations
+- **Harden context window cache collisions** — prevents cache key collisions across concurrent context windows
+- **Unicode tokens in FTS query builder** — `buildFtsQuery()` now supports non-ASCII tokens
+- **Inject runtime date-time into memory flush prompt** — memory flush gets current timestamp for temporal context
+- **Verify QMD index artifact after manual reindex** — validates index integrity post-reindex
+- **New `sync-progress.ts`** — typed sync progress state & reporting callback
+- **New `batch-utils.ts`** — shared batch HTTP client config types
+
+### File Inventory (63 files)
 
 | File | Description |
 |------|-------------|
@@ -51,6 +61,7 @@ The memory module provides **semantic search over markdown files and session tra
 | `node-llama.ts` | Dynamic import wrapper for node-llama-cpp |
 | `batch-http.ts` | Generic HTTP POST with retry for batch APIs |
 | `batch-output.ts` | Shared batch output line parser |
+| `batch-utils.ts` | Shared batch HTTP client config types |
 | `batch-openai.ts` | OpenAI batch embedding API |
 | `batch-gemini.ts` | Gemini batch embedding API |
 | `batch-voyage.ts` | Voyage batch embedding API |
@@ -68,8 +79,10 @@ The memory module provides **semantic search over markdown files and session tra
 | `sync-index.ts` | Generic file-entry-changed check for incremental sync |
 | `sync-memory-files.ts` | Syncs memory markdown files to index |
 | `sync-session-files.ts` | Syncs session transcript files to index |
+| `sync-progress.ts` | Typed sync progress state, reporting callback for UI updates |
 | `sync-stale.ts` | Deletes stale indexed paths |
 | `status-format.ts` | Formatting helpers for memory status display |
+| `embedding-chunk-limits.test.ts` | Tests for chunk limit enforcement |
 | `embedding-manager.test-harness.ts` | Test fixture for embedding manager tests |
 | `embedding.test-mocks.ts` | Vitest mocks for embeddings |
 | `backend-config.test.ts` | Tests for backend config resolution |
@@ -143,7 +156,7 @@ type SessionFileEntry = { path, absPath, mtimeMs, size, hash, content, lineMap }
 | `QmdMemoryManager` | class implements `MemorySearchManager` | External qmd-based memory backend |
 | `chunkMarkdown` | `(text, tokens, overlap) → MemoryChunk[]` | Splits markdown into overlapping chunks |
 | `listMemoryFiles` | `(workspaceDir, extraPaths?) → Promise<string[]>` | Lists .md files in memory dirs |
-| `buildFtsQuery` | `(raw) → string | null` | Builds FTS5 AND-joined query |
+| `buildFtsQuery` | `(raw) → string | null` | Builds FTS5 AND-joined query (supports unicode tokens) |
 | `mergeHybridResults` | `(params) → merged[]` | Merges vector + keyword results with weights |
 | `searchVector` | `(params) → Promise<SearchRowResult[]>` | Executes vector similarity search |
 | `searchKeyword` | `(params) → Promise<SearchRowResult[]>` | Executes FTS5 keyword search |
@@ -196,7 +209,7 @@ type SessionFileEntry = { path, absPath, mtimeMs, size, hash, content, lineMap }
 - `agents.defaults.memorySearch.remote.batch.*` — batch embedding config
 
 ### Test Coverage
-17 test files covering: backend config resolution, embedding providers (OpenAI, Voyage, Gemini), batch APIs, hybrid search, chunking/file listing, session entry parsing, QMD manager/parser/scope, search manager factory, async search, atomic reindex, batch splitting, token limits, sync error handling, vector deduplication, watcher configuration.
+18 test files covering: backend config resolution, embedding chunk limits, embedding providers (OpenAI, Voyage, Gemini), batch APIs, hybrid search, chunking/file listing, session entry parsing, QMD manager/parser/scope, search manager factory, async search, atomic reindex, batch splitting, token limits, sync error handling, vector deduplication, watcher configuration.
 
 ---
 
@@ -212,7 +225,19 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - `store.ts` — `loadCronStore()` / `saveCronStore()`
 - `types.ts` — all type definitions
 
-### File Inventory (52 files)
+### v2026.2.15 Changes
+- **Normalize skill-filter snapshots** — consistent snapshot format for skill filters in cron context
+- **Pass agent-level skill filter to isolated cron sessions** — isolated runs inherit the agent's skill filter
+- **Treat missing `enabled` as true in `update()`** — job patches without `enabled` no longer disable jobs
+- **Infer payload kind for model-only patches** — PATCH with only `model` auto-infers `agentTurn` kind
+- **Preserve cron prompts for tagged interval events** — interval events with tags retain their original prompts
+- **Cron finished-run webhook (#14535)** — fires webhook on job completion
+- **Avoid async cron timer callbacks** — timer callbacks are now synchronous to prevent race conditions
+- **New `skills-snapshot.ts`** — build & normalize skill snapshots for cron sessions
+- **New `subagent-followup.ts`** — handle sub-agent followup after cron isolated runs
+- **New `legacy-delivery.ts`** — detect and handle legacy delivery hint fields
+
+### File Inventory (57 files)
 
 | File | Description |
 |------|-------------|
@@ -239,10 +264,15 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 | `isolated-agent/session.ts` | `resolveCronSession()` — creates isolated session |
 | `isolated-agent/delivery-target.ts` | `resolveDeliveryTarget()` — resolves channel/recipient |
 | `isolated-agent/helpers.ts` | Output picking, heartbeat detection, summary extraction |
+| `isolated-agent/skills-snapshot.ts` | Build & normalize agent skill-filter snapshots for cron sessions |
+| `isolated-agent/subagent-followup.ts` | Wait for/collect sub-agent results after isolated cron runs |
+| `legacy-delivery.ts` | Detect legacy delivery hints (`deliver`, `bestEffortDeliver`) in payloads |
 | `isolated-agent.mocks.ts` | Test mocks for isolated agent |
 | `isolated-agent.test-harness.ts` | Test harness for isolated agent |
 | `service.test-harness.ts` | Test harness for cron service |
-| + 20 test files | Various regression, integration, and unit tests |
+| `isolated-agent/run.skill-filter.test.ts` | Tests for skill filter passing in isolated runs |
+| `isolated-agent/session.test.ts` | Tests for cron session resolution |
+| + 24 test files | Various regression, integration, and unit tests |
 
 ### Key Types & Interfaces
 
@@ -325,7 +355,7 @@ type CronRunLogEntry = { ts, jobId, action, status?, error?, summary?, sessionId
 - Jobs configured via API (add/update/remove), not static config
 
 ### Test Coverage
-20+ test files: delivery plan resolution, every-job firing, regression tests (#13992, #16156), job CRUD, duplicate timer prevention, read-ops non-blocking, rearm timer, restart catchup, one-shot execution, empty payload handling, store migration, schedule error isolation, session management, protocol conformance.
+26+ test files: delivery plan resolution, every-job firing, regression tests (#13992, #16156, general regressions), job CRUD, duplicate timer prevention, read-ops non-blocking, rearm timer, restart catchup, one-shot execution, empty payload handling, store migration (2 files), schedule error isolation, session management, protocol conformance, skill-filter in isolated runs, cron session resolution.
 
 ---
 
@@ -343,7 +373,14 @@ Low-level **media file handling**: MIME detection, file fetching with size limit
 - `fetch.ts` — `fetchRemoteMedia()` with SSRF protection
 - `input-files.ts` — PDF/document content extraction
 
-### File Inventory (27 files)
+### v2026.2.15 Changes
+- **Share outbound attachment resolver** — `outbound-attachment.ts` now shared across channels
+- **Share base64 MIME sniff helper** — `sniff-mime-from-base64.ts` reusable across modules
+- **Treat binary `application/*` MIMEs as non-text** — prevents binary blobs from being treated as text
+- **Share response size limiter** — `read-response-with-limit.ts` shared for consistent enforcement
+- **New `local-roots.ts`** — resolve local media root directories (workspace, state, home)
+
+### File Inventory (26 files)
 
 | File | Description |
 |------|-------------|
@@ -359,11 +396,12 @@ Low-level **media file handling**: MIME detection, file fetching with size limit
 | `base64.ts` | Base64 decoded size estimation (zero-alloc) |
 | `image-ops.ts` | Image resize/metadata via sharp or macOS sips, EXIF orientation |
 | `input-files.ts` | PDF text/image extraction, document content loading |
-| `outbound-attachment.ts` | Resolve outbound media URL → local file |
+| `local-roots.ts` | Resolve local media root directories (workspace, state, home) for safe file access |
+| `outbound-attachment.ts` | Resolve outbound media URL → local file (shared across channels) |
 | `png-encode.ts` | Minimal PNG encoder (CRC32, chunks, RGBA) |
 | `read-response-with-limit.ts` | Stream response body with byte limit |
-| `sniff-mime-from-base64.ts` | Detect MIME from base64 header bytes |
-| + 8 test files | Tests for audio, constants, fetch, host, mime, parse, store |
+| `sniff-mime-from-base64.ts` | Detect MIME from base64 header bytes (shared helper) |
+| + 9 test files | Tests for audio, constants, fetch, fetch-guard, host, mime, parse, store, store-redirect |
 
 ### Key Types & Interfaces
 
@@ -445,7 +483,7 @@ const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 - `OPENCLAW_IMAGE_BACKEND` env var — `"sharp"` | `"sips"`
 
 ### Test Coverage
-8 test files: audio compatibility, media constants, fetch with SSRF, media hosting, MIME detection, MEDIA token parsing, store operations (headers, redirects, general).
+9 test files: audio compatibility, media constants, fetch with SSRF, input-files fetch guard, media hosting, MIME detection, MEDIA token parsing, store operations (headers, general), store redirects.
 
 ---
 
@@ -466,6 +504,7 @@ const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 | File | Description |
 |------|-------------|
 | `index.ts` | Public re-exports |
+| `fs.ts` | File existence helper utility |
 | `types.ts` | Core types: MediaAttachment, MediaUnderstandingOutput, MediaUnderstandingProvider |
 | `apply.ts` | `applyMediaUnderstanding()` — orchestrates all capabilities for a message |
 | `runner.ts` | `runCapability()` — runs image/audio/video processing |
@@ -495,6 +534,8 @@ const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 | `providers/deepgram/audio.ts` | Deepgram Nova transcription |
 | `providers/minimax/index.ts` | MiniMax provider (image) |
 | `providers/zai/index.ts` | ZAI/GLM provider (image) |
+| `providers/audio.test-helpers.ts` | Shared audio test helpers for provider tests |
+| `media-understanding-misc.test.ts` | Miscellaneous integration tests |
 | + 10 test files | Tests for apply, attachments SSRF, format, resolve, scope, runner, providers |
 
 ### Key Types & Interfaces
@@ -571,7 +612,7 @@ type MediaUnderstandingDecision = { capability; outcome; attachments: MediaUnder
 - Each supports: `models[]` array (provider/model/CLI entries), `enabled`, `maxChars`, `maxBytes`, `timeoutSeconds`, `scope` rules
 
 ### Test Coverage
-10 test files: apply e2e, attachment SSRF, format output, resolve config, scope decisions, runner (auto-audio, deepgram, vision-skip), provider-specific (deepgram audio, google video, openai audio).
+12 test files: apply e2e, attachment SSRF, format output, resolve config, scope decisions, runner (auto-audio, deepgram, vision-skip), provider-specific (deepgram audio/live, google video, openai audio), misc integration, audio test helpers.
 
 ---
 

@@ -1,5 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 
+> Updated: 2026-02-16 | Version: v2026.2.15
+
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
 ### Purpose
@@ -810,3 +812,39 @@ When event fires:
 - **memory** is relatively isolated — only 4 modules import from it directly
 - **cron** is consumed only by agents (cron-tool) and gateway
 - **hooks** is consumed by 8 modules, primarily for registration and event triggering
+
+---
+
+## v2026.2.15 Changes
+
+### Nested Subagent Orchestration
+- **`subagent-depth.ts`** (new): Tracks nesting depth for subagents — enables depth-2 nested spawning (subagents can spawn their own children, max 5 children per agent)
+- **`subagent-announce-queue.ts`** (new): Queue system for subagent result announcements — preserves queued items on send failure, uses deterministic idempotency keys to prevent duplicate announces (#17150)
+- Related commit: `b8f66c260` — Agents: add nested subagent orchestration controls and reduce subagent token waste (#14447)
+
+### Model Fallback in sessions_spawn (#17197)
+- **`tools/sessions-spawn-tool.ts`**: Model fallback support when spawning subagent sessions — if the requested model fails, the spawn can fall back through configured fallback chains
+- **`model-fallback.ts`**: Refactored — deduped model fallback candidate logic (`ed03b834d`)
+
+### Multi-Image Support in Image Tool (#17512)
+- **`tools/image-tool.ts`** + **`tools/image-tool.helpers.ts`**: Now accepts an array of up to 20 images in a single tool call (previously single image only). Commit `ff4f59ec9`
+- Propagates workspace root for image allowlist (#16722), allows workspace and sandbox media paths (#15541)
+- Increased maxTokens from 512 to 4096 (#11770)
+
+### Context Window & Model Behavior
+- Honor configured `contextWindow` overrides — respects per-model context window settings from config rather than only using catalog defaults
+- Force `store=true` for direct OpenAI responses — ensures OpenAI Responses API calls persist via **`pi-embedded-helpers/openai.ts`**
+- `messages.suppressToolErrors` config option — new config key to suppress tool error messages from being shown to users
+
+### Reply & Tool Error Handling
+- Suppress `NO_REPLY` when message tool already sent — if the agent used the message tool to send output, the runner no longer emits a redundant NO_REPLY token
+- Mark required-param tool errors as non-retryable — prevents infinite retry loops when tools are called with missing required parameters
+
+### Refactoring (Massive)
+- **Dedupe exec spawn**: `process/spawn-utils.ts` — consolidated spawn logic with EBADF retry and fallback
+- **Tool stubs**: Normalized tool stub generation across the codebase
+- **Session write lock**: `session-write-lock.ts` — deduped session write lock release logic (`f4782e1e7`)
+- **Memory tool config**: `memory-search.ts` — centralized memory search config resolution
+- **Subagent announce**: Consolidated announce logic with queue persistence
+- **Model fallback logic**: Deduped candidate selection in `model-fallback.ts`
+- **Turn validation**: Improved turn validation in `pi-embedded-helpers/turns.ts`
