@@ -52,6 +52,11 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 | `auto-reply/templating.ts` | `MsgContext`, `TemplateContext` types                              |
 | `auto-reply/thinking.ts`   | `ThinkLevel`, `VerboseLevel`, `normalizeVerboseLevel()`            |
 | `logging/subsystem.ts`     | `createSubsystemLogger()`                                          |
+| `agents/subagent-depth.ts` | Nested subagent depth tracking and orchestration controls           |
+| `agents/subagent-announce-queue.ts` | Subagent result announcement queueing                       |
+| `discord/components.ts`    | Discord Component v2 UI rendering and registry                     |
+| `infra/install-safe-path.ts` | Restricted skill download target path validation                 |
+| `pairing/pairing-store.ts` | Account-scoped device pairing store                                |
 
 ---
 
@@ -304,6 +309,8 @@ pnpm vitest run --coverage
 
 All type files are in `src/config/`, all Zod schemas in `src/config/`.
 
+> **v2026.2.15 additions:** `messages.suppressToolErrors` (bool) suppresses tool error display. Per-channel `ackReaction` config added to Telegram, Discord, Slack, WhatsApp type files.
+
 ### How to Add a New Config Key
 
 1. Add type to appropriate `config/types.*.ts` file
@@ -416,3 +423,19 @@ src/<module>/
 - **Discord 2000 char limit**: `discord/chunk.ts` enforces limits with fence-aware splitting. Don't bypass the chunker.
 - **Signal styled text**: Uses byte-position ranges, not character positions. Multi-byte chars shift ranges.
 - **WhatsApp target normalization**: Converts between E.164, JID (`@s.whatsapp.net`), and display formats. Getting this wrong means messages go nowhere silently.
+
+### v2026.2.15 New Gotchas
+
+9. **Pairing stores are now account-scoped** — `pairing/pairing-store.ts` scopes by account. Old unscoped pairing data requires migration via `legacy allowFrom migration` in Telegram.
+
+10. **Nested subagent depth limits** — `agents/subagent-depth.ts` enforces max depth (default 2) and max children per agent (default 5). Exceeding these silently blocks spawning.
+
+11. **Discord Component v2 UI** — `discord/components.ts` and `discord/components-registry.ts` handle new Discord components. The `send.components.ts` file handles outbound component messages separately from regular sends.
+
+12. **Memory collections are now per-agent isolated** — Managed QMD collections are isolated per agent. Drifted collection paths are automatically rebound. Don't assume shared memory across agents.
+
+13. **Cron skill-filter snapshots are normalized** — Cron service normalizes skill-filter snapshots. Treat missing `enabled` as `true` in cron job updates. Model-only update patches infer payload kind automatically.
+
+14. **`sessions_spawn` supports model fallback** — The `model` parameter in `sessions_spawn` now supports fallback chains. Don't assume the spawned session uses exactly the requested model.
+
+15. **Skill download paths are restricted** — `infra/install-safe-path.ts` validates target paths for skill downloads, preventing path traversal. Cross-platform fallback for non-brew installs added.

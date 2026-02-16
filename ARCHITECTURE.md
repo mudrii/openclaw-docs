@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Generated: 2026-02-15 | Comprehensive reference for contributors
+> Updated: 2026-02-16 (v2026.2.15) | Comprehensive reference for contributors
 
 ---
 
@@ -149,14 +149,14 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 
 | Module | Files (src) | Lines (approx) | Purpose | Key Dependencies |
 |--------|-------------|-----------------|---------|------------------|
-| `agents/` | ~530 | ~60,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents, auth profiles | config, routing, sessions, hooks, channels, infra, pi-ai |
+| `agents/` | ~545 | ~60,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration), auth profiles | config, routing, sessions, hooks, channels, infra, pi-ai |
 | `auto-reply/` | ~223 | ~25,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
 | `gateway/` | ~228 | ~83,000 | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control | agents, config, routing, channels, plugins, infra |
 | `config/` | ~85 | ~48,500 | Config loading, Zod schemas, session store, legacy migration, path resolution | channels (types), infra |
 | `infra/` | ~130 | ~71,000 | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
 | `channels/` | ~60 | ~8,000 | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
 | `telegram/` | ~45 | ~8,000 | Telegram Bot API via grammY: long-poll/webhook, topics, reactions, streaming | grammY, config, auto-reply, channels |
-| `discord/` | ~41 | ~8,000 | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin | carbon, config, auto-reply, channels |
+| `discord/` | ~45 | ~8,500 | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
 | `slack/` | ~34 | ~6,000 | Slack via Socket Mode: channels, threads, slash commands, file uploads | @slack/web-api, config, auto-reply |
 | `signal/` | ~17 | ~3,000 | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
 | `line/` | ~30 | ~5,000 | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
@@ -186,7 +186,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `sessions/` | ~9 | ~1,200 | Session utilities: key parsing, send policy, transcript events, provenance | config, channels |
 | `providers/` | ~9 | ~1,500 | Provider-specific auth: GitHub Copilot OAuth, Qwen refresh | config, agents (auth-profiles) |
 | `acp/` | ~10 | ~1,500 | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
-| `pairing/` | ~5 | ~500 | Device pairing: code generation, approval, channel allowlists | channels, config, infra |
+| `pairing/` | ~5 | ~500 | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
 | `node-host/` | ~7 | ~1,000 | Remote node agent: gateway connection, command invocation, browser proxy | gateway, browser, config |
 | `shared/` | ~16 | ~1,500 | Pure types/constants: frontmatter, requirements, reasoning tags | compat |
 | `utils/` | ~22 | ~2,000 | General utilities: boolean parse, delivery context, usage format, shell argv | channels, config |
@@ -501,6 +501,18 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 - **Code scanning:** `security/skill-scanner.ts` scans skill/plugin code for dangerous patterns (eval, exec, fetch)
 - **Filesystem inspection:** `security/audit-fs.ts` checks POSIX mode bits and Windows ACLs
 
+### v2026.2.15 Security Hardening
+
+- **Sandbox docker config validation** — Hardened validation of Docker sandbox configuration to prevent config injection
+- **Prompt path sanitization** — Hardened path sanitization to prevent directory traversal in prompt paths
+- **Skill download path restriction** — `infra/install-safe-path.ts` restricts skill download target paths to prevent writes outside allowed directories
+- **Session tool scoping** — Session tools and webhook secret fallback are now properly scoped
+- **Control-UI scope preservation** — Scopes are preserved in bypass mode; XSS fix via JSON endpoint + CSP lockdown
+- **Account-scoped pairing** — `pairing/pairing-store.ts` scopes pairing stores by account; allowlists for Telegram/WhatsApp are account-scoped
+- **Token redaction** — Telegram bot tokens are redacted in error messages; sensitive status details redacted for non-admin scopes
+- **Input sanitization** — `chat.send` message input sanitization hardened
+- **LINE webhook auth** — LINE webhook fails closed when authentication is missing (previously could pass through)
+
 ---
 
 ## 10. Storage & Persistence
@@ -727,7 +739,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Channel | Framework | Special Features |
 |---------|-----------|------------------|
 | Telegram | grammY | Forum topics, inline buttons, draft streaming, reactions, proxy support |
-| Discord | @buape/carbon | Guilds, threads, polls, PluralKit, presence, admin actions |
+| Discord | @buape/carbon | Guilds, threads, polls, PluralKit, presence, admin actions, Component v2 UI (`components.ts`, `components-registry.ts`, `send.components.ts`) |
 | Slack | @slack/web-api | Socket Mode, slash commands, file uploads, pins |
 | Signal | signal-cli REST | JSON-RPC + SSE, groups, reactions, daemon management |
 | LINE | @line/bot-sdk | Flex Messages, Rich Menus, markdown→flex conversion |
@@ -791,9 +803,9 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Value |
 |--------|-------|
-| **Total src/ modules** | ~45 directories |
-| **Total source files** | ~2,500+ .ts files |
-| **Total test files** | ~800+ .test.ts files |
+| **Total src/ modules** | ~50 directories |
+| **Total source files** | ~2,980 .ts files |
+| **Total test files** | ~1,000 .test.ts files |
 | **Estimated total lines** | ~350,000+ |
 | **External framework** | @mariozechner/pi-ai, pi-agent-core, pi-coding-agent |
 | **Language** | TypeScript (Node.js) |
@@ -804,9 +816,9 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Rank | Module | Source Files | Test Files |
 |------|--------|-------------|------------|
-| 1 | `agents/` | ~263 | ~267 |
-| 2 | `auto-reply/` | ~129 | ~86 |
-| 3 | `gateway/` | ~145 | ~83 |
+| 1 | `agents/` | ~278 | ~267 |
+| 2 | `auto-reply/` | ~137 | ~86 |
+| 3 | `gateway/` | ~154 | ~83 |
 | 4 | `commands/` | ~160 | ~30 |
 | 5 | `cli/` | ~130 | ~20 |
 | 6 | `infra/` | ~130 | ~40 |

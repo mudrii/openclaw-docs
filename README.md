@@ -2,7 +2,7 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Current version: v2026.2.14**
+**Current version: v2026.2.15**
 
 ## What's Here
 
@@ -14,6 +14,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [DEVELOPER-REFERENCE.md](DEVELOPER-REFERENCE.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
+| [CHANGELOG-v2026.2.15.md](CHANGELOG-v2026.2.15.md) | Changelog for v2026.2.14 → v2026.2.15 (880 commits, 12 security fixes, 11 features). |
 
 ### Detailed Analysis
 
@@ -60,14 +61,15 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each release is tagged to match the OpenClaw version it documents:
+- `v2026.2.15` — Updated for v2026.2.15 (880 commits, security hardening, Discord Component v2, nested subagents, multi-image, cron webhooks)
 - `v2026.2.14` — Initial release, documenting OpenClaw v2026.2.14
 
 When a new OpenClaw version is released, the documentation is re-analyzed and a new version is tagged.
 
 ## Stats
 
-- **~3,051 TypeScript files** analyzed
-- **~527,000 lines of code** covered
+- **~2,980 TypeScript files** analyzed (reduced from ~3,051 via massive refactoring/consolidation)
+- **~527,000+ lines of code** covered
 - **50+ modules** documented
 - **~420KB** of documentation
 
