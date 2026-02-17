@@ -194,10 +194,10 @@ gateway/server-plugins.ts
 ### Running Tests
 
 ```bash
-# Full suite
-pnpm vitest run
+# Full suite (parallel runner, matches CI)
+pnpm test
 
-# Single module
+# Single module (direct vitest for targeted runs)
 pnpm vitest run src/config/
 
 # Single file
@@ -238,18 +238,20 @@ pnpm vitest run --coverage
 ### CI Pipeline
 
 - **Build**: `pnpm build` (TypeScript compilation)
+- **Type check**: `pnpm tsgo` (fast type checking)
 - **Lint**: `pnpm lint` (Oxlint, type-aware)
-- **Format**: `pnpm format:check`
-- **Tests**: `pnpm vitest run`
+- **Format**: `pnpm format:check` (Oxfmt, check-only)
+- **Check (all-in-one)**: `pnpm check` (`format:check` + `tsgo` + `lint`)
+- **Tests**: `pnpm test` (parallel runner via `scripts/test-parallel.mjs`)
 
 ---
 
 ## 5. Pre-PR Checklist
 
 ```
-□ pnpm lint                         # Full project, zero NEW errors
-□ pnpm vitest run                   # All related test files pass
-□ pnpm format                        # No formatting issues
+□ pnpm build                        # TypeScript compilation
+□ pnpm check                        # Format + type check + lint (all-in-one)
+□ pnpm test                         # Full test suite (parallel runner, matches CI)
 □ git diff --stat                   # Review what you're committing
 □ grep all callers                  # If changing function signatures
 □ Squash fix-on-fix commits         # Clean logical commits only
