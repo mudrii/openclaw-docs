@@ -417,6 +417,8 @@ src/<module>/
 - **Session file writes**: `agents/session-write-lock.ts` provides file-based locking. Concurrent JSONL appends without locking corrupt files.
 - **Gateway config reload**: `gateway/config-reload.ts` uses chokidar debounce. Rapid config changes can trigger multiple reloads.
 - **Telegram media groups**: `bot-updates.ts` aggregates photos with a timeout window. Changing this can split or merge groups incorrectly.
+- **Telegram draft stream cleanup vs fallback delivery**: `bot-message-dispatch.ts` has a `finally` block that calls `draftStream?.stop()`. The actual preview cleanup (`clear()`) must run **after** fallback delivery logic, but must still be guaranteed via `try/finally` wrapping the fallback. Pattern: `try { fallback } finally { cleanup }`. Putting cleanup in the outer `finally` (before fallback) causes the preview to be deleted before the fallback can send, causing silent message loss (#19001).
+- **Telegram `disableBlockStreaming` evaluation order**: When `streamMode === "off"`, `disableBlockStreaming` must be `true` (not `undefined`). The ternary chain must check `streamMode === "off"` first. If `blockStreaming: true` config takes priority, block streaming logic runs in off mode with `draftStream === undefined`, causing message loss.
 
 ### Other Landmines
 
