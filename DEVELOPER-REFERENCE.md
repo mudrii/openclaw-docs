@@ -37,26 +37,26 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 
 ### High-Blast-Radius Files
 
-| File                       | What It Exports                                                    |
-| -------------------------- | ------------------------------------------------------------------ |
-| `config/config.ts`         | `loadConfig()`, `OpenClawConfig`, `clearConfigCache()`             |
-| `config/types.ts`          | All config type re-exports                                         |
-| `config/paths.ts`          | `resolveStateDir()`, `resolveConfigPath()`, `resolveGatewayPort()` |
-| `config/sessions.ts`       | Session store CRUD                                                 |
-| `infra/errors.ts`          | Error utilities                                                    |
-| `infra/json-file.ts`       | `loadJsonFile()`, `saveJsonFile()`                                 |
-| `agents/agent-scope.ts`    | `resolveDefaultAgentId()`, `resolveAgentWorkspaceDir()`            |
-| `agents/defaults.ts`       | `DEFAULT_PROVIDER`, `DEFAULT_MODEL`                                |
-| `channels/registry.ts`     | `CHAT_CHANNEL_ORDER`, `normalizeChatChannelId()`                   |
-| `routing/session-key.ts`   | `buildAgentPeerSessionKey()`, `normalizeAgentId()`                 |
-| `auto-reply/templating.ts` | `MsgContext`, `TemplateContext` types                              |
-| `auto-reply/thinking.ts`   | `ThinkLevel`, `VerboseLevel`, `normalizeVerboseLevel()`            |
-| `logging/subsystem.ts`     | `createSubsystemLogger()`                                          |
-| `agents/subagent-depth.ts` | Nested subagent depth tracking and orchestration controls           |
-| `agents/subagent-announce-queue.ts` | Subagent result announcement queueing                       |
-| `discord/components.ts`    | Discord Component v2 UI rendering and registry                     |
-| `infra/install-safe-path.ts` | Restricted skill download target path validation                 |
-| `pairing/pairing-store.ts` | Account-scoped device pairing store                                |
+| File                                | What It Exports                                                    |
+| ----------------------------------- | ------------------------------------------------------------------ |
+| `config/config.ts`                  | `loadConfig()`, `OpenClawConfig`, `clearConfigCache()`             |
+| `config/types.ts`                   | All config type re-exports                                         |
+| `config/paths.ts`                   | `resolveStateDir()`, `resolveConfigPath()`, `resolveGatewayPort()` |
+| `config/sessions.ts`                | Session store CRUD                                                 |
+| `infra/errors.ts`                   | Error utilities                                                    |
+| `infra/json-file.ts`                | `loadJsonFile()`, `saveJsonFile()`                                 |
+| `agents/agent-scope.ts`             | `resolveDefaultAgentId()`, `resolveAgentWorkspaceDir()`            |
+| `agents/defaults.ts`                | `DEFAULT_PROVIDER`, `DEFAULT_MODEL`                                |
+| `channels/registry.ts`              | `CHAT_CHANNEL_ORDER`, `normalizeChatChannelId()`                   |
+| `routing/session-key.ts`            | `buildAgentPeerSessionKey()`, `normalizeAgentId()`                 |
+| `auto-reply/templating.ts`          | `MsgContext`, `TemplateContext` types                              |
+| `auto-reply/thinking.ts`            | `ThinkLevel`, `VerboseLevel`, `normalizeVerboseLevel()`            |
+| `logging/subsystem.ts`              | `createSubsystemLogger()`                                          |
+| `agents/subagent-depth.ts`          | Nested subagent depth tracking and orchestration controls          |
+| `agents/subagent-announce-queue.ts` | Subagent result announcement queueing                              |
+| `discord/components.ts`             | Discord Component v2 UI rendering and registry                     |
+| `infra/install-safe-path.ts`        | Restricted skill download target path validation                   |
+| `pairing/pairing-store.ts`          | Account-scoped device pairing store                                |
 
 ---
 
@@ -417,15 +417,18 @@ src/<module>/
 - **Session file writes**: `agents/session-write-lock.ts` provides file-based locking. Concurrent JSONL appends without locking corrupt files.
 - **Gateway config reload**: `gateway/config-reload.ts` uses chokidar debounce. Rapid config changes can trigger multiple reloads.
 - **Telegram media groups**: `bot-updates.ts` aggregates photos with a timeout window. Changing this can split or merge groups incorrectly.
-- **Telegram draft stream cleanup vs fallback delivery**: `bot-message-dispatch.ts` has a `finally` block that calls `draftStream?.stop()`. The actual preview cleanup (`clear()`) must run **after** fallback delivery logic, but must still be guaranteed via `try/finally` wrapping the fallback. Cleanup in a `finally` that runs *before* fallback logic executes too early — the preview gets deleted before fallback can send, causing silent message loss (#19001). Always use this pattern:
+- **Telegram draft stream cleanup vs fallback delivery**: `bot-message-dispatch.ts` has a `finally` block that calls `draftStream?.stop()`. The actual preview cleanup (`clear()`) must run **after** fallback delivery logic, but must still be guaranteed via `try/finally` wrapping the fallback. Cleanup in a `finally` that runs _before_ fallback logic executes too early — the preview gets deleted before fallback can send, causing silent message loss (#19001). Always use this pattern:
+
   ```ts
   try {
     await fallbackDelivery();
   } finally {
-    clearDraftPreviewIfNeeded();  // runs even if fallback throws
+    clearDraftPreviewIfNeeded(); // runs even if fallback throws
   }
   ```
+
   If the fallback itself throws and cleanup isn't in `finally`, stale preview messages are left behind.
+
 - **Telegram `disableBlockStreaming` evaluation order**: When `streamMode === "off"`, `disableBlockStreaming` must be `true` (not `undefined`). A ternary chain like `a ? x : b ? y : undefined` produces `undefined` instead of `true` when the priority condition isn't checked first. Code using `if (disableBlockStreaming)` treats `undefined` as falsy, silently allowing block streaming in off mode with `draftStream === undefined` → message loss. Always put the most restrictive condition first, and prefer explicit `true`/`false` over `undefined` in boolean ternaries.
 
 ### Other Landmines
