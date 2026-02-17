@@ -417,8 +417,16 @@ src/<module>/
 - **Session file writes**: `agents/session-write-lock.ts` provides file-based locking. Concurrent JSONL appends without locking corrupt files.
 - **Gateway config reload**: `gateway/config-reload.ts` uses chokidar debounce. Rapid config changes can trigger multiple reloads.
 - **Telegram media groups**: `bot-updates.ts` aggregates photos with a timeout window. Changing this can split or merge groups incorrectly.
-- **Telegram draft stream cleanup vs fallback delivery**: `bot-message-dispatch.ts` has a `finally` block that calls `draftStream?.stop()`. The actual preview cleanup (`clear()`) must run **after** fallback delivery logic, but must still be guaranteed via `try/finally` wrapping the fallback. Pattern: `try { fallback } finally { cleanup }`. Putting cleanup in the outer `finally` (before fallback) causes the preview to be deleted before the fallback can send, causing silent message loss (#19001).
-- **Telegram `disableBlockStreaming` evaluation order**: When `streamMode === "off"`, `disableBlockStreaming` must be `true` (not `undefined`). The ternary chain must check `streamMode === "off"` first. If `blockStreaming: true` config takes priority, block streaming logic runs in off mode with `draftStream === undefined`, causing message loss.
+- **Telegram draft stream cleanup vs fallback delivery**: `bot-message-dispatch.ts` has a `finally` block that calls `draftStream?.stop()`. The actual preview cleanup (`clear()`) must run **after** fallback delivery logic, but must still be guaranteed via `try/finally` wrapping the fallback. Cleanup in a `finally` that runs *before* fallback logic executes too early — the preview gets deleted before fallback can send, causing silent message loss (#19001). Always use this pattern:
+  ```ts
+  try {
+    await fallbackDelivery();
+  } finally {
+    clearDraftPreviewIfNeeded();  // runs even if fallback throws
+  }
+  ```
+  If the fallback itself throws and cleanup isn't in `finally`, stale preview messages are left behind.
+- **Telegram `disableBlockStreaming` evaluation order**: When `streamMode === "off"`, `disableBlockStreaming` must be `true` (not `undefined`). A ternary chain like `a ? x : b ? y : undefined` produces `undefined` instead of `true` when the priority condition isn't checked first. Code using `if (disableBlockStreaming)` treats `undefined` as falsy, silently allowing block streaming in off mode with `draftStream === undefined` → message loss. Always put the most restrictive condition first, and prefer explicit `true`/`false` over `undefined` in boolean ternaries.
 
 ### Other Landmines
 
@@ -427,6 +435,8 @@ src/<module>/
 - **Discord 2000 char limit**: `discord/chunk.ts` enforces limits with fence-aware splitting. Don't bypass the chunker.
 - **Signal styled text**: Uses byte-position ranges, not character positions. Multi-byte chars shift ranges.
 - **WhatsApp target normalization**: Converts between E.164, JID (`@s.whatsapp.net`), and display formats. Getting this wrong means messages go nowhere silently.
+- **`config.patch` path nesting matters**: `config.patch` with `{"telegram":{"streamMode":"off"}}` silently writes to an ignored top-level key. The correct path is `{"channels":{"telegram":{"streamMode":"off"}}}`. A "successful" patch that changes nothing is worse than an error — always verify the full nested structure before patching.
+- **Gateway config patches need read-back verification**: After `config.patch`, always read back the config to confirm the change took effect. Silent success + wrong nesting path = hours of debugging the wrong code while the config was never actually changed.
 
 ### v2026.2.15 New Gotchas
 
@@ -443,3 +453,22 @@ src/<module>/
 14. **`sessions_spawn` supports model fallback** — The `model` parameter in `sessions_spawn` now supports fallback chains. Don't assume the spawned session uses exactly the requested model.
 
 15. **Skill download paths are restricted** — `infra/install-safe-path.ts` validates target paths for skill downloads, preventing path traversal. Cross-platform fallback for non-brew installs added.
+
+---
+
+## 10. PR & Bug Filing Best Practices
+
+### Multi-Model Review
+
+- Use multiple models for PR review when complexity warrants it. Different models catch different classes of bugs: one focuses on correctness (happy path), another on failure paths (what happens when recovery itself fails). At minimum, use one model for "does it work?" and another for "what breaks?"
+
+### Test Matrices
+
+- **Test across ALL config permutations.** Telegram has 3 `streamMode` values (`partial` / `block` / `off`), each with different code paths. A fix for one mode can break another. Build a test matrix covering every mode × every failure scenario before claiming a fix is complete.
+- File bugs with full test matrices. Include: reproduction steps for each mode, all root causes identified, and a gap matrix showing which PRs fix which scenarios. Detailed issues attract better reviews and prevent partial fixes (e.g., #19001).
+
+### Issue & PR Workflow
+
+- **Search existing issues before filing.** A quick `gh issue list --search "<keywords>"` surfaces prior analysis and avoids duplicate effort. Issue #18244 (Telegram message loss) was found only after deep investigation — a search would have saved hours.
+- **One PR, multiple root causes = scope risk.** A PR fixing 3 distinct failure modes (eval order, failed delivery tracking, cleanup timing) is harder to review even if each fix is independently correct. Consider whether splitting gets faster review vs. the coherence benefit of a single fix.
+- **Scope PRs to one logical change when possible.** If root causes are independent, separate PRs are easier to review, revert, and bisect.
