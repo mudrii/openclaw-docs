@@ -71,7 +71,7 @@ Channel SDK event (grammY/Carbon/Bolt/SSE/RPC)
 → src/auto-reply/dispatch.ts                   # dispatchInboundMessage()
 → src/routing/resolve-route.ts                 # resolveAgentRoute() → {agentId, sessionKey}
 → src/auto-reply/reply/dispatch-from-config.ts # dispatchReplyFromConfig()
-→ src/auto-reply/reply/get-reply.ts            # getReplyFromConfig() — MAIN ORCHESTRATOR
+→ src/auto-reply/reply/get-reply.ts            # getReplyFromConfig() - MAIN ORCHESTRATOR
   ├─ media-understanding/apply.ts
   ├─ command-auth.ts
   ├─ reply/session.ts                          # initSessionState()
@@ -161,11 +161,11 @@ gateway/server-plugins.ts
 | `routing/session-key.ts`         | Session key parsing everywhere, cron sessions, subagent sessions                                                                               |
 | `agents/pi-tools.ts`             | ALL tool tests, tool policy, tool display, sandbox tool policy                                                                                 |
 | `agents/pi-embedded-runner/run/` | The entire agent execution path, fallback, compaction, streaming                                                                               |
-| `agents/system-prompt.ts`        | Agent behavior changes — test with actual LLM calls                                                                                            |
+| `agents/system-prompt.ts`        | Agent behavior changes - test with actual LLM calls                                                                                            |
 | `agents/model-selection.ts`      | Model resolution across all agents, directives, cron, subagents                                                                                |
 | `agents/tool-policy*.ts`         | Tool access for all tools, sandbox, subagent restrictions                                                                                      |
 | `auto-reply/dispatch.ts`         | All channel inbound paths                                                                                                                      |
-| `auto-reply/reply/get-reply.ts`  | The entire reply pipeline — most impactful single file                                                                                         |
+| `auto-reply/reply/get-reply.ts`  | The entire reply pipeline - most impactful single file                                                                                         |
 | `auto-reply/templating.ts`       | `MsgContext` type used by 15+ files                                                                                                            |
 | `auto-reply/thinking.ts`         | `ThinkLevel`/`VerboseLevel` used across agents, directives, sessions                                                                           |
 | `channels/plugins/types*.ts`     | ALL channel implementations, plugin SDK                                                                                                        |
@@ -184,7 +184,7 @@ gateway/server-plugins.ts
 - **`agents/` ↔ `auto-reply/`**: Bidirectional dependency by design. Changes to agent run result types break reply delivery.
 - **`config/sessions/` → `routing/` → `gateway/`**: Session key format changes ripple to route resolution and gateway session management.
 - **`channels/dock.ts`**: Returns channel metadata without importing heavy channel code. If you change a channel's capabilities, update the dock too.
-- **`auto-reply/thinking.ts`**: `VerboseLevel` is used by `sessions/level-overrides.ts` — changing enum values breaks session persistence.
+- **`auto-reply/thinking.ts`**: `VerboseLevel` is used by `sessions/level-overrides.ts` - changing enum values breaks session persistence.
 - **`infra/outbound/deliver.ts`**: Used by both cron delivery AND channel tool message sending. Changes affect both paths.
 
 ---
@@ -228,12 +228,12 @@ pnpm vitest run --coverage
 
 ### Test Helpers
 
-- `src/test-helpers/` — Shared test utilities
-- `src/test-utils/` — Additional test utilities
-- `src/config/test-helpers.ts` — Config-specific test helpers
-- `src/cron/service.test-harness.ts` — Cron service test fixture
-- `src/cron/isolated-agent.test-harness.ts` — Isolated agent test fixture
-- `src/memory/embedding-manager.test-harness.ts` — Embedding test fixture
+- `src/test-helpers/` - Shared test utilities
+- `src/test-utils/` - Additional test utilities
+- `src/config/test-helpers.ts` - Config-specific test helpers
+- `src/cron/service.test-harness.ts` - Cron service test fixture
+- `src/cron/isolated-agent.test-harness.ts` - Isolated agent test fixture
+- `src/memory/embedding-manager.test-harness.ts` - Embedding test fixture
 
 ### CI Pipeline
 
@@ -272,29 +272,29 @@ pnpm vitest run --coverage
 
 ### Commit Message Conventions
 
-- `feat:` — New feature
-- `fix:` — Bug fix
-- `perf:` — Performance improvement
-- `refactor:` — Code restructuring
-- `test:` — Test additions/changes
-- `docs:` — Documentation
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `perf:` - Performance improvement
+- `refactor:` - Code restructuring
+- `test:` - Test additions/changes
+- `docs:` - Documentation
 
 ### Common Pitfalls
 
-1. **Never call `loadConfig()` in render/hot paths** — it does sync `fs.readFileSync`. Thread config through params.
-2. **Verify function is actually `async` before adding `await`** — causes `await-thenable` lint errors.
-3. **Removing `async` from exported functions is BREAKING** — changes return type from `Promise<T>` to `T`. All `await` callers break.
-4. **Primary operations must throw; only convenience ops get try/catch** — don't swallow errors on critical paths.
-5. **Guard numeric comparisons against NaN** — use `Number.isFinite()` before `>` / `<`.
-6. **Normalize paths before string comparison** — `path.resolve()` before `===`.
-7. **Derive context from parameters, not global state** — use explicit paths, not env var fallbacks.
-8. **Run FULL `pnpm lint` before every push** — not just changed files. Type-aware linting catches cross-file issues.
+1. **Never call `loadConfig()` in render/hot paths** - it does sync `fs.readFileSync`. Thread config through params.
+2. **Verify function is actually `async` before adding `await`** - causes `await-thenable` lint errors.
+3. **Removing `async` from exported functions is BREAKING** - changes return type from `Promise<T>` to `T`. All `await` callers break.
+4. **Primary operations must throw; only convenience ops get try/catch** - don't swallow errors on critical paths.
+5. **Guard numeric comparisons against NaN** - use `Number.isFinite()` before `>` / `<`.
+6. **Normalize paths before string comparison** - `path.resolve()` before `===`.
+7. **Derive context from parameters, not global state** - use explicit paths, not env var fallbacks.
+8. **Run FULL `pnpm lint` before every push** - not just changed files. Type-aware linting catches cross-file issues.
 
 ---
 
 ## 6. Configuration Reference
 
-### Root Config (`openclaw.json` — JSON5)
+### Root Config (`openclaw.json` - JSON5)
 
 | Section             | Type File                          | Zod Schema                         |
 | ------------------- | ---------------------------------- | ---------------------------------- |
@@ -331,7 +331,7 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 ### How to Add a New Config Key
 
 1. Add type to appropriate `config/types.*.ts` file
-2. Add Zod schema to appropriate `config/zod-schema.*.ts` file — type and schema MUST match
+2. Add Zod schema to appropriate `config/zod-schema.*.ts` file - type and schema MUST match
 3. Add default in `config/defaults.ts` if applicable
 4. Update `config/schema.hints.ts` if it needs UI labels
 5. Add test in `config/config.*.test.ts`
@@ -343,7 +343,7 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 
 | Type                          | File                                 | Usage                                                          |
 | ----------------------------- | ------------------------------------ | -------------------------------------------------------------- |
-| `OpenClawConfig`              | `config/types.openclaw.ts`           | Root config — used everywhere                                  |
+| `OpenClawConfig`              | `config/types.openclaw.ts`           | Root config - used everywhere                                  |
 | `AgentConfig`                 | `config/types.agents.ts`             | Per-agent config                                               |
 | `AgentBinding`                | `config/types.agents.ts`             | Channel→agent binding                                          |
 | `SessionEntry`                | `config/sessions/types.ts`           | Persistent session state                                       |
@@ -409,22 +409,22 @@ src/<module>/
 
 ### Things That Look Simple But Aren't
 
-1. **`loadConfig()` is synchronous with caching** — First call reads disk (sync `fs.readFileSync`). Subsequent calls return cached. `clearConfigCache()` to invalidate. NEVER call in hot paths.
+1. **`loadConfig()` is synchronous with caching** - First call reads disk (sync `fs.readFileSync`). Subsequent calls return cached. `clearConfigCache()` to invalidate. NEVER call in hot paths.
 
-2. **Route resolution uses `WeakMap` cache on config object** — `routing/resolve-route.ts` caches bindings evaluation on the config object itself. If you spread/clone config, the cache misses.
+2. **Route resolution uses `WeakMap` cache on config object** - `routing/resolve-route.ts` caches bindings evaluation on the config object itself. If you spread/clone config, the cache misses.
 
-3. **Session keys are hierarchical** — Format: `agent:<id>:<channel>:<kind>:<peerId>[:thread:<threadId>]`. Functions like `isSubagentSessionKey()`, `isCronSessionKey()` depend on exact format.
+3. **Session keys are hierarchical** - Format: `agent:<id>:<channel>:<kind>:<peerId>[:thread:<threadId>]`. Functions like `isSubagentSessionKey()`, `isCronSessionKey()` depend on exact format.
 
-4. **`agents/` ↔ `auto-reply/` is bidirectional by design** — Not a circular dependency bug. `agents/` provides runtime, `auto-reply/` orchestrates it.
+4. **`agents/` ↔ `auto-reply/` is bidirectional by design** - Not a circular dependency bug. `agents/` provides runtime, `auto-reply/` orchestrates it.
 
-5. **`agents/pi-embedded-subscribe.ts` processes SSE stream chunks** — It's a streaming state machine. Adding/removing events here can break tool call parsing, block chunking, or reasoning block extraction.
+5. **`agents/pi-embedded-subscribe.ts` processes SSE stream chunks** - It's a streaming state machine. Adding/removing events here can break tool call parsing, block chunking, or reasoning block extraction.
 
 ### Modules With Surprising Coupling
 
-- **`auto-reply/thinking.ts`** exports `VerboseLevel` used by `sessions/level-overrides.ts` — changing enum values breaks session persistence.
+- **`auto-reply/thinking.ts`** exports `VerboseLevel` used by `sessions/level-overrides.ts` - changing enum values breaks session persistence.
 - **`channels/dock.ts`** returns lightweight metadata to avoid importing heavy channel code. Must be updated when channel capabilities change.
-- **`infra/outbound/deliver.ts`** is used by both cron delivery AND message tool sends — test both.
-- **`config/sessions/store.ts`** uses file locking — concurrent writes can deadlock if lock isn't released.
+- **`infra/outbound/deliver.ts`** is used by both cron delivery AND message tool sends - test both.
+- **`config/sessions/store.ts`** uses file locking - concurrent writes can deadlock if lock isn't released.
 
 ### Race Conditions to Watch
 
@@ -432,7 +432,7 @@ src/<module>/
 - **Session file writes**: `agents/session-write-lock.ts` provides file-based locking. Concurrent JSONL appends without locking corrupt files.
 - **Gateway config reload**: `gateway/config-reload.ts` uses chokidar debounce. Rapid config changes can trigger multiple reloads.
 - **Telegram media groups**: `bot-updates.ts` aggregates photos with a timeout window. Changing this can split or merge groups incorrectly.
-- **Telegram draft stream cleanup vs fallback delivery**: `bot-message-dispatch.ts` has a `finally` block that calls `draftStream?.stop()`. The actual preview cleanup (`clear()`) must run **after** fallback delivery logic, but must still be guaranteed via `try/finally` wrapping the fallback. Cleanup in a `finally` that runs _before_ fallback logic executes too early — the preview gets deleted before fallback can send, causing silent message loss (#19001). Always use this pattern:
+- **Telegram draft stream cleanup vs fallback delivery**: `bot-message-dispatch.ts` has a `finally` block that calls `draftStream?.stop()`. The actual preview cleanup (`clear()`) must run **after** fallback delivery logic, but must still be guaranteed via `try/finally` wrapping the fallback. Cleanup in a `finally` that runs _before_ fallback logic executes too early - the preview gets deleted before fallback can send, causing silent message loss (#19001). Always use this pattern:
 
   ```ts
   try {
@@ -449,44 +449,66 @@ src/<module>/
 ### Other Landmines
 
 - **JSON5 vs JSON**: Config files are JSON5 (comments, trailing commas). Session files, cron store, auth profiles are strict JSON. Don't mix parsers.
-- **Telegram HTML formatting**: `telegram/format.ts` converts Markdown→Telegram HTML. Telegram's HTML subset is limited — broken HTML silently fails.
+- **Telegram HTML formatting**: `telegram/format.ts` converts Markdown→Telegram HTML. Telegram's HTML subset is limited - broken HTML silently fails.
 - **Discord 2000 char limit**: `discord/chunk.ts` enforces limits with fence-aware splitting. Don't bypass the chunker.
 - **Signal styled text**: Uses byte-position ranges, not character positions. Multi-byte chars shift ranges.
 - **WhatsApp target normalization**: Converts between E.164, JID (`@s.whatsapp.net`), and display formats. Getting this wrong means messages go nowhere silently.
-- **`config.patch` path nesting matters**: `config.patch` with `{"telegram":{"streamMode":"off"}}` silently writes to an ignored top-level key. The correct path is `{"channels":{"telegram":{"streamMode":"off"}}}`. A "successful" patch that changes nothing is worse than an error — always verify the full nested structure before patching.
+- **`config.patch` path nesting matters**: `config.patch` with `{"telegram":{"streamMode":"off"}}` silently writes to an ignored top-level key. The correct path is `{"channels":{"telegram":{"streamMode":"off"}}}`. A "successful" patch that changes nothing is worse than an error - always verify the full nested structure before patching.
 - **Gateway config patches need read-back verification**: After `config.patch`, always read back the config to confirm the change took effect. Silent success + wrong nesting path = hours of debugging the wrong code while the config was never actually changed.
 
 ### v2026.2.15 New Gotchas
 
-9. **Pairing stores are now account-scoped** — `pairing/pairing-store.ts` scopes by account. Old unscoped pairing data requires migration via `legacy allowFrom migration` in Telegram.
+9. **Pairing stores are now account-scoped** - `pairing/pairing-store.ts` scopes by account. Old unscoped pairing data requires migration via `legacy allowFrom migration` in Telegram.
 
-10. **Nested subagent depth limits** — `agents/subagent-depth.ts` enforces max depth (default 2) and max children per agent (default 5). Exceeding these silently blocks spawning.
+10. **Nested subagent depth limits** - `agents/subagent-depth.ts` enforces max depth (default 2) and max children per agent (default 5). Exceeding these silently blocks spawning.
 
-11. **Discord Component v2 UI** — `discord/components.ts` and `discord/components-registry.ts` handle new Discord components. The `send.components.ts` file handles outbound component messages separately from regular sends.
+11. **Discord Component v2 UI** - `discord/components.ts` and `discord/components-registry.ts` handle new Discord components. The `send.components.ts` file handles outbound component messages separately from regular sends.
 
-12. **Memory collections are now per-agent isolated** — Managed QMD collections are isolated per agent. Drifted collection paths are automatically rebound. Don't assume shared memory across agents.
+12. **Memory collections are now per-agent isolated** - Managed QMD collections are isolated per agent. Drifted collection paths are automatically rebound. Don't assume shared memory across agents.
 
-13. **Cron skill-filter snapshots are normalized** — Cron service normalizes skill-filter snapshots. Treat missing `enabled` as `true` in cron job updates. Model-only update patches infer payload kind automatically.
+13. **Cron skill-filter snapshots are normalized** - Cron service normalizes skill-filter snapshots. Treat missing `enabled` as `true` in cron job updates. Model-only update patches infer payload kind automatically.
 
-14. **`sessions_spawn` supports model fallback** — The `model` parameter in `sessions_spawn` now supports fallback chains. Don't assume the spawned session uses exactly the requested model.
+14. **`sessions_spawn` supports model fallback** - The `model` parameter in `sessions_spawn` now supports fallback chains. Don't assume the spawned session uses exactly the requested model.
 
-15. **Skill download paths are restricted** — `infra/install-safe-path.ts` validates target paths for skill downloads, preventing path traversal. Cross-platform fallback for non-brew installs added.
+15. **Skill download paths are restricted** - `infra/install-safe-path.ts` validates target paths for skill downloads, preventing path traversal. Cross-platform fallback for non-brew installs added.
 
 ### v2026.2.17 New Gotchas
 
-16. **Config include confinement is strict** — `$include` paths are now confined to the top-level config directory with traversal/symlink hardening. Old layouts that reached outside config root will fail and need explicit restructuring.
+16. **Config include confinement is strict** - `$include` paths are now confined to the top-level config directory with traversal/symlink hardening. Old layouts that reached outside config root will fail and need explicit restructuring.
 
-17. **Cron top-of-hour defaults are now staggered** — recurring cron schedules like `0 * * * *` persist deterministic `schedule.staggerMs` by default. If you need exact clock boundaries, set stagger to `0` (`--exact`).
+17. **Cron top-of-hour defaults are now staggered** - recurring cron schedules like `0 * * * *` persist deterministic `schedule.staggerMs` by default. If you need exact clock boundaries, set stagger to `0` (`--exact`).
 
-18. **`sessions_spawn` is push-first, not poll-first** — one-off spawns return an accepted note and completion is auto-announced back to requester context. Busy polling can now trip loop protections and waste tokens.
+18. **`sessions_spawn` is push-first, not poll-first** - one-off spawns return an accepted note and completion is auto-announced back to requester context. Busy polling can now trip loop protections and waste tokens.
 
-19. **Tool-loop detection hard-blocks no-progress poll/log loops** — repeated `process(action=poll|log)` with no progress now escalates to warnings and eventually a circuit-breaker block. Always include progress checks/backoff/exit criteria.
+19. **Tool-loop detection hard-blocks no-progress poll/log loops** - repeated `process(action=poll|log)` with no progress now escalates to warnings and eventually a circuit-breaker block. Always include progress checks/backoff/exit criteria.
 
-20. **Read truncation markers are actionable, not fatal** — when output contains `[compacted: tool output removed to free context]` or `[truncated: output exceeded context limit]`, recover with smaller targeted reads (`offset`/`limit`) instead of full-file retries.
+20. **Read truncation markers are actionable, not fatal** - when output contains `[compacted: tool output removed to free context]` or `[truncated: output exceeded context limit]`, recover with smaller targeted reads (`offset`/`limit`) instead of full-file retries.
 
-21. **Z.AI tool streaming defaults ON** — `tool_stream` is enabled by default for Z.AI models. If your automation assumes non-streamed tool behavior, explicitly set `params.tool_stream: false` and test both paths.
+21. **Z.AI tool streaming defaults ON** - `tool_stream` is enabled by default for Z.AI models. If your automation assumes non-streamed tool behavior, explicitly set `params.tool_stream: false` and test both paths.
 
-22. **Anthropic 1M context is explicit opt-in** — `params.context1m: true` controls the beta header (`anthropic-beta: context-1m-2025-08-07`). Don’t assume larger windows without this flag and provider support.
+22. **Anthropic 1M context is explicit opt-in** — `params.context1m: true` controls the beta header (`anthropic-beta: context-1m-2025-08-07`). Don't assume larger windows without this flag and provider support.
+
+### v2026.2.18 New Gotchas
+
+23. **Pass API tokens explicitly in every call** — When one call in a flow passes a token explicitly, all calls must. Missing token causes silent auth failure; SDK defaults aren't guaranteed to carry the right credentials.
+
+24. **Use the repo's logging abstraction, not `console.*`** — Raw `console.debug()` bypasses user-controlled verbosity (`logVerbose`/`deps.log.*`) and spams stdout in hot paths. Every log call must go through the subsystem.
+
+25. **Identity checks must compare exact values, not field existence** — `(message.bot_id && ctx.botUserId)` matches ANY bot. Correct: `message.bot_id === ctx.botUserId`. "Both truthy" ≠ identity match.
+
+26. **Don't mix ID namespaces for message provenance** — `uploadSlackFile()` returns a file ID, not a message `ts`. Using it as a message key in an origin cache means lookups always fail. Verify what SDK methods actually return.
+
+27. **Classify shell builtins by token list, not resolved PATH** — `resolveExecutablePath()` finds PATH-shadowed binaries for builtin names (e.g., `/usr/bin/echo`). Detecting builtins via `resolvedPath == null` fails. Use a known-builtins set.
+
+28. **Close resource pools on every call, not just teardown** — `ProxyAgent` and connection pools instantiated per-call must be explicitly closed. Unclosed pools accumulate and leak.
+
+29. **Validate URLs before constructing connection objects** — Invalid proxy URL throws in `ProxyAgent` constructor, crashing execution. Validate format first.
+
+30. **Duplicate inverse conditions in sequence = dead code** — Block A skips non-gateway, Block B skips gateway → nothing runs. Two inverse conditions = contradiction bug.
+
+31. **Consolidate duplicate functions into shared utilities immediately** — Same function body in 3+ files guarantees divergence. When flagged, fix it now.
+
+32. **Run `pnpm protocol:gen:swift` after protocol schema changes** — Forgetting breaks `pnpm protocol:check` on all rebased PRs. Add to pre-commit checklist for `src/gateway/protocol/schema/**`.
 
 ---
 
@@ -503,10 +525,10 @@ src/<module>/
 
 ### Issue & PR Workflow
 
-- **Search existing issues before filing.** A quick `gh issue list --search "<keywords>"` surfaces prior analysis and avoids duplicate effort. Issue #18244 (Telegram message loss) was found only after deep investigation — a search would have saved hours.
+- **Search existing issues before filing.** A quick `gh issue list --search "<keywords>"` surfaces prior analysis and avoids duplicate effort. Issue #18244 (Telegram message loss) was found only after deep investigation - a search would have saved hours.
 - **One PR, multiple root causes = scope risk.** A PR fixing 3 distinct failure modes (eval order, failed delivery tracking, cleanup timing) is harder to review even if each fix is independently correct. Consider whether splitting gets faster review vs. the coherence benefit of a single fix.
 - **Scope PRs to one logical change when possible.** If root causes are independent, separate PRs are easier to review, revert, and bisect.
-- **Call out behavior-default shifts explicitly in PR descriptions.** If a release changes defaults (for example cron stagger, include confinement, tool streaming), include a short “old assumption vs new behavior” note so reviewers can validate migration risk quickly.
+- **Call out behavior-default shifts explicitly in PR descriptions.** If a release changes defaults (for example cron stagger, include confinement, tool streaming), include a short "old assumption vs new behavior" note so reviewers can validate migration risk quickly.
 
 ### Documentation Update Guardrails (from recent failures)
 
@@ -515,3 +537,11 @@ src/<module>/
 - **Verify command names against source, never memory.** Before documenting commands, confirm in `package.json`, `CONTRIBUTING.md`, and `.github/workflows/ci.yml` to avoid stale/wrong instructions.
 - **Keep comments shell-safe when posting with `gh pr comment`.** Backticks in inline shell strings can be evaluated by the shell; prefer plain text, single-quoted heredoc, or escaped backticks to avoid mangled comments and duplicate reposts.
 - **After conflict resolution, run type checks.** Merge conflict fixes can drop `import type` lines; tests and lint may still pass. Run `pnpm check` to catch `tsgo` regressions before push.
+
+### Documentation Link & i18n Guardrails
+
+- **Never remove the only link to authoritative docs without replacement.** Deleting a cross-reference that is the sole path to a config reference orphans readers. Verify no other navigation path exists first.
+- **Use heredoc or `--raw-field` for JSON in CLI examples.** `gh api graphql -F input='{}'` is brittle across shells. Prefer `@file.json` or heredoc.
+- **Ensure trailing newline when writing/converting text files.** Symlink→regular-file conversion and programmatic writes often drop the POSIX newline, causing format failures and noisy diffs.
+- **Apply style rules to ALL locale variants.** AGENTS.md rules (no emojis in headings, etc.) apply to `docs/zh-CN`, `docs/ja-JP`, etc. Run the same checks on all locales.
+- **Edit i18n docs via pipeline, not directly.** `docs/zh-CN/**` is generated by `scripts/docs-i18n`. Manual edits get overwritten. Workflow: update English → glossary → i18n pipeline → targeted fixes.
