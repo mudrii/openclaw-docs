@@ -251,6 +251,8 @@ pnpm vitest run --coverage
 
 ## 5. Pre-PR Checklist
 
+> Canonical command source: `CONTRIBUTING.md` + `.github/workflows/ci.yml`. If any checklist command diverges from those, update this document immediately.
+
 ```
 □ pnpm build                        # TypeScript compilation
 □ pnpm check                        # Format + type check + lint (all-in-one)
