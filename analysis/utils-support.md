@@ -1,6 +1,6 @@
 # Utilities & Support Modules — Comprehensive Analysis
 
-**Updated:** 2026-02-16 | **Version:** v2026.2.15  
+**Updated:** 2026-02-20 | **Version:** v2026.2.19  
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~330 .ts files across 14 modules
 
@@ -823,3 +823,15 @@ Shared test utilities and mock factories.
 - **`infra/pairing-files.ts`** (new): Extracted pairing file path resolution from inline logic in pairing-store and device-pairing
 - **`infra/device-auth-store.ts`** (new): Extracted device auth token store with atomic JSON read/write via `json-file.ts`
 - **Legacy telegram `allowFrom` migration**: Migrates legacy `channels.telegram.allowFrom` config to the new account-scoped pairing store format
+
+## v2026.2.19 Changes
+
+### YAML Parsing
+- **YAML 1.2 core schema** — Frontmatter parsing uses YAML 1.2 core schema; `on`/`off`/`yes`/`no` no longer auto-coerced to booleans. See DEVELOPER-REFERENCE.md §9 (gotcha 37)
+
+### Logging
+- **Config change audit logging** — Actor, device, IP, and changed paths logged on control-plane config mutations
+
+### Networking
+- **SSRF guard hardening** — NAT64/6to4/Teredo IPv6 transition addresses and octal/hex/short/packed IPv4 blocked
+- **Plaintext ws:// blocked** — Non-loopback plaintext WebSocket connections rejected; `wss://` required for remote hosts
