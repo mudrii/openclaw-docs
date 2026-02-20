@@ -5,6 +5,22 @@
 
 ---
 
+## 0. Quick Start for Coding Agents
+
+Use this routing first to avoid scanning the whole file.
+
+| Task | Read in this order |
+| --- | --- |
+| Fix message delivery bug | §2 Message Lifecycle -> §3 (`auto-reply/`, `channels/`) -> §9 Telegram/Race gotchas -> §5 checklist |
+| Add or change config key | §6 config reference -> §3 (`config/*`) -> §5 checklist |
+| Add a tool | §8 file placement -> §2 Tool Execution -> §3 (`agents/pi-tools.ts`) -> §5 checklist |
+| Change routing/session behavior | §2 Message Lifecycle -> §3 (`routing/*`) -> §9 session/race gotchas |
+| Prepare PR | §5 checklist -> §10 PR practices |
+
+Fast rule: identify module in §1, then run only the matching impact row in §3 plus relevant gotchas in §9.
+
+---
+
 ## 1. Module Dependency Map
 
 ### Hierarchy (Level 0 = most depended upon)
@@ -57,6 +73,17 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 | `discord/components.ts`             | Discord Component v2 UI rendering and registry                     |
 | `infra/install-safe-path.ts`        | Restricted skill download target path validation                   |
 | `pairing/pairing-store.ts`          | Account-scoped device pairing store                                |
+
+### Risk Level Definitions
+
+| Level | Meaning | Required Validation |
+| --- | --- | --- |
+| 🔴 CRITICAL | Cross-cutting core modules; failures can break startup/routing or multiple channels | Full test suite + impacted subsystem tests |
+| 🔴 HIGH | Multi-subsystem module with large blast radius | Targeted subsystem tests + pre-PR checklist |
+| 🟡 MEDIUM | Shared module with moderate import fan-out | Module tests + caller verification |
+| 🟢 LOW | Leaf/isolated module | Local tests + smoke checks |
+
+---
 
 ---
 
@@ -254,13 +281,19 @@ pnpm vitest run --coverage
 > Canonical command source: `CONTRIBUTING.md` + `.github/workflows/ci.yml`. If any checklist command diverges from those, update this document immediately.
 
 ```
-□ pnpm build                        # TypeScript compilation
-□ pnpm check                        # Format + type check + lint (all-in-one)
-□ pnpm test                         # Full test suite (parallel runner, matches CI)
+□ pnpm build                        # TypeScript compilation (always)
+□ pnpm check                        # Format + type check + lint (always)
+□ pnpm test                         # Full suite for high/blast changes
 □ pnpm check:docs                   # Required when docs files changed
-□ git diff --stat                   # Review what you're committing
-□ grep all callers                  # If changing function signatures
-□ Squash fix-on-fix commits         # Clean logical commits only
+□ git diff --stat                   # Review staged scope
+□ grep all callers                  # If changing exported signatures
+□ Squash fix-on-fix commits         # Keep logical commits only
+
+Conditional checks:
+□ If `config/*` changed: run config-focused tests + read-back validation of changed keys
+□ If `routing/*` changed: verify session key parsing + cron + subagent routing
+□ If `agents/pi-tools*` changed: run tool policy + tool execution paths
+□ If `auto-reply/reply/get-reply.ts` changed: run reply pipeline checks across fallback paths
 ```
 
 ### Release-window Workflow Additions (v2026.2.19)
@@ -298,6 +331,26 @@ pnpm vitest run --coverage
 6. **Normalize paths before string comparison** - `path.resolve()` before `===`.
 7. **Derive context from parameters, not global state** - use explicit paths, not env var fallbacks.
 8. **Run FULL `pnpm lint` before every push** - not just changed files. Type-aware linting catches cross-file issues.
+
+### Safety Invariants (Never Violate)
+
+1. Never call `loadConfig()` in hot paths (`auto-reply/*`, channel send paths, streaming handlers).
+2. Use subsystem logger instead of `console.*` in runtime paths.
+3. Do exact identity checks (`a === b`), not truthy co-existence checks.
+4. Treat primary operations as fail-fast (throw); only convenience wrappers should catch.
+5. Keep file locking for sessions/cron stores; do not remove lock wrappers.
+6. For security-sensitive changes (auth, SSRF, exec), run `openclaw security audit` before PR.
+7. For config mutations, patch full nested path and verify by immediate read-back.
+
+### Common Errors -> First Fix
+
+| Error / Symptom | First Check | First Fix |
+| --- | --- | --- |
+| `SQLITE_CANTOPEN` in daemon mode | LaunchAgent env (`TMPDIR`) | Reinstall/restart gateway service to pick up env forwarding |
+| `config.patch` "ok" but behavior unchanged | Wrong nesting path | Patch full nested key (`channels.telegram.*` etc.) + read-back verify |
+| Startup fails with token conflict | `hooks.token` equals `gateway.auth.token` | Set different values; restart gateway |
+| SSRF block on webhook/browser URL | Target is private/metadata/non-public | Use public HTTPS endpoint |
+| `await-thenable` lint error | Function is not async | Fix signature or remove incorrect `await` |
 
 ---
 
@@ -417,6 +470,16 @@ src/<module>/
 ---
 
 ## 9. Gotchas & Landmines
+
+### Gotcha Index by Domain
+
+- **Config & Auth:** #1, #6, #16, #33, #34, #37, #44
+- **Routing & Sessions:** #3, #6, #17, #18, #20
+- **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36
+- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41
+- **Security/Network:** #38, #42, #43, #45, #46, #47, #48
+
+(Use this index first, then read only the relevant gotchas for your change.)
 
 ### Things That Look Simple But Aren't
 
@@ -590,3 +653,16 @@ src/<module>/
 - **Ensure trailing newline when writing/converting text files.** Symlink→regular-file conversion and programmatic writes often drop the POSIX newline, causing format failures and noisy diffs.
 - **Apply style rules to ALL locale variants.** AGENTS.md rules (no emojis in headings, etc.) apply to `docs/zh-CN`, `docs/ja-JP`, etc. Run the same checks on all locales.
 - **Edit i18n docs via pipeline, not directly.** `docs/zh-CN/**` is generated by `scripts/docs-i18n`. Manual edits get overwritten. Workflow: update English → glossary → i18n pipeline → targeted fixes.
+
+
+---
+
+## 11. Debugging & Triage Quick Workflow
+
+1. Reproduce once with minimal scope.
+2. Map symptom to module using §0 + §1 + §2.
+3. Check matching impact row in §3 and relevant gotchas in §9.
+4. Run targeted tests first, then full suite if touching 🔴/high-blast modules.
+5. Confirm fix did not regress fallback paths (cron, channel send, subagent completion).
+
+For ambiguous runtime failures: capture exact error string, map via "Common Errors -> First Fix", then inspect nearest owning module.
