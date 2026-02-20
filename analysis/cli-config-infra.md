@@ -1,6 +1,6 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 
-> Updated: 2026-02-16 | Version: v2026.2.15 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-02-20 | Version: v2026.2.19 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1536,3 +1536,22 @@ User types: openclaw <command> [args]
 - **Centralize openclaw root candidate scan**: `openclaw-root.ts` — unified OpenClaw installation root detection across CLI, daemon, and node-host
 - **Share `isTailnetIPv4`**: `tailnet.ts` — exported shared Tailnet IPv4 detection (100.x.y.z range) used by networking, bind resolution, and node matching
 - **Replace deprecated SHA-1 in sandbox config hash**: `sandbox/config-hash.ts` — replaced SHA-1 with SHA-256 for sandbox configuration change detection
+
+## v2026.2.19 Changes
+
+### CLI
+- **Plugin uninstall** — Full plugin uninstall support added to CLI lifecycle
+- **Security audit enhancements** — `openclaw security audit` now emits `gateway.http.no_auth` findings with loopback/remote severity levels
+
+### Config
+- **Gateway auth defaults** — `gateway.auth.mode` defaults to `"token"` (was implicit open); `gateway.auth.token` auto-generated and persisted on first start. See DEVELOPER-REFERENCE.md §6 for config reference
+- **hooks.token ≠ gateway.auth.token** — Startup validation rejects matching tokens
+- **browser.ssrfPolicy** — New config key controls SSRF behavior for browser URL navigation
+- **YAML 1.2 core schema** — Frontmatter parsing uses YAML 1.2 core; no implicit `on`/`off` boolean coercion. See DEVELOPER-REFERENCE.md §9 (gotcha 37)
+- **Plugin install records** — Include `name`, `version`, `spec`, integrity, shasum (`--pin` flag for npm plugins)
+
+### Infra
+- **Rate-limited control-plane RPCs** — `config.apply`, `config.patch`, `update.run` limited to 3/min per device+IP; config change audit logging (actor, device, IP, changed paths)
+- **macOS LaunchAgent TMPDIR fix** — `TMPDIR` forwarded to service environment, resolving SQLite `SQLITE_CANTOPEN` failures
+- **Windows daemon cmd injection** — Hardened Windows daemon service commands against command injection
+- **Exec preflight guard** — Detects shell env var injection patterns in Python/Node scripts before execution. See DEVELOPER-REFERENCE.md §9 (gotcha 40)
