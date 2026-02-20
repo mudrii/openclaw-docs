@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 
-> Updated: 2026-02-16 | Version: v2026.2.15
+> Updated: 2026-02-20 | Version: v2026.2.19
 
 ## Overview
 
@@ -775,3 +775,14 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 - **Share outbound attachment resolver**: `media/outbound-attachment.ts` — extracted shared logic for resolving outbound attachments (file path → hosted URL) previously duplicated across channel plugins
 - **Base64 mime sniff helper**: `media/sniff-mime-from-base64.ts` — new utility to detect MIME type from base64-encoded data by inspecting magic bytes after decoding
 - **Binary application mimes as non-text**: `media/mime.ts` — `application/octet-stream` and similar binary MIME types now correctly classified as non-text, preventing binary content from being treated as readable text in tool results
+
+## v2026.2.19 Changes
+
+### Tools
+- **Read tool auto-paging** — `read` tool auto-pages based on model `contextWindow`; no manual `offset`/`limit` needed for small-to-medium files. See DEVELOPER-REFERENCE.md §9 (gotcha 38)
+- **Exec preflight guard** — Detects shell env var injection patterns in scripts before execution. See DEVELOPER-REFERENCE.md §9 (gotcha 40)
+- **safeBins trusted dirs** — `tools.exec.safeBins` binaries must resolve from trusted bin directories; PATH-hijacked binaries rejected
+
+### CLI
+- **Plugin uninstall** — Full plugin uninstall support in CLI
+- **macOS LaunchAgent TMPDIR fix** — `TMPDIR` forwarded to service environment, resolving SQLite failures in daemon mode
