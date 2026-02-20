@@ -1,6 +1,6 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 
-> Generated: 2026-02-15 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-02-20 | Version: v2026.2.19 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (100 files), `src/discord` (77 files), `src/signal` (32 files), `src/slack` (67 files), `src/whatsapp` (3 files), `src/imessage` (20 files), `src/line` (46 files), `src/channels` (106 files)
 
 ---
@@ -934,6 +934,17 @@ Agent tool call: message(action="send", target="...", message="...")
 - **Probe/token base type deduplication** (`#16986`, thanks @iyoda)
 - **Consolidated test suites** — channel action, plugin, and misc test suites consolidated for performance
 - **Onboarding config patching** — shared across Discord and Slack
+
+## v2026.2.19 Changes (2026-02-20)
+
+### Telegram
+- **Cron/heartbeat topic delivery** — Explicit `<chatId>:topic:<threadId>` targets now correctly route scheduled sends into the configured topic instead of defaulting to last active thread. See DEVELOPER-REFERENCE.md §9 (gotcha 43)
+
+### Discord
+- **Moderation permission checks** — Moderation actions (`timeout`, `kick`, `ban`) now enforce guild permission checks on trusted sender; untrusted `senderUserId` parameters rejected. See DEVELOPER-REFERENCE.md §9 (gotcha 44)
+
+### Browser/Relay
+- **Chrome extension relay auth** — Both `/extension` and `/cdp` endpoints now require `gateway.auth.token` authentication
 
 ---
 
