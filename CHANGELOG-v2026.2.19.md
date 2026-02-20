@@ -101,6 +101,24 @@ Cron webhook POST delivery now routes through SSRF-guarded outbound fetch (`fetc
 
 **Impact:** Webhook targets pointing to private addresses (localhost, RFC1918) will be rejected. Use only publicly reachable webhook endpoints.
 
+### 15) Plaintext `ws://` connections blocked to non-loopback hosts
+
+Plaintext `ws://` WebSocket connections to non-loopback hosts are now rejected. Secure `wss://` transport is required for remote WebSocket endpoints.
+
+**Impact:** Any automation or integration connecting to remote WebSocket endpoints via `ws://` must switch to `wss://`. Loopback (`ws://localhost`, `ws://127.0.0.1`) is still allowed.
+
+### 16) Control-plane write RPCs are now rate-limited
+
+`config.apply`, `config.patch`, and `update.run` RPCs are rate-limited to 3 requests per minute per `deviceId+clientIp`. Gateway restarts are coalesced with a 30-second cooldown, and config change audit details (actor, device, IP, changed paths) are now logged.
+
+**Impact:** Automation that rapidly applies config changes (e.g., scripted `config.patch` loops) will hit 429 rate limits. Space out config writes or batch changes into single `config.apply` calls.
+
+### 17) Discord moderation actions require trusted-sender guild permissions
+
+Moderation actions (`timeout`, `kick`, `ban`) now enforce guild permission checks on the trusted sender and ignore untrusted `senderUserId` parameters. This prevents privilege escalation via tool-driven flows.
+
+**Impact:** Discord operators using moderation tools must ensure the bot/sender has appropriate guild permissions. Untrusted sender IDs in tool parameters are now rejected.
+
 ### 14) Sub-agent context guard + compacted-output recovery guidance
 
 Accumulated tool-result context is now guarded before model calls, truncating oversized outputs and compacting oldest tool-result messages to avoid context-window overflow crashes. Explicit guidance added to recover from `[compacted: ...]` / `[truncated: ...]` markers by re-reading with smaller chunks.
@@ -118,6 +136,9 @@ Accumulated tool-result context is now guarded before model calls, truncating ov
 5. **Test cron/heartbeat Telegram topic routing** — if using `<chatId>:topic:<threadId>` targets, verify sends now land in the correct topic.
 6. **Check browser relay clients** — any non-standard browser relay clients need gateway-token auth on `/extension` and `/cdp`.
 7. **Review cron webhook targets** — ensure all webhook URLs are publicly reachable (not localhost/RFC1918).
+8. **Switch remote WebSocket connections to `wss://`** — plaintext `ws://` to non-loopback hosts is now blocked.
+9. **Check config automation pacing** — control-plane RPCs (`config.apply`, `config.patch`, `update.run`) are rate-limited to 3/min per device+IP.
+10. **Verify Discord moderation bot permissions** — moderation actions now enforce guild permission checks on the trusted sender.
 
 ---
 

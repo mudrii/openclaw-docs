@@ -547,7 +547,13 @@ src/<module>/
 
 44. **Canvas/A2UI now uses node-scoped session capability URLs** — The `/__openclaw__/canvas/*` and `/__openclaw__/a2ui/*` endpoints no longer use shared-IP fallback auth. Requests must use node-scoped session capability URLs. Trusted-proxy requests that omit forwarded client headers now fail closed. Update any canvas proxy automation that assumed shared-IP auth.
 
-45. **macOS LaunchAgent SQLite fix: no action needed, but restart service after upgrade** — `TMPDIR` is now forwarded into installed service environments. If the gateway daemon was hitting `SQLITE_CANTOPEN` errors under macOS LaunchAgent, this is fixed automatically. Re-run `openclaw gateway install` (or reinstall the service) to pick up the new environment forwarding.
+45. **macOS LaunchAgent SQLite fix: no action needed, but restart service after upgrade**
+
+46. **Plaintext `ws://` to non-loopback hosts is blocked** — Only `wss://` is accepted for remote WebSocket connections. Loopback (`ws://localhost`) still works. Any remote integrations using `ws://` must switch to `wss://`.
+
+47. **Control-plane RPCs are rate-limited (3/min per device+IP)** — `config.apply`, `config.patch`, `update.run` are rate-limited. Gateway restarts are coalesced with a 30-second cooldown. Rapid scripted config changes will hit 429 errors.
+
+48. **Discord moderation actions enforce guild permissions on trusted sender** — `timeout`, `kick`, `ban` now check the calling sender's guild permissions. Untrusted `senderUserId` params are ignored. Ensure the bot has appropriate guild permissions for moderation. — `TMPDIR` is now forwarded into installed service environments. If the gateway daemon was hitting `SQLITE_CANTOPEN` errors under macOS LaunchAgent, this is fixed automatically. Re-run `openclaw gateway install` (or reinstall the service) to pick up the new environment forwarding.
 
 ---
 
