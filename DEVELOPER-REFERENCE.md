@@ -263,6 +263,15 @@ pnpm vitest run --coverage
 □ Squash fix-on-fix commits         # Clean logical commits only
 ```
 
+### Release-window Workflow Additions (v2026.2.19)
+
+- **Gateway auth changes:** Before any gateway auth config edit, verify `gateway.auth.mode` explicitly. Default is now token mode. If touching `gateway.auth.token`, ensure `hooks.token` is set to a **different** value — identical values fail at startup.
+- **Security audit as first step:** After upgrade or any security-adjacent config change, run `openclaw security audit` and triage all findings before writing new code or runbooks.
+- **YAML frontmatter in prompts/cron:** Use explicit `true`/`false` for booleans — `on`/`off`/`yes`/`no` are now strings under YAML 1.2 core schema. Review all agent prompt frontmatter accordingly.
+- **Cron webhook targets:** Verify all cron webhook URLs are publicly reachable. SSRF guard now blocks private/metadata destinations at dispatch time.
+- **Plugin/hook installs:** Use `--pin` for npm plugin installs in automated flows. Unversioned installs now generate audit warnings. Record `name`, `version`, `spec`, and integrity in install records.
+- **Canvas/A2UI automation:** Update any canvas proxy clients that used shared-IP auth to use scoped session capability URLs instead.
+
 ### Release-window Workflow Additions (v2026.2.17)
 
 - **Config include changes:** If touching config loading, run at least one negative-path check for out-of-root `$include` and symlink escape behavior; do not assume legacy include layouts remain valid.
@@ -327,6 +336,8 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 > **v2026.2.15 additions:** `messages.suppressToolErrors` (bool) suppresses tool error display. Per-channel `ackReaction` config added to Telegram, Discord, Slack, WhatsApp type files.
 >
 > **v2026.2.17 additions:** Anthropic models support `params.context1m: true` (1M beta header), Z.AI models default to `params.tool_stream: true`, and recurring top-of-hour cron schedules now persist deterministic staggering via `schedule.staggerMs` unless explicitly disabled.
+>
+> **v2026.2.19 additions:** `gateway.auth.mode` defaults to `"token"` (was implicit open). `gateway.auth.token` is auto-generated and persisted on first start. `hooks.token` must differ from `gateway.auth.token` (startup validation). `browser.ssrfPolicy` controls SSRF behavior for browser URL navigation. `tools.exec.safeBins` now validates against trusted bin directories only. Cron webhook targets are SSRF-validated before dispatch. Plugin install records now include `name`, `version`, `spec`, integrity, and shasum (`--pin` flag for npm plugins).
 
 ### How to Add a New Config Key
 
@@ -509,6 +520,34 @@ src/<module>/
 31. **Consolidate duplicate functions into shared utilities immediately** — Same function body in 3+ files guarantees divergence. When flagged, fix it now.
 
 32. **Run `pnpm protocol:gen:swift` after protocol schema changes** — Forgetting breaks `pnpm protocol:check` on all rebased PRs. Add to pre-commit checklist for `src/gateway/protocol/schema/**`.
+
+### v2026.2.19 New Gotchas
+
+33. **Gateway auth now defaults to token mode** — `gateway.auth.mode` is no longer implicitly open. A `gateway.auth.token` is auto-generated and persisted on first start. If you need an explicitly open loopback setup, set `gateway.auth.mode: "none"` explicitly. The new security audit fires a `gateway.http.no_auth` warning (loopback) or critical (remote exposure) when `mode="none"` is active.
+
+34. **`hooks.token` must differ from `gateway.auth.token` — startup failure if equal** — New startup validation rejects configs where these two tokens are identical. The gateway refuses to start. Separate them before upgrading, or let gateway auto-generate a fresh `gateway.auth.token`.
+
+35. **Heartbeat skips when HEARTBEAT.md is missing or empty** — Interval heartbeats now no-op automatically when `HEARTBEAT.md` is absent or empty and no tagged cron events are queued. Cron-event fallback for queued tagged reminders is still preserved. Don't rely on heartbeat firing to run "always-on" logic unless HEARTBEAT.md has content.
+
+36. **Cron/heartbeat Telegram topic delivery now works — but requires correct target format** — Explicit `<chatId>:topic:<threadId>` targets in cron/heartbeat delivery now correctly route to the configured topic. The old behavior (falling back to last active thread) is fixed. If you were working around this with custom routing, remove the workaround.
+
+37. **YAML frontmatter: `on`/`off`/`yes`/`no` are now strings, not booleans** — YAML 1.2 core schema is used for frontmatter parsing. `on` and `off` no longer coerce to `true`/`false`. Any agent prompt, cron payload, or config that relied on implicit YAML 1.1 boolean coercion must be updated to use explicit `true`/`false`.
+
+38. **Browser relay requires gateway-token auth on `/extension` and `/cdp`** — Both the Chrome extension relay endpoint and CDP endpoint now require `gateway.auth.token` authentication. External browser clients (non-tool-path access) must supply the token. The `browser` tool handles this automatically.
+
+39. **`read` tool auto-pages using model contextWindow** — When no explicit `limit` is provided, `read` now auto-pages and scales its per-call output budget from the model's configured `contextWindow`. Large-context models get proportionally more output before guards kick in. This is a behavior change: previously `read` without `limit` was equivalent to a bounded single-call read.
+
+40. **exec preflight guard for env var injection patterns** — The exec tool now runs a preflight check that detects shell env var injection patterns (e.g., `$DM_JSON`, `$TMPDIR`, `$HOME`) in Python/Node scripts before execution. Scripts that include env-var interpolation from surrounding shell context will be blocked with an early warning. Fix: use explicit Python/Node variable assignment instead of shell-sourced vars.
+
+41. **`tools.exec.safeBins` now validates against trusted bin directories only** — Previously, `safeBins` checked allowlist membership by name. Now, the resolved binary path must be in trusted bin directories (system defaults + gateway startup `PATH`). A trojan binary shadowing a safe bin name in a later PATH directory will be rejected even if the name is in `safeBins`.
+
+42. **Cron webhook delivery is now SSRF-guarded** — Cron webhook POST targets are validated via `fetchWithSsrFGuard` before dispatch. Private addresses (RFC1918, localhost, metadata endpoints) and non-standard IPv4 forms (octal, hex, short) are blocked. Only publicly reachable HTTPS endpoints are accepted.
+
+43. **SSRF bypass via IPv6 transition addresses is now blocked** — NAT64 (`64:ff9b::/96`, `64:ff9b:1::/48`), 6to4 (`2002::/16`), Teredo (`2001:0000::/32`), and ISATAP embedded IPv4 addresses are now rejected by SSRF guards. Non-standard IPv4 forms (octal, hex, packed, short) are also blocked before DNS lookup.
+
+44. **Canvas/A2UI now uses node-scoped session capability URLs** — The `/__openclaw__/canvas/*` and `/__openclaw__/a2ui/*` endpoints no longer use shared-IP fallback auth. Requests must use node-scoped session capability URLs. Trusted-proxy requests that omit forwarded client headers now fail closed. Update any canvas proxy automation that assumed shared-IP auth.
+
+45. **macOS LaunchAgent SQLite fix: no action needed, but restart service after upgrade** — `TMPDIR` is now forwarded into installed service environments. If the gateway daemon was hitting `SQLITE_CANTOPEN` errors under macOS LaunchAgent, this is fixed automatically. Re-run `openclaw gateway install` (or reinstall the service) to pick up the new environment forwarding.
 
 ---
 

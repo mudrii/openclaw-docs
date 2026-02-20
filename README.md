@@ -2,7 +2,7 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Current version: v2026.2.17**
+**Current version: v2026.2.19**
 
 ## What's Here
 
@@ -14,6 +14,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [DEVELOPER-REFERENCE.md](DEVELOPER-REFERENCE.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
+| [CHANGELOG-v2026.2.19.md](CHANGELOG-v2026.2.19.md) | Changelog for v2026.2.17 → v2026.2.19 (security surge, gateway auth defaults, cron/heartbeat fixes). |
 | [CHANGELOG-v2026.2.17.md](CHANGELOG-v2026.2.17.md) | Changelog for v2026.2.15 → v2026.2.17 (behavior/docs-impact focus). |
 | [CHANGELOG-v2026.2.15.md](CHANGELOG-v2026.2.15.md) | Changelog for v2026.2.14 → v2026.2.15 (880 commits, 12 security fixes, 11 features). |
 
@@ -62,6 +63,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each release is tagged to match the OpenClaw version it documents:
+- `v2026.2.19` (2026-02-20) — Updated for v2026.2.17 → v2026.2.19: massive security hardening (SSRF, exec safeBins, plugin integrity, gateway auth defaults), cron/heartbeat Telegram topic delivery fix, heartbeat skip-on-empty behavior, YAML 1.2 frontmatter schema, browser relay token auth, macOS LaunchAgent `TMPDIR` fix, and DEVELOPER-REFERENCE gotchas 33–45.
 - `v2026.2.17` (2026-02-18) — Updated for v2026.2.15 → v2026.2.17: subagent spawn/announce behavior hardening, cron stagger defaults + CLI controls, config `$include` confinement hardening, Telegram forum topic creation action support, Z.AI `tool_stream` defaults, and DEVELOPER-REFERENCE gotcha refresh.
 - `v2026.2.15` (2026-02-16) — Updated for v2026.2.15: 7 security hardening fixes, Discord Components v2 UI tool, nested subagent orchestration (depth 2, max 5 children), plugin LLM input/output hooks, per-channel ackReaction config, major channel deduplication refactor, 10 analysis files updated
 - `v2026.2.14` — Initial release, documenting OpenClaw v2026.2.14
