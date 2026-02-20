@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 
-> Generated: 2026-02-16 | Version: v2026.2.15 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-02-20 | Version: v2026.2.19 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -30,6 +30,14 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Harden chat.send input sanitization** — tighter validation on outbound message parameters
 - **Control UI XSS fix** — JSON endpoint + CSP lockdown in `src/infra/control-ui-assets.ts`
 - **Skill scanner updates** — updated detection rules in `skill-scanner.ts`
+
+#### v2026.2.19 Changes
+- **SSRF hardening** — NAT64/6to4/Teredo IPv6 transition addresses and octal/hex/short/packed IPv4 blocked in SSRF guard
+- **Browser SSRF** — Browser navigation routed through SSRF guard (configurable via `browser.ssrfPolicy`). See DEVELOPER-REFERENCE.md §6 for config reference
+- **Security headers** — `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer` on gateway HTTP responses
+- **Plugin/hook path containment** — `realpath` checks prevent symlink escapes
+- **safeBins trusted dirs** — Binaries must resolve from trusted bin directories; untrusted PATH entries rejected
+- **Cron webhook SSRF guard** — Webhook delivery URLs validated through SSRF guard before dispatch
 
 ### File Inventory (22 files + 2 new infra files)
 
@@ -327,6 +335,11 @@ Browser automation module providing a local HTTP control server for Playwright a
 - **Share CDP fetch helpers** — extracted `cdp.helpers.ts` as shared module with `getHeadersWithAuth()`, `CdpSendFn` type, WebSocket helpers, and loopback detection (previously inlined)
 - **Share common server middleware** — new `server-middleware.ts` extracts `installBrowserCommonMiddleware()` (abort signal, JSON parsing, CSRF guard) and `installBrowserAuthMiddleware()` from server.ts
 - **Isolate profile hot-reload config refresh** — new `resolved-config-refresh.ts` extracts `refreshResolvedBrowserConfigFromDisk()` and `applyResolvedConfig()` for cleaner hot-reload lifecycle
+
+#### v2026.2.19 Changes
+- **Browser SSRF policy** — Browser URL navigation now routed through SSRF guard; configurable via `browser.ssrfPolicy` config key (see DEVELOPER-REFERENCE.md §6)
+- **Chrome extension relay auth** — Both `/extension` and `/cdp` endpoints now require `gateway.auth.token` authentication
+- **Canvas node-scoped sessions** — Canvas session capabilities are node-scoped, replacing shared-IP fallback auth
 
 ### File Inventory (non-test, ~60 source files)
 
@@ -805,6 +818,12 @@ Public SDK for plugin authors. Re-exports essential types and utilities from int
 
 ### Module Overview
 Agent Client Protocol (ACP) implementation — provides an MCP-compatible server that translates ACP requests into OpenClaw gateway sessions. Enables external ACP clients (IDEs, tools) to interact with OpenClaw agents via standardized protocol. Entry points: `serveAcpGateway()`, `createAcpClient()`.
+
+#### v2026.2.19 Changes
+- **Session rate limiting** — ACP sessions now rate-limited to prevent abuse
+- **Idle reaping** — Idle ACP sessions automatically cleaned up
+- **Prompt size bounds** — Prompt input capped at 2 MiB to prevent memory exhaustion
+- See DEVELOPER-REFERENCE.md §9 (gotchas 33–45) for related hardening details
 
 ### File Inventory (14 files)
 
