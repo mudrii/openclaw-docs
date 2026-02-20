@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 
-> Updated: 2026-02-16 | Version: v2026.2.15
+> Updated: 2026-02-20 | Version: v2026.2.19
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -11,6 +11,17 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Skill scanner updates** — updated detection rules in `skill-scanner.ts` for broader pattern coverage
 - **Redact sensitive status for non-admin** — `status.ts` now redacts sensitive fields when queried by non-admin users
 - **Restrict skill download target paths** — new `src/infra/install-safe-path.ts` sanitizes install target directory names with `unscopedPackageName()`, `safeDirName()`, `safePathSegmentHashed()`; new `src/infra/path-safety.ts` provides `resolveSafeBaseDir()` and `isWithinDir()` for cross-platform path containment
+
+#### v2026.2.19 Changes
+- **SSRF hardening** — NAT64/6to4/Teredo IPv6 transition addresses and octal/hex/short/packed IPv4 representations now blocked in SSRF guard (see DEVELOPER-REFERENCE.md §9 for gotchas 33–45)
+- **Gateway auth defaults** — Unresolved auth defaults to token mode with auto-generated token; security audit emits `gateway.http.no_auth` findings when `mode="none"` leaves APIs reachable
+- **hooks.token ≠ gateway.auth.token** — Startup validation rejects matching tokens, preventing credential reuse
+- **safeBins trusted dirs** — `tools.exec.safeBins` binaries must resolve from trusted bin directories; PATH-hijacked binaries rejected
+- **Plugin discovery hardening** — Blocks unsafe plugin candidates (root escapes, world-writable directories, suspicious ownership)
+- **Plugin/hook path containment** — Plugin and hook paths validated with `realpath` checks to prevent symlink escapes
+- **Security headers** — `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer` added to gateway HTTP responses
+- **ACP hardening** — Session rate limiting, idle reaping, and prompt size bounds (2 MiB) for Agent Client Protocol (see DEVELOPER-REFERENCE.md §6 for config reference)
+- **Windows daemon cmd injection** — Hardened Windows daemon service commands against command injection
 
 ### Key Files
 
@@ -70,6 +81,12 @@ Full plugin lifecycle: discovery, loading, validation, registration, hook execut
 - **Reuse `createEmptyPluginRegistry()`** — `registry.ts` now exports `createEmptyPluginRegistry()` for reuse (e.g., in tests and loader initialization)
 - **Share plugin-sdk helpers** — see plugin-sdk section below for new shared helpers (auth, status, webhook paths)
 - **Clear plugin manifest cache after install** — manifest registry now invalidates cached manifests after plugin install/uninstall to pick up changes immediately
+
+#### v2026.2.19 Changes
+- **Plugin discovery hardening** — Blocks unsafe plugin candidates: root escapes, world-writable directories, suspicious ownership
+- **Plugin/hook path containment** — Plugin and hook paths validated with `realpath` checks to prevent symlink escapes
+- **Plugin install records** — Install records now include `name`, `version`, `spec`, integrity, and shasum (`--pin` flag for npm plugins). See DEVELOPER-REFERENCE.md §5 for pre-PR checklist on plugin changes
+- **Plugin uninstall** — Full plugin uninstall support added to CLI lifecycle
 
 ### Key Files
 
@@ -172,6 +189,12 @@ Used by: All `extensions/` plugins import from `@openclaw/plugin-sdk` (mapped to
 ### Purpose
 Implements the ACP (Agent Client Protocol) server and client for IDE/editor integration. Bridges ACP sessions to gateway sessions.
 
+#### v2026.2.19 Changes
+- **Session rate limiting** — ACP sessions now rate-limited to prevent abuse
+- **Idle reaping** — Idle ACP sessions automatically reaped to free resources
+- **Prompt size bounds** — Prompt input capped at 2 MiB to prevent memory exhaustion
+- See DEVELOPER-REFERENCE.md §9 (gotchas 33–45) for related security hardening details
+
 ### Key Files
 
 | File | Role |
@@ -225,7 +248,12 @@ Used by: `security/audit-channel` (reads allowFrom store), `security/fix` (reads
 ## 6. `src/node-host/` — Node Hosting & Remote Exec
 
 ### Purpose
-Runs OpenClaw as a paired "node" device — connects to gateway, executes commands remotely, provides browser proxy.
+Runs OpenClaw as a paired "node" device — connects to gateway, executes commands remotely, provides browser proxy. As of v2026.2.19, includes APNs wake support and Apple Watch companion integration.
+
+#### v2026.2.19 Changes
+- **APNs wake support** — Node host supports APNs wake-before-invoke for iOS/macOS nodes
+- **Apple Watch companion** — New `watch-companion/` module for glanceable status, quick actions, haptic notifications
+- **Plaintext ws:// blocked** — WebSocket connections to non-loopback hosts must use `wss://`
 
 ### Key Files
 
