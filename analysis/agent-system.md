@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 
-> Updated: 2026-02-16 | Version: v2026.2.15
+> Updated: 2026-02-20 | Version: v2026.2.19
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -848,3 +848,18 @@ When event fires:
 - **Subagent announce**: Consolidated announce logic with queue persistence
 - **Model fallback logic**: Deduped candidate selection in `model-fallback.ts`
 - **Turn validation**: Improved turn validation in `pi-embedded-helpers/turns.ts`
+
+## v2026.2.19 Changes
+
+### Read Tool Auto-Paging
+- **`read` tool auto-pages** based on model context window — scales per-call output budget from model's `contextWindow`; larger-context models read more before context guards kick in. See DEVELOPER-REFERENCE.md §9 (gotcha 38)
+
+### Sub-Agent Context Guard
+- **Context guard before model calls** — truncates oversized tool outputs and compacts oldest tool-result messages to avoid context-window overflow crashes
+- **Compacted-output recovery** — Explicit guidance for recovering from `[compacted: ...]` / `[truncated: ...]` markers by re-reading with smaller chunks
+
+### Exec Preflight Guard
+- **Shell env var injection detection** — Preflight guard detects likely shell env var injection patterns (`$DM_JSON`, `$TMPDIR`) in Python/Node scripts before execution. See DEVELOPER-REFERENCE.md §9 (gotcha 40)
+
+### YAML 1.2 Frontmatter
+- **Core schema parsing** — Agent prompt frontmatter uses YAML 1.2 core schema; `on`/`off`/`yes`/`no` no longer coerced to booleans. Use `true`/`false` explicitly. See DEVELOPER-REFERENCE.md §9 (gotcha 37)
