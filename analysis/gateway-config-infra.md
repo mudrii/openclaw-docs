@@ -1,6 +1,6 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 
-**Date:** 2026-02-15  
+**Updated:** 2026-02-20 | **Version:** v2026.2.19  
 **Codebase:** ~/src/openclaw  
 **Total lines (6 modules):** ~94,080
 
@@ -10,6 +10,15 @@
 
 **Lines:** ~83,178 | **Files:** ~120+ .ts files  
 **Purpose:** The heart of OpenClaw — runs the gateway server that accepts WebSocket connections from CLI/plugins, exposes HTTP endpoints (OpenAI-compatible API, control UI), manages agent sessions, chat routing, cron, browser control, node subscriptions, and plugin lifecycle.
+
+#### v2026.2.19 Changes
+- **Gateway auth defaults** — Unresolved auth defaults to token mode with auto-generated token; explicit `mode: "none"` required for open loopback. See DEVELOPER-REFERENCE.md §6 for config reference
+- **hooks.token ≠ gateway.auth.token** — Startup validation rejects matching tokens
+- **Rate-limited control-plane RPCs** — `config.apply`, `config.patch`, `update.run` limited to 3/min per device+IP with 30s restart coalesce
+- **Security headers** — `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer` on all HTTP responses
+- **Plaintext ws:// blocked** — WebSocket connections to non-loopback hosts must use `wss://`
+- **Config change audit logging** — Actor, device, IP, and changed paths now logged on config mutations
+- **Drain-before-restart** — Gateway restart coalesced with cooldown to allow in-flight requests to complete
 
 ### Key Files & Roles
 
