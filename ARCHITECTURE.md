@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-02-16 (v2026.2.15) | Comprehensive reference for contributors
+> Updated: 2026-02-20 (v2026.2.19) | Comprehensive reference for contributors
 
 ---
 
@@ -69,9 +69,9 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 │  ┌──────┴──────────────────────────────────────────────────────────┐            │
 │  │                    SERVER SUBSYSTEMS                             │            │
 │  │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌──────────────┐ │            │
-│  │  │ Cron   │ │Browser │ │ Nodes  │ │Plugins │ │  Auth/Rate   │ │            │
-│  │  │Service │ │Control │ │Registry│ │Lifecycle│ │  Limiting    │ │            │
-│  │  └────────┘ └────────┘ └────────┘ └────────┘ └──────────────┘ │            │
+│  │  │ Cron   │ │Browser │ │ Nodes  │ │Plugins │ │  Auth/Rate   │ │  APNs/   │ │
+│  │  │Service │ │Control │ │Registry│ │Lifecycle│ │  Limiting    │ │  Push    │ │
+│  │  └────────┘ └────────┘ └────────┘ └────────┘ └──────────────┘ └──────────┘ │
 │  └────────────────────────────────┬────────────────────────────────┘            │
 └───────────────────────────────────┼─────────────────────────────────────────────┘
                                     │
@@ -187,7 +187,8 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `providers/` | ~9 | ~1,500 | Provider-specific auth: GitHub Copilot OAuth, Qwen refresh | config, agents (auth-profiles) |
 | `acp/` | ~10 | ~1,500 | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
 | `pairing/` | ~5 | ~500 | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
-| `node-host/` | ~7 | ~1,000 | Remote node agent: gateway connection, command invocation, browser proxy | gateway, browser, config |
+| `node-host/` | ~7 | ~1,000 | Remote node agent: gateway connection, command invocation, browser proxy, APNs wake support | gateway, browser, config |
+| `watch-companion/` | ~3 | ~400 | Apple Watch companion: glanceable status, quick actions, haptic notifications | node-host, config |
 | `shared/` | ~16 | ~1,500 | Pure types/constants: frontmatter, requirements, reasoning tags | compat |
 | `utils/` | ~22 | ~2,000 | General utilities: boolean parse, delivery context, usage format, shell argv | channels, config |
 | `terminal/` | ~11 | ~1,000 | ANSI styling, tables, progress lines for CLI output | chalk |
@@ -512,6 +513,25 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 - **Token redaction** — Telegram bot tokens are redacted in error messages; sensitive status details redacted for non-admin scopes
 - **Input sanitization** — `chat.send` message input sanitization hardened
 - **LINE webhook auth** — LINE webhook fails closed when authentication is missing (previously could pass through)
+
+### v2026.2.19 Security Hardening
+
+- **Gateway auth defaults** — Unresolved auth now defaults to token mode with auto-generated token; explicit `mode: "none"` required for open loopback
+- **hooks.token ≠ gateway.auth.token** — Gateway refuses to start if hook token and gateway auth token match, preventing credential reuse
+- **SSRF hardening** — NAT64/6to4/Teredo IPv6 transition addresses and octal/hex/short/packed IPv4 representations blocked in SSRF guard
+- **safeBins trusted dirs** — Binaries must resolve from trusted bin directories; untrusted paths rejected
+- **Rate-limited control-plane RPCs** — `config.apply`, `config.patch`, and `update.run` limited to 3/min per device+IP
+- **Plugin discovery hardening** — Blocks unsafe plugin candidates (root escapes, world-writable directories, suspicious ownership)
+- **YAML 1.2 core schema** — Frontmatter parsing uses YAML 1.2 core schema; no implicit `on`/`off` boolean coercion
+- **Plaintext ws:// blocked** — WebSocket connections over plaintext `ws://` blocked to non-loopback hosts
+- **Security headers** — `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer` added to gateway HTTP responses
+- **Browser SSRF** — Browser navigation routed through SSRF guard (configurable via `browser.ssrfPolicy`)
+- **Canvas node-scoped sessions** — Canvas session capabilities are now node-scoped, replacing shared-IP fallback
+- **Cron webhook SSRF guard** — Cron webhook delivery URLs validated through SSRF guard
+- **Discord moderation permissions** — Moderation permission checks enforced on trusted sender actions
+- **ACP hardening** — Session rate limiting, idle reaping, and prompt size bounds (2 MiB) for Agent Client Protocol
+- **Plugin/hook path containment** — Plugin and hook paths validated with `realpath` checks to prevent symlink escapes
+- **Windows daemon cmd injection** — Hardened Windows daemon service commands against command injection
 
 ---
 
