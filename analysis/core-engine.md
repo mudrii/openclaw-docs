@@ -1,6 +1,6 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 
-> Generated: 2026-02-15 | Codebase: ~/src/openclaw  
+> Updated: 2026-02-20 | Version: v2026.2.19 | Codebase: ~/src/openclaw  
 > Modules: agents (530 files), gateway (228 files), sessions (9 files), routing (5 files), providers (9 files), hooks (32 files)
 
 ---
@@ -1020,6 +1020,29 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **Skills** — cross-platform install fallback for non-brew environments (`d19b74692`)
 - **Memory** — harden context window cache collisions (`cbf58d993`)
 - **Test infrastructure** — massive test consolidation and deduplication (~100+ commits); shared env snapshot helpers; folded mini-suites into larger test files for faster CI
+
+## v2026.2.19 Changes (2026-02-20)
+
+### Agents
+- **Read tool auto-paging** — `read` tool auto-pages based on model `contextWindow`; larger-context models read more before context guards kick in
+- **Sub-agent context guard** — Truncates oversized tool outputs and compacts oldest tool-result messages before model calls; explicit recovery guidance for `[compacted: ...]` markers
+- **Exec preflight guard** — Detects shell env var injection patterns in Python/Node scripts before execution. See DEVELOPER-REFERENCE.md §9 (gotcha 40)
+- **YAML 1.2 frontmatter** — Core schema parsing; `on`/`off`/`yes`/`no` no longer coerced to booleans. See DEVELOPER-REFERENCE.md §9 (gotcha 37)
+
+### Gateway
+- **Auth defaults to token mode** — Unresolved auth defaults to token with auto-generated token; explicit `mode: "none"` required for open loopback. See DEVELOPER-REFERENCE.md §6
+- **hooks.token ≠ gateway.auth.token** — Startup validation rejects matching tokens
+- **Rate-limited control-plane RPCs** — `config.apply`, `config.patch`, `update.run` limited to 3/min per device+IP; config change audit logging
+- **Security headers** — `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` on HTTP responses
+- **Plaintext ws:// blocked** — Non-loopback plaintext WebSocket connections rejected
+- **Browser relay auth** — `/extension` and `/cdp` endpoints require `gateway.auth.token`
+- **Canvas node-scoped sessions** — Canvas capabilities node-scoped, replacing shared-IP fallback
+
+### Sessions
+- **Heartbeat skip on empty** — Interval heartbeats skipped when `HEARTBEAT.md` missing/empty and no tagged cron events queued
+
+### Routing
+- **Telegram topic delivery** — Cron/heartbeat `<chatId>:topic:<threadId>` targets now route correctly
 
 ---
 
