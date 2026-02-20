@@ -1,6 +1,6 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 
-> Generated: 2026-02-16 | Codebase: ~/src/openclaw | Version: v2026.2.15
+> Updated: 2026-02-20 | Codebase: ~/src/openclaw | Version: v2026.2.19
 
 ---
 
@@ -236,6 +236,12 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - **New `skills-snapshot.ts`** — build & normalize skill snapshots for cron sessions
 - **New `subagent-followup.ts`** — handle sub-agent followup after cron isolated runs
 - **New `legacy-delivery.ts`** — detect and handle legacy delivery hint fields
+
+### v2026.2.19 Changes
+- **Heartbeat skip on empty** — Interval heartbeats skipped when `HEARTBEAT.md` is missing or empty and no tagged cron events are queued
+- **Telegram topic delivery** — Explicit `<chatId>:topic:<threadId>` targets now correctly route scheduled sends into the configured topic
+- **Cron webhook SSRF guard** — Webhook delivery URLs validated through SSRF guard before dispatch; private/metadata destinations blocked. See DEVELOPER-REFERENCE.md §9 (gotcha 42)
+- **Exec preflight guard** — Shell env var injection patterns in cron scripts detected before execution
 
 ### File Inventory (57 files)
 
