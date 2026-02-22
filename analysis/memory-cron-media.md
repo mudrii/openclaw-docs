@@ -1,6 +1,6 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 
-> Updated: 2026-02-20 | Codebase: ~/src/openclaw | Version: v2026.2.19
+> Updated: 2026-02-23 | Codebase: ~/src/openclaw | Version: v2026.2.21
 
 ---
 
@@ -35,6 +35,14 @@ The memory module provides **semantic search over markdown files and session tra
 - **Verify QMD index artifact after manual reindex** — validates index integrity post-reindex
 - **New `sync-progress.ts`** — typed sync progress state & reporting callback
 - **New `batch-utils.ts`** — shared batch HTTP client config types
+
+### v2026.2.21 Changes <!-- v2026.2.21 -->
+
+- **QMD manager reliability** — `src/memory/qmd-manager.ts` received significant changes improving QMD (query-managed document) search reliability. Key improvements: better error handling for missing files, improved index consistency. Source: `qmd-manager.test.ts` (332 lines of updated tests).
+
+- **Memory ENOENT handling** — The memory system now handles missing file errors (ENOENT) gracefully. Previously a missing memory file could cause a crash; now it returns an empty result and continues.
+
+- **Multilingual FTS stop-word filtering** — Full-text search now applies stop-word filtering for Korean (with particle-aware extraction and mixed Korean/English stems), Japanese (mixed-script katakana/ASCII), Spanish, and Portuguese. Query expansion uses language-appropriate tokenization, improving recall in conversational searches for these languages.
 
 ### File Inventory (63 files)
 
@@ -242,6 +250,10 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - **Telegram topic delivery** — Explicit `<chatId>:topic:<threadId>` targets now correctly route scheduled sends into the configured topic
 - **Cron webhook SSRF guard** — Webhook delivery URLs validated through SSRF guard before dispatch; private/metadata destinations blocked. See DEVELOPER-REFERENCE.md §9 (gotcha 42)
 - **Exec preflight guard** — Shell env var injection patterns in cron scripts detected before execution
+
+### v2026.2.21 Changes <!-- v2026.2.21 -->
+
+- **`maxConcurrentRuns` now honored** (`fix(cron)`, #22413) — The `cron.maxConcurrentRuns` config key was previously not enforced in the timer loop. Concurrent cron job executions are now properly limited. This is a significant reliability fix: previously, slow cron jobs could accumulate unbounded parallel runs across timer ticks.
 
 ### File Inventory (57 files)
 

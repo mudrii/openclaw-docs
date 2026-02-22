@@ -1,6 +1,6 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 
-> Updated: 2026-02-20 | Version: v2026.2.19 | Codebase: ~/src/openclaw  
+> Updated: 2026-02-23 | Version: v2026.2.21 | Codebase: ~/src/openclaw
 > Modules: agents (530 files), gateway (228 files), sessions (9 files), routing (5 files), providers (9 files), hooks (32 files)
 
 ---
@@ -1043,6 +1043,63 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ### Routing
 - **Telegram topic delivery** — Cron/heartbeat `<chatId>:topic:<threadId>` targets now route correctly
+
+---
+
+## v2026.2.21 Changes (2026-02-23)
+
+<!-- v2026.2.21 -->
+
+### commands-subagents Refactor
+
+- **File**: `src/auto-reply/reply/commands-subagents.ts` (727-line change) + new `src/auto-reply/reply/commands-subagents/shared.ts` (432 lines)
+- **What changed**: The monolithic `commands-subagents.ts` was split into a barrel dispatcher plus a `commands-subagents/shared.ts` module. The shared module contains all types (`SubagentsCommandContext`, `SubagentsAction`), helper functions (`resolveRequesterSessionKey`, `resolveHandledPrefix`, `resolveSubagentsAction`, `stopWithText`, `formatSubagentListLine`, `resolveFocusTargetSession`), command constants (`COMMAND`, `COMMAND_KILL`, `COMMAND_FOCUS`, etc.), and utilities that all action handlers (`action-list.ts`, `action-focus.ts`, `action-spawn.ts`, etc.) depend on.
+- **Operational impact**: Internal refactor only — behavior of `/subagents`, `/focus`, `/unfocus`, `/kill`, `/steer`, `/tell`, `/agents` commands is unchanged. The dispatcher `handleSubagentsCommand` remains the single entry point. Per-action modules import shared helpers from `shared.ts` rather than duplicating logic.
+
+### tool-display-common Compound Command Fix
+
+- **File**: `src/agents/tool-display-common.ts` (224 lines)
+- **What changed**: `resolveExecDetail` now correctly handles compound shell commands such as `cd ~/dir && npm install`. Previously, the summarizer extracted only the first stage (showing `list files in ~/dir` for a `cd && npm install` sequence). The fix:
+  1. `stripShellPreamble()` strips leading `cd`/`pushd`/`export`/`set`/`unset` preamble stages and captures the inferred working directory (`chdirPath`).
+  2. `splitTopLevelStages()` splits the remaining command on `&&`, `||`, `;` respecting quoting.
+  3. Each stage is summarized independently via `summarizePipeline()` and joined with ` → `.
+  4. If all stages produce generic summaries, the compact raw command is shown instead.
+- **Operational impact**: The tool approval UI and activity feed now show the full compound command (e.g. `install dependencies (in ~/dir)\n\n\`cd ~/dir && npm install\``) rather than truncating to the first stage.
+
+### invoke / system-run Hardening
+
+- **Files**: `src/node-host/invoke-system-run.ts` (new file, 422 lines), `src/node-host/invoke.ts` (385-line change)
+- **What changed**: System run command resolution was extracted from `invoke.ts` into a dedicated `invoke-system-run.ts` module via `handleSystemRunInvoke()`. Key security hardening applied:
+  - `sanitizeSystemRunEnvOverrides()` from `src/infra/host-env-security.ts` blocks startup-file env injection (e.g. `BASH_ENV`, `ENV`, `NODE_OPTIONS` that point to files) and heredoc command substitution in shell wrappers.
+  - `resolveSystemRunCommand()` centralizes argv/shell command resolution from `src/infra/system-run-command.ts`.
+  - Exec approvals (`resolveExecApprovals`, `evaluateShellAllowlist`, `evaluateExecAllowlist`) are resolved per-agent from config and enforced before any command runs.
+  - Runtime command override via injected env is prevented.
+- **Operational impact**: Tighter security posture for node-host-executed commands. The extracted module makes approval and allowlist logic independently testable.
+
+### Status-Reactions Controller
+
+- **File**: `src/channels/status-reactions.ts` (new file, 390 lines)
+- **What changed**: A new channel-agnostic `createStatusReactionController()` function provides a unified lifecycle reaction state machine used by both Telegram and Discord channel plugins. Features:
+  - `StatusReactionController` API: `setQueued()`, `setThinking()`, `setTool(toolName?)`, `setDone()`, `setError()`, `clear()`, `restoreInitial()`.
+  - Promise chain serialization prevents concurrent API calls.
+  - Debounced intermediate state transitions (`debounceMs`, default 700 ms); terminal states (`done`/`error`) are immediate.
+  - Stall timers: soft stall (`stallSoftMs` 10 s, default `🥱`) and hard stall (`stallHardMs` 30 s, default `😨`) fire automatically on inactivity.
+  - Tool-type emoji routing: `CODING_TOOL_TOKENS` (exec, read, write, edit, bash) → coding emoji; `WEB_TOOL_TOKENS` (web_search, browser) → web emoji; all others → generic tool emoji.
+  - Configurable emoji overrides via `StatusReactionEmojis` and timing overrides via `StatusReactionTiming`.
+  - `StatusReactionAdapter` interface (`setReaction`, optional `removeReaction`) abstracts platform differences (Telegram sets atomically; Discord-style platforms need explicit remove).
+- **Operational impact**: Reaction update logic is now shared across channels. Both Telegram and Discord status reactions go through this controller, fixing timing/dedup inconsistencies that existed when each channel had its own ad-hoc reaction management.
+
+### subagent-spawn: senderIsOwner Forwarded to Embedded Runner
+
+- **File**: `src/agents/subagent-spawn.ts` (236 lines)
+- **What changed**: `spawnSubagentDirect()` now forwards the `senderIsOwner` flag into the `agent` gateway RPC call parameters. Previously, subagent runs launched via `sessions_spawn` did not propagate owner context, causing owner-only tools (e.g. tools gated on `tool-policy.ts` owner checks) to be unavailable inside subagent sessions even when spawned by an authorized owner.
+- **Operational impact**: Owner-only tools now function correctly inside subagent sessions when the spawn request originates from an owner.
+
+### subagent-announce: Improved Announce Format
+
+- **File**: `src/agents/subagent-announce.ts` (319 lines)
+- **What changed**: `buildCompletionDeliveryMessage()` distinguishes between `run` and `session` spawn modes in the header text (e.g. "session remains active" appended for `mode=session` spawns). `buildAnnounceReplyInstruction()` updated to include `expectsCompletionMessage` awareness, routing to the correct instruction variant depending on whether the requester is a subagent, has remaining active siblings, or expects a formatted user-facing completion message.
+- **Operational impact**: Cleaner announce messages for both ephemeral run-mode subagents and persistent session-mode subagents.
 
 ---
 

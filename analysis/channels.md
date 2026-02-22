@@ -1,6 +1,6 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 
-> Updated: 2026-02-20 | Version: v2026.2.19 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-02-23 | Version: v2026.2.21 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (100 files), `src/discord` (77 files), `src/signal` (32 files), `src/slack` (67 files), `src/whatsapp` (3 files), `src/imessage` (20 files), `src/line` (46 files), `src/channels` (106 files)
 
 ---
@@ -945,6 +945,81 @@ Agent tool call: message(action="send", target="...", message="...")
 
 ### Browser/Relay
 - **Chrome extension relay auth** — Both `/extension` and `/cdp` endpoints now require `gateway.auth.token` authentication
+
+---
+
+<!-- v2026.2.21 -->
+## v2026.2.21 Changes (2026-02-23)
+
+### Telegram
+
+<!-- v2026.2.21 -->
+- **Streaming config simplified** (`src/telegram/bot-message-dispatch.ts`) — `channels.telegram.streaming` is now a plain boolean (`true`/`false`). Legacy `streamMode` string values (`"off"`, `"partial"`, `"block"`) are auto-mapped on load. Internally the dispatch logic continues to use the same two-lane (answer + reasoning) draft-stream architecture; the simplified boolean controls whether answer-lane draft streaming is active. Reasoning-lane streaming is governed separately by the per-session `reasoningLevel` setting.
+
+<!-- v2026.2.21 -->
+- **Status reactions** (new file: `src/telegram/status-reaction-variants.ts`) — Lifecycle reaction phases now signal agent progress directly on the inbound message: `queued` → `thinking` → `tool`/`coding`/`web` (tool-type aware) → `done` or `error`. The new module provides:
+  - `TELEGRAM_STATUS_REACTION_VARIANTS` — per-phase fallback emoji lists restricted to Telegram's supported reaction set.
+  - `resolveTelegramStatusReactionEmojis()` — merges per-channel config overrides (`channels.telegram.accounts.<id>.statusReactions.*`) against defaults from `src/channels/status-reactions.ts`.
+  - `buildTelegramStatusReactionVariants()` — builds the variant map used for chat-allowed emoji fallback resolution.
+  - `resolveTelegramReactionVariant()` — picks the first available emoji from the variant list that is both in Telegram's global supported set and allowed by the specific chat's `available_reactions`.
+  - The `statusReactionController` field on `TelegramMessageContext` carries a `StatusReactionController` instance; `dispatchTelegramMessage` calls `setThinking()` at start, `setTool(name)` per tool call, and `setDone()` or `setError()` on completion.
+
+### Discord
+
+<!-- v2026.2.21 -->
+- **Model picker UI** (new file: `src/discord/monitor/model-picker.ts`, ~937 lines) — Native Discord Components v2 UI for switching models mid-conversation, restoring the model picker UX broken in a prior release (issue #21458). Key details:
+  - Uses Carbon's `Container`, `Row`, `Button`, `StringSelectMenu`, `TextDisplay`, and `Separator` components.
+  - State encoded in the `custom_id` field under the key `mdlpk` (max 100 chars); carries `command`, `action`, `view`, `userId`, `provider`, `page`, `providerPage`, `modelIndex`, `recentSlot`.
+  - Views: `providers` (paginated buttons, up to 20 providers per page), `models` (select menu, up to 25 per page), `recents` (recently used models).
+  - Actions: `open`, `provider`, `model`, `submit`, `quick`, `back`, `reset`, `cancel`, `recents`.
+  - Provider buttons paginated at 20 per page (4 rows × 5 buttons, reserving 1 row for nav); single-page layout uses all 5 rows (25 max).
+  - Triggered by `/model` and `/models` slash commands.
+
+<!-- v2026.2.21 -->
+- **Thread-bound subagents** (`src/discord/monitor/provider.ts`, `native-command.ts`) — New per-thread subagent session system. Each Discord thread can be bound to a dedicated agent session via a `ThreadBindingManager` (`src/discord/monitor/thread-bindings.ts`). New slash commands:
+  - `/focus` — bind the current thread to a named subagent session.
+  - `/list` — list active thread bindings.
+  - Thread-bound sessions route continuation messages back to the bound subagent automatically. TTL defaults to 24 hours; configurable via `channels.discord.accounts.<id>.threadBindings.ttlHours` and per-session overrides.
+
+<!-- v2026.2.21 -->
+- **Voice channel support** (new files: `src/discord/voice/manager.ts` ~676 lines, `src/discord/voice/command.ts` ~341 lines) — Bot can join and participate in Discord voice channels for realtime voice conversations:
+  - `DiscordVoiceManager` (`manager.ts`) — manages active voice sessions keyed by `guildId:channelId`. Handles audio capture (48kHz/stereo/16-bit PCM via `@discordjs/voice`), silence detection (1s gap), TTS playback queue, and per-guild session lifecycle. Integrates with the TTS pipeline (`src/tts/tts.js`) and media understanding runner for speech-to-text. Exposes `join()`, `leave()`, `getStatus()`.
+  - `createDiscordVoiceCommand()` (`command.ts`) — builds the `/vc` slash command group with subcommands `join`, `leave`, and `status`. Each subcommand is scoped to guild channels only and respects the same allowlist/group-policy authorization as other Discord commands. `ephemeralDefault` is forwarded from the account slash-command config.
+  - Auto-join: if `channels.discord.accounts.<id>.voice.autoJoin` is set, the bot joins the configured voice channel on startup.
+  - Requires `VoicePlugin` from `@buape/carbon/voice` registered on the Carbon client.
+
+<!-- v2026.2.21 -->
+- **Provider allowlist canonicalization** (new file: `src/discord/monitor/provider.allowlist.ts`, ~207 lines) — On startup, `resolveDiscordAllowlistConfig()` resolves all human-readable guild/channel/user names in the config to Discord snowflake IDs by querying the Discord REST API. This eliminates runtime mismatches caused by display-name changes and ensures allowlist entries remain stable. Calls `resolveDiscordUserAllowlist()` and `resolveDiscordChannelAllowlist()` in parallel per guild, then patches the live config entries via `patchAllowlistUsersInConfigEntries()`.
+
+<!-- v2026.2.21 -->
+- **Ephemeral defaults for slash commands** — `channels.discord.accounts.<id>.slashCommand.ephemeral` (boolean) controls whether slash-command responses are ephemeral by default. Resolved as `ephemeralDefault` in `provider.ts` and forwarded to every native command and the `/vc` command group. Previously responses were always non-ephemeral.
+
+<!-- v2026.2.21 -->
+- **Forum tag management** (`src/discord/send.channels.ts`) — Channel-edit actions can now supply an `availableTags` array to update a forum channel's tag list. Each entry accepts `{ id?, name, emoji?, moderated? }`. Passed through as `available_tags` in the Discord channel PATCH body.
+
+### Channels (shared infrastructure)
+
+<!-- v2026.2.21 -->
+- **Volcengine / BytePlus provider** (`src/agents/models-config.providers.volcengine-byteplus.test.ts`, `auth-choice.apply.volcengine.ts`) — New provider integrated: Volcengine (BytePlus / Doubao family). Doubao models including coding variants are now available in the model catalog. Onboarding credentials handled via `auth-choice.apply.volcengine.ts`.
+
+<!-- v2026.2.21 -->
+- **BlueBubbles (iMessage via BlueBubbles server)** — A new channel platform entry has been added (distinct from the existing `imsg`-based iMessage channel). Status-issue diagnostics live in `src/channels/plugins/status-issues/bluebubbles.ts`; action specs in `src/channels/plugins/bluebubbles-actions.ts`. Configuration and onboarding are separate from the classic iMessage path.
+
+<!-- v2026.2.21 -->
+- **Per-channel model override** (`src/channels/model-overrides.ts`) — New `channels.modelByChannel` config section allows routing specific channels or groups to a dedicated model. Config structure:
+
+  ```json
+  {
+    "channels": {
+      "modelByChannel": {
+        "telegram": { "-100123456789": "openai/gpt-4.1" },
+        "discord": { "guild-name/channel-name": "anthropic/claude-opus-4-6", "*": "google/gemini-3-flash-preview" }
+      }
+    }
+  }
+  ```
+
+  Keys under each channel entry are matched against the inbound `groupId`/`groupChannel`/`groupSubject` using the same candidate-matching logic as `channel-config.ts` (slug normalization, wildcard `*` fallback). Thread-suffixed group IDs (`groupId:thread:xxx`) also check the parent ID. The override is applied before inline `/model` directives but after agent-level defaults.
 
 ---
 

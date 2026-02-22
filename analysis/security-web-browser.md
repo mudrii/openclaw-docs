@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 
-> Updated: 2026-02-20 | Version: v2026.2.19 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-02-23 | Version: v2026.2.21 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -38,6 +38,14 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Plugin/hook path containment** — `realpath` checks prevent symlink escapes
 - **safeBins trusted dirs** — Binaries must resolve from trusted bin directories; untrusted PATH entries rejected
 - **Cron webhook SSRF guard** — Webhook delivery URLs validated through SSRF guard before dispatch
+
+#### v2026.2.21 Changes <!-- v2026.2.21 -->
+- **SHA-256 for synthetic IDs** — `feat(security)`: migrate sha1 hashes to sha256 for synthetic IDs (#22528/#7343). All synthetically-generated IDs now use SHA-256; SHA-1 collision resistance was insufficient for untrusted content
+- **Sandbox --no-sandbox disabled by default** — `Security`: Chrome/Chromium sandbox now enabled by default in sandbox container runs (#22451); `--no-sandbox` flag is no longer set by default
+- **Sandbox browser network defaults hardened** — `fix(security)`: outbound network restrictions tightened in sandboxed browser runs
+- **Sandbox browser hash migration** — `fix(security)`: force sandbox browser hash migration and audit stale labels — SHA-1 → SHA-256 for browser session labels; stale labels flagged by `sandbox.browser_container.hash_epoch_stale` audit check (see `audit.test.ts` line 574)
+- **Non-network navigation schemes blocked** — `fix(browser)`: non-network navigation schemes blocked in browser module (e.g., `file://`, `javascript:`, `data:` URIs)
+- **noVNC observer tokens** — `fix(sandbox)`: noVNC observer sessions now require one-time token auth plus mandatory password auth
 
 ### File Inventory (22 files + 2 new infra files)
 
@@ -178,6 +186,9 @@ WhatsApp Web integration module using `@whiskeysockets/baileys`. Handles WhatsAp
 - **Disallow workspace-\* roots without explicit localRoots** — image tool now requires explicit `localRoots` config to access workspace-prefixed directories (`src/agents/tools/image-tool.ts`)
 - **Omit direct conversation labels from inbound metadata** — direct chats no longer inject conversation labels into inbound metadata to prevent metadata leakage
 
+#### v2026.2.21 Changes <!-- v2026.2.21 -->
+- **WhatsApp JID allowlist** — `fix(security)`: OC-91 all outbound WhatsApp sends now validate the destination JID against the configured allowlist in every send path. Centralized outbound auth returns 403 on tool auth errors
+
 ### File Inventory (non-test, 35+ source files)
 
 | File | Description |
@@ -310,6 +321,7 @@ WhatsApp Web integration module using `@whiskeysockets/baileys`. Handles WhatsAp
 - **Echo detection**: Prevents bot from responding to its own messages
 - **Media limits**: Default 5MB cap on media
 - **SSRF protection**: Uses `../infra/net/ssrf.js` for URL validation
+- **WhatsApp JID allowlist** <!-- v2026.2.21 -->: OC-91 — all outbound sends validate destination JID against configured allowlist; centralized outbound auth returns 403 on tool auth errors
 
 ### Configuration
 - `channels.whatsapp.*` — account config, groupPolicy, dmPolicy, allowFrom, mentionMode
@@ -517,6 +529,12 @@ Browser automation module providing a local HTTP control server for Playwright a
 - **Bridge auth registry**: Per-port auth for bridge connections
 - **Evaluate gating**: JS evaluation can be disabled via config (`browser.evaluate: false`)
 - **Path containment**: File operations restricted to workspace root
+- **Non-network navigation schemes blocked** <!-- v2026.2.21 -->: `file://`, `javascript:`, and `data:` URI navigation blocked in browser module
+- **noVNC observer auth** <!-- v2026.2.21 -->: noVNC observer sessions require one-time tokens plus mandatory password auth
+- **Sandbox --no-sandbox disabled** <!-- v2026.2.21 -->: Chrome/Chromium sandbox enabled by default in container runs (#22451)
+- **Sandbox browser network hardened** <!-- v2026.2.21 -->: outbound network restrictions tightened for sandboxed browser runs
+- **Sandbox browser hash migration** <!-- v2026.2.21 -->: browser session labels migrated from SHA-1 to SHA-256; stale labels flagged by audit check `sandbox.browser_container.hash_epoch_stale`
+- **SHA-256 synthetic IDs** <!-- v2026.2.21 -->: all synthetically-generated IDs migrated from SHA-1 to SHA-256 (#22528/#7343)
 
 ### Configuration
 - `browser.enabled` — Enable/disable browser control (default: true)

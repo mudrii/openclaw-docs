@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 
-> Updated: 2026-02-20 | Version: v2026.2.19
+> Updated: 2026-02-23 | Version: v2026.2.21
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -22,6 +22,18 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Security headers** — `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer` added to gateway HTTP responses
 - **ACP hardening** — Session rate limiting, idle reaping, and prompt size bounds (2 MiB) for Agent Client Protocol (see DEVELOPER-REFERENCE.md §6 for config reference)
 - **Windows daemon cmd injection** — Hardened Windows daemon service commands against command injection
+
+#### v2026.2.21 Changes <!-- v2026.2.21 -->
+- **system.run command resolution** — `fix(security)`: centralized and hardened in `src/node-host/invoke-system-run.ts` (new 402-line module). Validates command path, sanitizes env overrides via `sanitizeSystemRunEnvOverrides()`, and resolves command through `resolveSystemRunCommand()` before any allowlist evaluation
+- **Startup-file env injection blocked** — `fix(security)`: environment variable injection via startup files (`.bashrc`, `.zshrc`, etc.) blocked across host execution paths via `sanitizeSystemRunEnvOverrides()` / `sanitizeHostExecEnv()`
+- **Heredoc allowlist parsing hardened** — `fix(security)`: more heredoc patterns recognized and blocked in allowlist parsing
+- **Command substitution in heredocs blocked** — `fix(security)`: `$(cmd)` and backtick substitution in unquoted heredoc bodies now blocked
+- **macOS exec shell-chain checks** — `fix(macos)`: chained shell commands evaluated against exec allowlist more strictly on macOS
+- **Runtime command override gating** — `fix(security)`: dynamic injection of command overrides at runtime is now prevented
+- **grep safe-bin file-read bypass blocked** — `fix(security)`: `grep` as a safe-bin entry could be abused to read arbitrary files; this path is now blocked
+- **Compaction counter reset blocked** — `fix(security)`: OC-65 agents can no longer reset their own compaction counters to circumvent context exhaustion limits
+- **Prototype-chain traversal in webhook templates** — `security(hooks)`: prototype-chain traversal blocked in webhook template `getByPath` (#22213); prevents prototype pollution via crafted template paths
+- **Per-wrapper IDs on untrusted content** — `Security`: each untrusted content wrapper now receives a unique per-wrapper ID for attribution (#19009)
 
 ### Key Files
 
@@ -54,6 +66,7 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - `isPathInside()` — path traversal prevention
 - `buildUntrustedChannelMetadata()` — safe metadata formatting
 - `DEFAULT_GATEWAY_HTTP_TOOL_DENY`, `DANGEROUS_ACP_TOOLS` — risk constants
+- <!-- v2026.2.21 --> Per-wrapper untrusted content IDs — `wrapExternalContent()` now attaches a unique per-wrapper ID to each untrusted content boundary for attribution (#19009)
 
 ### Dependencies
 Imports from: `agents/`, `browser/config`, `channels/`, `cli/`, `config/`, `gateway/`, `infra/`, `pairing/`, `plugins/`, `process/`, `routing/`
@@ -261,7 +274,8 @@ Runs OpenClaw as a paired "node" device — connects to gateway, executes comman
 |------|------|
 | `config.ts` | Node host config (nodeId, token, gateway connection) — read/write `node.json` |
 | `runner.ts` | Main node host runner — connects to gateway as node client, handles invoke requests |
-| `invoke.ts` | Command execution handler — validates against exec allowlists, spawns processes, caps output |
+| `invoke.ts` | Command execution handler — routes `system.run` to `invoke-system-run.ts`, validates against exec allowlists, spawns processes, caps output |
+| `invoke-system-run.ts` | <!-- v2026.2.21 --> Centralized `system.run` hardening — `handleSystemRunInvoke()`: resolves command via `resolveSystemRunCommand()`, sanitizes env overrides, evaluates shell/argv allowlists, gates macOS exec host, handles approval decisions |
 | `invoke-browser.ts` | Browser proxy for remote nodes — routes browser commands through local browser control |
 | `with-timeout.ts` | Generic timeout wrapper with AbortController |
 

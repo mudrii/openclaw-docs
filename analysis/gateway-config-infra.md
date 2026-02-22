@@ -1,7 +1,7 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 
-**Updated:** 2026-02-20 | **Version:** v2026.2.19  
-**Codebase:** ~/src/openclaw  
+**Updated:** 2026-02-23 | **Version:** v2026.2.21
+**Codebase:** ~/src/openclaw
 **Total lines (6 modules):** ~94,080
 
 ---
@@ -19,6 +19,22 @@
 - **Plaintext ws:// blocked** — WebSocket connections to non-loopback hosts must use `wss://`
 - **Config change audit logging** — Actor, device, IP, and changed paths now logged on config mutations
 - **Drain-before-restart** — Gateway restart coalesced with cooldown to allow in-flight requests to complete
+
+#### v2026.2.21 Changes <!-- v2026.2.21 -->
+
+- **Tailscale tokenless auth scoped to WebSocket** (`fix(gateway)`) — Tailscale-based tokenless authentication is now only permitted for WebSocket connections. HTTP API calls always require explicit auth; the tokenless path is no longer reachable from HTTP entrypoints.
+
+- **Gateway credential resolution unified** (`refactor(gateway)`) — Credential-source precedence for call/probe/status/auth entrypoints now uses shared resolver helpers with table-driven parity. Auth context is typed; `auth.deviceToken` support added in connect frames. Source: `server.auth.e2e.test.ts` covers parity across entrypoints.
+
+- **Insecure auth toggle messaging aligned** (`fix(gateway)`) — The log/startup message shown when `gateway.auth.mode: "none"` is configured is now consistent across all entrypoints (was inconsistent between HTTP and WS paths).
+
+- **WebSocket message handler hardened** — `src/gateway/server/ws-connection/message-handler.ts` now strips inbound metadata blocks from messages before processing, preventing metadata leakage into the agent context via WebSocket frames.
+
+- **BlueBubbles webhook auth required** (`fix(security)`) — BlueBubbles (iMessage) channel webhooks now require authentication. Previously, webhook delivery from the BlueBubbles server was unauthenticated.
+
+- **Gateway nodes API improvements** — `src/gateway/server-methods/nodes.ts` updated for gateway multi-node reliability improvements.
+
+- **`customBindHost` config key** — Gateway binding now supports an explicit `customBindHost` config key to override the bind address independent of the `host` setting.
 
 ### Key Files & Roles
 

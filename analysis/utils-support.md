@@ -1,6 +1,6 @@
 # Utilities & Support Modules — Comprehensive Analysis
 
-**Updated:** 2026-02-20 | **Version:** v2026.2.19  
+**Updated:** 2026-02-23 | **Version:** v2026.2.21
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~330 .ts files across 14 modules
 
@@ -835,3 +835,29 @@ Shared test utilities and mock factories.
 ### Networking
 - **SSRF guard hardening** — NAT64/6to4/Teredo IPv6 transition addresses and octal/hex/short/packed IPv4 blocked
 - **Plaintext ws:// blocked** — Non-loopback plaintext WebSocket connections rejected; `wss://` required for remote hosts
+
+<!-- v2026.2.21 -->
+## v2026.2.21 Changes
+
+### Channels (shared infrastructure)
+
+<!-- v2026.2.21 -->
+- **Shared status-reactions controller** (new file: `src/channels/status-reactions.ts`, ~390 lines) — Unified, channel-agnostic lifecycle reaction system shared between Telegram and Discord. Provides:
+  - `StatusReactionAdapter` — minimal interface (`setReaction`, optional `removeReaction`) that each channel implements to perform the actual API call.
+  - `StatusReactionEmojis` — per-phase emoji config (all optional, with defaults): `queued`, `thinking`, `tool`, `coding`, `web`, `done`, `error`, `stallSoft`, `stallHard`.
+  - `StatusReactionTiming` — debounce and stall timer thresholds: `debounceMs` (700ms), `stallSoftMs` (10s), `stallHardMs` (30s), `doneHoldMs` (1500ms), `errorHoldMs` (2500ms).
+  - `StatusReactionController` — public API: `setQueued()`, `setThinking()`, `setTool(toolName?)`, `setDone()`, `setError()`, `clear()`, `restoreInitial()`.
+  - `createStatusReactionController()` — factory that handles promise-chain serialization (prevents concurrent API calls), debouncing of intermediate states (terminal states are immediate), and stall timers that escalate `stallSoft → stallHard` on inactivity.
+  - `resolveToolEmoji()` — selects `coding` emoji for exec/read/write/bash-family tools, `web` emoji for web_search/web_fetch/browser-family tools, generic `tool` otherwise.
+  - `DEFAULT_EMOJIS` and `DEFAULT_TIMING` exported constants.
+  - Telegram's `status-reaction-variants.ts` builds on this base, adding Telegram-specific emoji preselection against the platform's fixed supported-reaction set and per-chat `available_reactions` allowlist.
+
+### Auto-Reply
+
+<!-- v2026.2.21 -->
+- **TTS model-provider switching is now opt-in** — Previously, when TTS was active and a TTS-capable model was resolved, the system could automatically switch the LLM provider to one paired with the TTS engine. This automatic switching is now opt-in and must be explicitly enabled in config. Prevents unexpected provider changes during TTS sessions.
+
+### Gateway
+
+<!-- v2026.2.21 -->
+- **Inbound metadata stripping** (`src/gateway/chat-sanitize.ts`, backed by `src/auto-reply/reply/strip-inbound-meta.js`) — The WS connection message handler now strips internal metadata blocks from inbound messages before routing them to channel surfaces or agent sessions. `stripEnvelopeFromMessage()` applies `stripInboundMetadata()` to all text content (both string and array-of-blocks forms), then strips `[Channel From Timestamp]` envelope headers and message-id hints from user-role messages. This prevents internal marker blocks (injected by the auto-reply pipeline for message correlation) from leaking into chat surfaces or being re-injected into subsequent agent turns. The function handles `content: string`, `content: [{type:"text", text:...}]`, and `text: string` message shapes, and is applied to every inbound message array via `stripEnvelopeFromMessages()`.

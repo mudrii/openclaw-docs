@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 
-> Updated: 2026-02-20 | Version: v2026.2.19
+> Updated: 2026-02-23 | Version: v2026.2.21
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -863,3 +863,66 @@ When event fires:
 
 ### YAML 1.2 Frontmatter
 - **Core schema parsing** — Agent prompt frontmatter uses YAML 1.2 core schema; `on`/`off`/`yes`/`no` no longer coerced to booleans. Use `true`/`false` explicitly. See DEVELOPER-REFERENCE.md §9 (gotcha 37)
+
+---
+
+## v2026.2.21 Changes
+
+<!-- v2026.2.21 -->
+
+### Thread-Bound Subagents on Discord
+
+- **Files** (all new): `src/discord/monitor/thread-bindings.manager.ts` (515 lines), `src/discord/monitor/thread-bindings.state.ts` (444 lines), `src/discord/monitor/thread-bindings.lifecycle.ts` (225 lines), `src/discord/monitor/thread-bindings.discord-api.ts` (289 lines)
+- **What changed**: A complete Discord thread-binding subsystem was added, enabling per-thread subagent sessions on Discord. Architecture is a four-layer chain:
+
+  | Layer | File | Responsibility |
+  |-------|------|----------------|
+  | Manager | `thread-bindings.manager.ts` | Public API (`createThreadBindingManager`); per-account `ThreadBindingManager` instances; integrates with `session-binding-service` adapter |
+  | State | `thread-bindings.state.ts` | In-process + on-disk global state (`BINDINGS_BY_THREAD_ID`, `BINDINGS_BY_SESSION_KEY`); stored on `globalThis` so Jiti and ESM loader paths share one registry |
+  | Lifecycle | `thread-bindings.lifecycle.ts` | Session-level helpers: `autoBindSpawnedDiscordSubagent`, `unbindThreadBindingsBySessionKey`, `setThreadBindingTtlBySessionKey` |
+  | Discord API | `thread-bindings.discord-api.ts` | Low-level Discord REST calls: `createThreadForBinding`, `createWebhookForChannel`, `resolveChannelIdForBinding`, `maybeSendBindingMessage`, `isDiscordThreadGoneError` |
+
+- **`ThreadBindingRecord`** fields: `accountId`, `channelId`, `threadId`, `targetKind` (`"subagent" | "acp"`), `targetSessionKey`, `agentId`, `label`, `webhookId`/`webhookToken`, `boundBy`, `boundAt`, `expiresAt`.
+- **Persistence**: Bindings are serialized to `<stateDir>/discord/thread-bindings.json` (version 1 JSON format) and loaded on first manager creation via `ensureBindingsLoaded()`.
+- **Sweeper**: Each `ThreadBindingManager` runs a periodic interval that probes thread status via Discord REST. Archived threads trigger `unbindThread(reason: "thread-archived")`; deleted/403 threads trigger silent removal (`sendFarewell: false`). TTL-expired bindings send a farewell message.
+- **Webhook reuse**: Per `(accountId, channelId)` pair, a reusable webhook is cached in `REUSABLE_WEBHOOKS_BY_ACCOUNT_CHANNEL` to avoid creating a new webhook for every binding on the same parent channel.
+- **Unbound echo suppression**: After unbinding, `rememberRecentUnboundWebhookEcho()` records the last webhook ID briefly so the Discord monitor can suppress echoed webhook messages from recently removed bindings.
+- **Focus/unfocus integration**: `thread-bindings.lifecycle.ts` exposes `listThreadBindingsBySessionKey` so `/focus` and `/unfocus` commands can resolve the bound thread for a subagent session.
+- **Completion routing**: Thread-bound sessions integrate with `BoundDeliveryRouter` (via the `session-binding-service` adapter registered in `createThreadBindingManager`) so subagent completion announcements are routed to the bound thread rather than the original channel.
+- **Operational impact**: When `sessions_spawn` is called with `thread=true` on Discord, a new thread is automatically created and bound to the child session key. Follow-up messages from that subagent are routed into the thread. When the session ends (killed, TTL-expired, or session-mode farewell), the thread receives a farewell message and the binding is removed.
+
+### sessions-spawn-hooks
+
+- **File**: `src/agents/sessions-spawn-hooks.ts` (new, 373 lines — located under `src/agents/` per test file `sessions-spawn-hooks.test.ts`)
+- **What changed**: Hook integration for session spawning was extracted into a dedicated module. `subagent-spawn.ts` now calls into `sessions-spawn-hooks.ts` via `ensureThreadBindingForSubagentSpawn()` to invoke the `subagent_spawning` hook on the global hook runner before proceeding with thread-bound spawn. On spawn failure, `runSubagentEnded` is emitted so the thread binding is cleaned up even if the gateway `agent` RPC fails.
+- **Hook contract**: The `subagent_spawning` hook must return `{ status: "ok", threadBindingReady: true }` for `thread=true` spawns to proceed. Any other return value or error causes the provisional child session to be deleted and an error returned to the tool caller.
+- **Operational impact**: Channel plugins (Discord) register `subagent_spawning` hooks to create the thread and return binding confirmation before the agent run is dispatched.
+
+### subagent-registry Refactor
+
+- **File**: `src/agents/subagent-registry.ts` (590-line change)
+- **What changed**: Major internal refactor with several behavioral fixes:
+  - **Raised dynamic retry cap budget**: `MAX_ANNOUNCE_RETRY_COUNT` governs how many times a failed `runSubagentAnnounceFlow` is retried before giving up. Previously unbounded; now capped to prevent infinite retry loops (`#18264`).
+  - **Announce expiry**: `ANNOUNCE_EXPIRY_MS` (5 minutes) force-expires announces that were never delivered, guarding against stale registry entries surviving gateway restarts.
+  - **Capped embedded runner retry loop**: `waitForSubagentCompletion` (gateway RPC-based) and the in-process lifecycle listener are now properly coordinated. `resumeSubagentRun` respects the retry cap and expiry before re-attempting cleanup.
+  - **Backoff on retry**: `resolveAnnounceRetryDelayMs()` implements exponential backoff (1s → 2s → 4s → max 8s) for retry scheduling.
+  - **Completion hook deferral**: `completeSubagentRun` defers `subagent_ended` hook emission until after announce delivery completes when `expectsCompletionMessage=true`, so the farewell message arrives in the thread before the binding is torn down.
+  - **Module split**: Queries (`subagent-registry-queries.ts`), state helpers (`subagent-registry-state.ts`), cleanup logic (`subagent-registry-cleanup.ts`), and completion logic (`subagent-registry-completion.ts`) extracted from the monolithic file. Public API (`registerSubagentRun`, `listSubagentRunsForRequester`, `countActiveRunsForSession`, etc.) unchanged.
+- **Operational impact**: Eliminates stuck registry entries on gateway restart; prevents announce storm after transient failures; ensures thread-unbind and farewell happen in the correct order relative to delivery.
+
+### QMD Manager Improvements
+
+- **File**: `src/memory/qmd-manager.ts` (326-line change)
+- **What changed**:
+  - **Han script BM25 normalization**: `normalizeHanBm25Query()` decomposes CJK queries into keyword tokens (capped at `QMD_BM25_HAN_KEYWORD_LIMIT = 12`) before passing to BM25 search, improving recall for Chinese/Japanese/Korean memory searches.
+  - **NUL byte filtering**: `NUL_MARKER_RE` detects and filters NUL-byte markers in QMD output that caused parse errors in downstream processing.
+  - **Embed queue serialization**: `qmdEmbedQueueTail` serializes embedding calls to prevent concurrent embed operations from exceeding provider rate limits; uses `QMD_EMBED_BACKOFF_BASE_MS` / `QMD_EMBED_BACKOFF_MAX_MS` (1 min to 1 hour) for backoff on provider errors.
+  - **Search pending update wait**: `SEARCH_PENDING_UPDATE_WAIT_MS` (500 ms) prevents searches from reading stale index state immediately after a file sync.
+- **Operational impact**: More reliable memory search for CJK content; fewer embedding rate-limit errors under high load; eliminates parse failures caused by NUL bytes in QMD output.
+
+### Per-Channel Model Overrides
+
+- **Config key**: `channels.modelByChannel`
+- **What changed**: Per-channel model override resolution was documented and wired into the agent pipeline. In the routing/session resolution path, `channels.modelByChannel` is read during `applyModelOverrideToSessionEntry()` (in `src/sessions/model-overrides.ts`) and applied before the embedded runner selects its model. This allows different channels (e.g. Discord vs Telegram) to be pinned to different models without modifying per-agent config.
+- **Resolution order** (lowest to highest precedence): agent default model → `channels.modelByChannel[channel]` → per-session override → in-message directive override.
+- **Operational impact**: Operators can now set `channels.modelByChannel.discord = "google/gemini-3-flash-preview"` to use a different model for Discord traffic without affecting Telegram or other channels.

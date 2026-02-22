@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-02-20 (v2026.2.19) | Comprehensive reference for contributors
+> Updated: 2026-02-23 (v2026.2.21) | Comprehensive reference for contributors
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## 1. Executive Summary
 
-**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, LINE, IRC, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
+**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
 
 Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. The `agents` module (the largest at ~530 files) contains the AI runtime: model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module (~223 files) is the message processing pipeline that sits between channels and agents — handling commands, directives, session management, model routing, queue management, and reply delivery.
 
@@ -155,12 +155,16 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `config/` | ~85 | ~48,500 | Config loading, Zod schemas, session store, legacy migration, path resolution | channels (types), infra |
 | `infra/` | ~130 | ~71,000 | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
 | `channels/` | ~60 | ~8,000 | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
+| `channels/status-reactions` | ~3 | ~400 | Shared lifecycle reaction controller for Telegram and Discord status events | channels, config, infra |
 | `telegram/` | ~45 | ~8,000 | Telegram Bot API via grammY: long-poll/webhook, topics, reactions, streaming | grammY, config, auto-reply, channels |
 | `discord/` | ~45 | ~8,500 | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
+| `discord/voice/` | ~6 | ~800 | Discord voice channel join/leave management, auto-join, realtime conversation | discord, config, channels |
+| `discord/monitor/thread-bindings/` | ~4 | ~500 | Thread-bound subagent session management for Discord | discord, sessions, config |
 | `slack/` | ~34 | ~6,000 | Slack via Socket Mode: channels, threads, slash commands, file uploads | @slack/web-api, config, auto-reply |
 | `signal/` | ~17 | ~3,000 | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
 | `line/` | ~30 | ~5,000 | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
 | `imessage/` | ~13 | ~2,000 | iMessage via custom `imsg` CLI (JSON-RPC over stdin/stdout) | config, auto-reply, channels |
+| `bluebubbles/` | ~8 | ~1,200 | iMessage via BlueBubbles server (HTTP/WebSocket) | config, auto-reply, channels |
 | `whatsapp/` | ~2 | ~300 | WhatsApp target normalization (bulk via src/web/) | utils, infra |
 | `web/` | ~30 | ~5,000 | WhatsApp Web via Baileys: session, QR login, media, auto-reply | @whiskeysockets/baileys, config |
 | `memory/` | ~61 | ~8,000 | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
@@ -188,6 +192,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `acp/` | ~10 | ~1,500 | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
 | `pairing/` | ~5 | ~500 | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
 | `node-host/` | ~7 | ~1,000 | Remote node agent: gateway connection, command invocation, browser proxy, APNs wake support | gateway, browser, config |
+| `node-host/invoke-system-run` | ~2 | ~300 | Extracted system.run hardened command resolver (security-critical) | node-host, config, process |
 | `watch-companion/` | ~3 | ~400 | Apple Watch companion: glanceable status, quick actions, haptic notifications | node-host, config |
 | `shared/` | ~16 | ~1,500 | Pure types/constants: frontmatter, requirements, reasoning tags | compat |
 | `utils/` | ~22 | ~2,000 | General utilities: boolean parse, delivery context, usage format, shell argv | channels, config |
@@ -533,6 +538,16 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 - **Plugin/hook path containment** — Plugin and hook paths validated with `realpath` checks to prevent symlink escapes
 - **Windows daemon cmd injection** — Hardened Windows daemon service commands against command injection
 
+### v2026.2.21 Security Hardening
+
+- **SHA-1 → SHA-256 synthetic IDs** — Internal synthetic IDs (session keys, content addressing, etc.) migrated from SHA-1 to SHA-256. External systems storing or comparing OpenClaw-generated synthetic IDs must regenerate after upgrade; old SHA-1 IDs will not match.
+- **`--no-sandbox` disabled by default in containers** — Chrome/Chromium sandbox is enabled by default in containerized runs. Restricted container environments (e.g., nested Docker without `SYS_ADMIN` capability) may need capability grants or explicit sandbox opt-out.
+- **Prototype-chain traversal blocked in webhook templates** — `getByPath` in webhook template evaluation now rejects expressions traversing `__proto__`, `constructor`, or other prototype-chain keys, preventing template-injection prototype pollution.
+- **Heredoc command substitution blocked** — The exec tool preflight guard now rejects `$(cmd)` and backtick substitutions in unquoted heredoc bodies, preventing shell command injection through heredoc expansion.
+- **noVNC observer requires token auth** — noVNC observer sessions now use one-time token authentication; unauthenticated external noVNC connections are rejected.
+- **Tailscale tokenless auth restricted to WebSocket** — Tailscale-based tokenless auth is accepted only on WebSocket connections; HTTP API calls via Tailscale require explicit token auth.
+- **WhatsApp JID allowlist enforced on all send paths** — All outbound WhatsApp sends (including tool-initiated) now validate the target JID against the configured allowlist.
+
 ---
 
 ## 10. Storage & Persistence
@@ -695,7 +710,7 @@ OpenClaw delegates LLM API calls to `@mariozechner/pi-ai` — the external AI ag
 
 ### Supported Providers
 
-Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax**, **Qwen**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, and any OpenAI-compatible API.
+Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax**, **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, and any OpenAI-compatible API.
 
 ### Provider-Specific Auth
 
@@ -764,6 +779,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Signal | signal-cli REST | JSON-RPC + SSE, groups, reactions, daemon management |
 | LINE | @line/bot-sdk | Flex Messages, Rich Menus, markdown→flex conversion |
 | iMessage | imsg CLI | JSON-RPC over stdin/stdout, macOS native |
+| BlueBubbles | BlueBubbles server (HTTP/WS) | iMessage via BlueBubbles, macOS server required |
 | WhatsApp | Baileys | QR login, media conversion, broadcast groups |
 
 ---
@@ -938,6 +954,44 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 - **`before_tool_call` hook double-fire** — Guard added in `agents/pi-tools.before-tool-call.ts` to prevent the hook from firing twice per tool invocation
 - **Cron spin-loop floor** — `cron/service/timer.ts` enforces a minimum 1-second floor on `setTimeout` delay, preventing CPU spin when `nextRunAtMs` is in the past
 - **Stale SQLite WAL connection** — `memory/` now detects and reconnects stale WAL-mode SQLite connections that silently stop returning results after long idle periods
+
+---
+
+## v2026.2.21 Changes (2026-02-23)
+
+### New Modules
+
+- **`discord/voice/`** — Voice channel management: join/leave/status, auto-join on trigger, realtime voice conversation support
+- **`channels/status-reactions.ts`** — Shared lifecycle reaction controller extracted from Telegram/Discord; centralizes status-emoji reactions (typing, thinking, error) across both channels
+- **`discord/monitor/thread-bindings/`** — Thread-bound subagent session management; tracks and reuses Discord thread ↔ subagent session bindings across interactions
+- **`node-host/invoke-system-run.ts`** — Extracted from `invoke.ts`; hardened `system.run` command resolver with stricter validation (security-critical)
+
+### New Channels
+
+- **BlueBubbles** — iMessage via BlueBubbles server (HTTP/WebSocket); requires BlueBubbles running on macOS; added as a first-class channel alongside the existing `imsg` CLI path
+
+### New Providers
+
+- **Gemini 3.1** — Added to the Google provider family; accessible via standard `google/` auth profile
+- **Volcengine/BytePlus (Doubao)** — ByteDance's Doubao model family added via OpenAI-compatible endpoint
+
+### Security (7 fixes)
+
+See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for details.
+
+1. **SHA-1 → SHA-256 synthetic IDs** — Internal ID generation migrated; external systems must regenerate stored IDs
+2. **`--no-sandbox` disabled in containers** — Chrome sandbox enabled by default; container environments need `SYS_ADMIN` or explicit opt-out
+3. **Prototype-chain traversal blocked** — Webhook template `getByPath` rejects `__proto__`/`constructor` traversal
+4. **Heredoc command substitution blocked** — Exec preflight guard rejects `$(cmd)` and backticks in heredoc bodies
+5. **noVNC token auth required** — noVNC observer sessions require one-time token; unauthenticated connections rejected
+6. **Tailscale tokenless auth WebSocket-only** — HTTP API calls via Tailscale now require explicit token auth
+7. **WhatsApp JID allowlist enforced on all send paths** — Tool-initiated WhatsApp sends now validate JID against allowlist
+
+### Bug Fixes
+
+- **`cron.maxConcurrentRuns` now enforced** — Timer loop now enforces the `maxConcurrentRuns` limit; previously silently ignored
+- **`senderIsOwner` propagated to subagent runners** — Ownership context is now forwarded to embedded/subagent runners; owner-only tools no longer fail silently in subagent contexts
+- **`channels.telegram.streaming` simplified to boolean** — Legacy `streamMode` enum replaced with boolean; auto-mapper handles old values but explicit config should be updated
 
 ---
 

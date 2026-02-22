@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 
-> Updated: 2026-02-20 | Version: v2026.2.19
+> Updated: 2026-02-23 | Version: v2026.2.21
 
 ## Overview
 
@@ -786,3 +786,17 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### CLI
 - **Plugin uninstall** — Full plugin uninstall support in CLI
 - **macOS LaunchAgent TMPDIR fix** — `TMPDIR` forwarded to service environment, resolving SQLite failures in daemon mode
+
+## v2026.2.21 Changes <!-- v2026.2.21 -->
+
+### Tools <!-- v2026.2.21 -->
+
+- **Compound command display fix** — `fix(tool-display)`: compound commands such as `cd ~/dir && npm install` previously showed only the first stage (`cd`) in the tool call display. The full compound command is now shown. Affects all tool call monitoring surfaces in the TUI and Control UI. File: `src/agents/tool-display-common.ts`. <!-- v2026.2.21 -->
+
+  Technical detail: `resolveExecDetail()` now calls `splitTopLevelStages()` after `stripShellPreamble()` to collect all stages, then joins them with ` → ` rather than stopping at the preamble boundary. The `summarizePipeline()` call is applied per-stage and concatenated.
+
+- **`senderIsOwner` forwarded to embedded runner** — `fix(tools)`: `senderIsOwner` is now forwarded through to the embedded runner params so that owner-only tool access checks work correctly when tools are invoked from embedded/subagent runners (issue #22296). Previously, the owner context was not propagated into the embedded run, causing owner-only tool calls to be denied. File: `src/agents/pi-embedded-runner/run.ts` (field `senderIsOwner` threaded through `buildEmbeddedRunnerParams` and passed into `attempt.ts`). <!-- v2026.2.21 -->
+
+- **Image resize filename logging** — `fix(agents)`: when the agent resizes images, the filename is now included in the log output. Improves debuggability when multiple images are processed in one session. <!-- v2026.2.21 -->
+
+- **ACP resource link metadata hardening** — `fix(acp)`: ACP resource link metadata is now more strictly validated and formatted before being emitted. Prevents malformed metadata from silently passing through the resource-link pipeline. <!-- v2026.2.21 -->

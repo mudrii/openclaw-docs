@@ -1,6 +1,6 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 
-> Updated: 2026-02-20 | Version: v2026.2.19 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-02-23 | Version: v2026.2.21 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1555,3 +1555,39 @@ User types: openclaw <command> [args]
 - **macOS LaunchAgent TMPDIR fix** — `TMPDIR` forwarded to service environment, resolving SQLite `SQLITE_CANTOPEN` failures
 - **Windows daemon cmd injection** — Hardened Windows daemon service commands against command injection
 - **Exec preflight guard** — Detects shell env var injection patterns in Python/Node scripts before execution. See DEVELOPER-REFERENCE.md §9 (gotcha 40)
+
+## v2026.2.21 Changes <!-- v2026.2.21 -->
+
+### CLI
+
+- **`openclaw update --dry-run`** — New `--dry-run` flag for `openclaw update`. Previews the full update plan (channel, resolved tag/spec, install kind, planned actions, restart decision) without mutating config, running the package manager, syncing plugins, or restarting the gateway. Output includes a structured summary of what *would* happen; `--json` mode emits machine-readable JSON. File: `src/cli/update-cli/update-command.ts`. <!-- v2026.2.21 -->
+
+  ```
+  openclaw update --dry-run
+  openclaw update --dry-run --channel beta --json
+  ```
+
+  Dry-run output fields: `root`, `installKind`, `mode`, `effectiveChannel`, `tag`, `currentVersion`, `targetVersion`, `downgradeRisk`, `actions[]`, `notes[]`.
+
+- **`food-order` skill removed from bundle** — The bundled `food-order` skill is no longer shipped in this repository. Install and manage it from ClawHub instead. Not a breaking change for users who did not use the bundled skill. <!-- v2026.2.21 -->
+
+### Config <!-- v2026.2.21 -->
+
+- **Auto-updater config block (`update.auto.*`)** — New optional built-in auto-updater for package installs. Disabled by default (`update.auto.enabled = false`). When enabled: stable channel uses a rollout delay plus per-device jitter to avoid thundering-herd; beta channel checks hourly. Config keys added to the `update` section: <!-- v2026.2.21 -->
+
+  | Key | Type | Default | Description |
+  |-----|------|---------|-------------|
+  | `update.auto.enabled` | `boolean` | `false` | Enable/disable background auto-updates |
+  | `update.auto.channel` | `"stable" \| "beta"` | inherits `update.channel` | Channel for auto-updates |
+
+  The existing `update.channel` and `update.checkOnStart` keys are unchanged.
+
+- **Per-account/channel `channels.defaultTo` routing** — New `channels.defaultTo` config key. Provides a per-account/channel outbound routing fallback used by `openclaw agent --deliver` when no explicit `--reply-to` target is given. Configured in the channels config block alongside existing `defaults`. <!-- v2026.2.21 -->
+
+- **`channels.modelByChannel`** — New config key for per-channel model overrides. Allows specifying a different model for messages arriving on specific channels without changing the global agent model. Lives in the `channels` config hierarchy. <!-- v2026.2.21 -->
+
+- **Plugin version check prerelease handling** — `fix`: plugin version comparisons in the release-check path now correctly strip prerelease suffixes (e.g., `-beta.1`) before comparing versions. Prevents false-positive "update available" results when running a prerelease build. <!-- v2026.2.21 -->
+
+### Infra <!-- v2026.2.21 -->
+
+- **Update restart convergence hardened** — `fix`: the update flow's post-restart convergence step is now more robust against race conditions during gateway service restart. Stale gateway PIDs are detected and cleaned up before a second restart attempt is made. Relevant code path: `maybeRestartService()` in `src/cli/update-cli/update-command.ts`. <!-- v2026.2.21 -->

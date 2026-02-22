@@ -51,6 +51,15 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, `imessage/`, `web/`) are leaf modules with 🟢 risk.
 
+**v2026.2.21 additions:**
+
+| Level | Module | Imports From | Imported By | Risk |
+| ----- | ------ | ------------ | ----------- | ---- |
+| leaf | `discord/voice/` | `discord/`, `config/`, `channels/` | — | 🟢 |
+| 2 | `channels/status-reactions` | `channels/`, `config/`, `infra/` | `telegram/`, `discord/` | 🟡 |
+| leaf | `discord/monitor/thread-bindings.*` | `discord/`, `sessions/`, `config/` | — | 🟢 |
+| 2 | `node-host/invoke-system-run` | `node-host/`, `config/`, `process/` | `node-host/invoke.ts` | 🟡 |
+
 ### High-Blast-Radius Files
 
 | File                                | What It Exports                                                    |
@@ -73,6 +82,8 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 | `discord/components.ts`             | Discord Component v2 UI rendering and registry                     |
 | `infra/install-safe-path.ts`        | Restricted skill download target path validation                   |
 | `pairing/pairing-store.ts`          | Account-scoped device pairing store                                |
+| `channels/status-reactions.ts`      | Shared lifecycle reaction controller (used by Telegram and Discord) |
+| `node-host/invoke-system-run.ts`    | system.run command resolution (security-critical)                  |
 
 ### Risk Level Definitions
 
@@ -476,8 +487,10 @@ src/<module>/
 - **Config & Auth:** #1, #6, #16, #33, #34, #37, #44
 - **Routing & Sessions:** #3, #6, #17, #18, #20
 - **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36
-- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41
-- **Security/Network:** #38, #42, #43, #45, #46, #47, #48
+- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52
+- **Security/Network:** #38, #42, #43, #45, #46, #47, #48, #53, #54, #55, #56, #57, #58
+- **Channel/Streaming Config:** #36, #49, #50
+- **Subagent/Ownership:** #48, #53
 
 (Use this index first, then read only the relevant gotchas for your change.)
 
@@ -617,6 +630,28 @@ src/<module>/
 47. **Control-plane RPCs are rate-limited (3/min per device+IP)** — `config.apply`, `config.patch`, `update.run` are rate-limited. Gateway restarts are coalesced with a 30-second cooldown. Rapid scripted config changes will hit 429 errors.
 
 48. **Discord moderation actions enforce guild permissions on trusted sender** — `timeout`, `kick`, `ban` now check the calling sender's guild permissions. Untrusted `senderUserId` params are ignored. Ensure the bot has appropriate guild permissions for moderation. — `TMPDIR` is now forwarded into installed service environments. If the gateway daemon was hitting `SQLITE_CANTOPEN` errors under macOS LaunchAgent, this is fixed automatically. Re-run `openclaw gateway install` (or reinstall the service) to pick up the new environment forwarding.
+
+### v2026.2.21 New Gotchas
+
+49. **`channels.telegram.streaming` is now a boolean — old `streamMode` values don't map perfectly** — `channels.telegram.streaming` was simplified from an enum (`streamMode`) to a boolean. Legacy values are auto-mapped, but explicit `streamMode` config keys in any AGENTS.md or config files should be reviewed and updated to the boolean form to avoid silent behavior from the auto-mapper.
+
+50. **`maxConcurrentRuns` in cron was NOT enforced before v2026.2.21** — The `cron.maxConcurrentRuns` config key was silently ignored in the timer loop prior to v2026.2.21. If you had slow cron jobs that were supposed to be limited to 1 concurrent run, they may have been accumulating silently. After upgrade, the limit is now enforced, which could surface queued-but-never-started jobs or change timing behavior.
+
+51. **`senderIsOwner` was NOT propagated to embedded/subagent runners** — Before v2026.2.21, owner-only tools failed silently when invoked from subagents or embedded runners — the ownership context wasn't forwarded. If you have tools guarded by `senderIsOwner`, test them in subagent contexts after upgrade.
+
+52. **Heredoc command substitution now blocked — may break exec tool scripts** — `$(cmd)` and backtick substitutions in unquoted heredoc bodies are now blocked by the exec tool preflight guard. Scripts that used heredocs with command substitution will be rejected with a preflight error instead of executing. Rewrite to use variable assignment or separate exec calls.
+
+53. **`--no-sandbox` disabled in sandbox containers by default** — Chrome/Chromium sandbox is now enabled by default in container runs. This may cause failures in restricted container environments (e.g., nested Docker without `SYS_ADMIN` capability). If browser tasks fail in container context, check whether the container has the required Linux capabilities.
+
+54. **noVNC observer requires password auth — external noVNC clients will fail** — noVNC observer sessions now require one-time token auth. Any external tooling that connected to noVNC observer endpoints without auth will need to be updated to use the token-based auth flow.
+
+55. **Tailscale tokenless auth scoped to WebSocket only** — Tailscale-based tokenless auth is now only accepted on WebSocket connections. HTTP API calls via Tailscale must use explicit token auth. If any automation used HTTP API calls over Tailscale without explicit token auth, these will now be rejected.
+
+56. **WhatsApp JID allowlist now enforced on all send paths** — All outbound WhatsApp sends now validate JID against the allowlist. Previously some send paths (e.g., via tools) bypassed the allowlist. If you have WhatsApp automation that sends to JIDs not in the allowlist, these will now return 403.
+
+57. **Prototype-chain traversal blocked in webhook template `getByPath`** — Crafted template expressions using prototype-chain traversal (e.g., `__proto__`, `constructor`) in webhook templates now fail. If any webhook templates used these paths for legitimate reasons, they need to be rewritten.
+
+58. **SHA-1 synthetic IDs migrated to SHA-256 — stored IDs may differ** — Synthetic IDs (used internally for session keys, content addressing, etc.) have migrated from SHA-1 to SHA-256. If any external system stores or compares synthetic IDs generated by OpenClaw, they will need to regenerate after upgrade — old SHA-1 IDs will not match new SHA-256 IDs.
 
 ---
 
