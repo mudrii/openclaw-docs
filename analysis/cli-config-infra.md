@@ -1,6 +1,6 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 
-> Updated: 2026-02-23 | Version: v2026.2.21 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-02-24 | Version: v2026.2.23 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1591,3 +1591,37 @@ User types: openclaw <command> [args]
 ### Infra <!-- v2026.2.21 -->
 
 - **Update restart convergence hardened** — `fix`: the update flow's post-restart convergence step is now more robust against race conditions during gateway service restart. Stale gateway PIDs are detected and cleaned up before a second restart attempt is made. Relevant code path: `maybeRestartService()` in `src/cli/update-cli/update-command.ts`. <!-- v2026.2.21 -->
+
+## v2026.2.22 Changes <!-- v2026.2.22 -->
+
+### CLI <!-- v2026.2.22 -->
+
+- **`openclaw update --dry-run` (update)** — `openclaw update --dry-run` previews channel, tag, target, and restart actions without mutating config, installing, syncing plugins, or restarting. Auto-updater config keys live under `update.auto.*` (default-off). <!-- v2026.2.22 -->
+
+- **`openclaw doctor --fix` (config migration)** — Migrates legacy streaming config keys (`streamMode` → `channels.<channel>.streaming` with enum values). Repairs OAuth credentials directory only when affected channels are configured. <!-- v2026.2.22 -->
+
+- **`openclaw config get` redaction** — `openclaw config get` now redacts sensitive values before printing — prevents credential leakage to terminal output and shell history. <!-- v2026.2.22 -->
+
+### Config <!-- v2026.2.22 -->
+
+- **`channels.modelByChannel` allowlisted** — Previously caused "unknown channel id" errors during config validation. Now allowlisted in strict validation. `bindings[].comment` is now optional in strict validation. Array-valued paths compared structurally during config diffing. <!-- v2026.2.22 -->
+
+### Session <!-- v2026.2.22 -->
+
+- **`session.dmScope` default changed (breaking)** — CLI local onboarding now sets `session.dmScope` to `per-channel-peer` by default. Previous behavior was `main` (shared DM history across senders). To restore old behavior, set: <!-- v2026.2.22 -->
+
+  ```json
+  { "session": { "dmScope": "main" } }
+  ```
+
+- **Session-store path template resolution** — CLI sessions resolve implicit session-store path templates using the configured default agent ID for named-agent setups. Configured sessions directory is now passed when resolving transcript paths. <!-- v2026.2.22 -->
+
+### Doctor / Security <!-- v2026.2.22 -->
+
+- **`approvals.exec.enabled=false` warning** — Explicit warning added: setting `approvals.exec.enabled=false` disables forwarding only — enforcement remains driven by the host-local `exec-approvals.json` file. <!-- v2026.2.22 -->
+
+## v2026.2.23 Changes <!-- v2026.2.23 -->
+
+### Config <!-- v2026.2.23 -->
+
+- **`unsetPaths` immutable path-copy updates** — `unsetPaths` applied with immutable path-copy updates during config writes. Prototype-key segments are rejected in `config get/set/unset` path traversal to prevent prototype-pollution attacks. <!-- v2026.2.23 -->

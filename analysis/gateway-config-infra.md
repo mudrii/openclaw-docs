@@ -1,6 +1,6 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 
-**Updated:** 2026-02-23 | **Version:** v2026.2.21
+**Updated:** 2026-02-24 | **Version:** v2026.2.23
 **Codebase:** ~/src/openclaw
 **Total lines (6 modules):** ~94,080
 
@@ -35,6 +35,27 @@
 - **Gateway nodes API improvements** — `src/gateway/server-methods/nodes.ts` updated for gateway multi-node reliability improvements.
 
 - **`customBindHost` config key** — Gateway binding now supports an explicit `customBindHost` config key to override the bind address independent of the `host` setting.
+
+#### v2026.2.22 Changes <!-- v2026.2.22 -->
+
+**Gateway Auth:**
+- **Unified credential-source precedence** — Call/probe/status/auth entrypoints use shared resolver helpers with table-driven parity. WebSocket auth handshake uses shared typed auth contexts. Explicit `auth.deviceToken` support in connect frames.
+- **Device-auth signature v1 REMOVED** — v2 payloads required with `connect.challenge` nonce.
+- **Security:** Gateway emits startup warning when dangerous config flags enabled. Insecure non-loopback `ws://` targets rejected in onboarding validation.
+
+**Config:**
+- **`channels.modelByChannel` allowlisted** — Previously caused "unknown channel id" errors in config validation.
+- **`bindings[].comment` optional** — Field now optional in strict validation.
+- **Array-valued config paths** — Compared structurally during diffing (fixes false restart-required reloads for QMD paths).
+
+#### v2026.2.23 Changes <!-- v2026.2.23 -->
+
+**Gateway Auth:**
+- **WS flood protection** — Repeated unauthorized request floods closed per-connection with sampled rejection logging.
+
+**Config Write:**
+- **`unsetPaths` immutable updates** — Config write operations apply `unsetPaths` with immutable path-copy updates.
+- **Prototype-key traversal hardening** — `config get/set/unset` rejects prototype-key path segments.
 
 ### Key Files & Roles
 
@@ -265,6 +286,11 @@ openclaw.json → io.ts (read) → parseConfigJson5 → merge-config (includes) 
                                                                                 ↓
                                                               Cached in memory → consumed by gateway, agents, channels, CLI
 ```
+
+### Recent Changes
+
+- **v2026.2.22:** `channels.modelByChannel` allowlisted in config validation (previously caused "unknown channel id" errors). `bindings[].comment` field now optional in strict validation. Array-valued config paths compared structurally during diffing (fixes false restart-required reloads for QMD paths).
+- **v2026.2.23:** Config write operations apply `unsetPaths` with immutable path-copy updates. Path traversal hardening for `config get/set/unset` rejects prototype-key segments.
 
 ---
 
@@ -563,6 +589,25 @@ None directly — consumed by TypeScript compiler globally via `tsconfig.json` i
 
 ### Data Flow
 No runtime data flow — compile-time only.
+
+---
+
+## 7. Auto-Updater (`update.auto.*`)
+
+### Auto-Updater (`update.auto.*`)
+v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
+- `update.auto.enabled: true` to enable
+- Stable rollout: delay + jitter before applying updates
+- Beta: hourly cadence
+- `openclaw update --dry-run` previews without applying
+
+---
+
+## 8. Control UI
+
+### Recent Changes
+
+- **v2026.2.22:** Full cron edit parity (clone, validation, run history with pagination/search/sort). Tools panel data-driven from `tools.catalog`. Version status pill in web header. WS: stop/clear browser gateway client on teardown; stable per-tab `instanceId` in connect frames.
 
 ---
 

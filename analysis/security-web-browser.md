@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 
-> Updated: 2026-02-23 | Version: v2026.2.21 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-02-24 | Version: v2026.2.23 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -38,6 +38,57 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Plugin/hook path containment** — `realpath` checks prevent symlink escapes
 - **safeBins trusted dirs** — Binaries must resolve from trusted bin directories; untrusted PATH entries rejected
 - **Cron webhook SSRF guard** — Webhook delivery URLs validated through SSRF guard before dispatch
+
+#### v2026.2.22 SSRF Hardening
+
+**RFC range expansion:**
+- Block RFC2544 benchmarking range (`198.18.0.0/15`)
+- Block TEST-NET ranges (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`)
+- Block multicast and reserved/broadcast blocks
+- Centralize range checks into single CIDR policy table
+- Reuse one shared host/IP classifier across literal + DNS checks
+
+**IPv6 normalization:**
+- Normalize IPv6 dotted-quad transition literals (`::127.0.0.1`, `64:ff9b::8.8.8.8`)
+- Block RFC2544 benchmarking range across direct and embedded-IP paths
+
+**IPv4/IPv6 fallback:**
+- Enable `autoSelectFamily` on pinned undici dispatchers with attempt timeout
+- IPv6-unreachable environments quickly fall back to IPv4 for guarded fetch paths
+
+**MSTeams media (v2026.2.22):**
+- Enforce allowlist checks for SharePoint reference attachment URLs and redirect targets
+- Route attachment auth-retry and Graph SharePoint download redirects through shared `safeFetch`
+- Validate each hop with allowlist + DNS/IP checks across full redirect chain
+
+**Cron webhook SSRF (previously in v2026.2.19):**
+- All cron delivery webhooks validated through SSRF guard
+
+#### v2026.2.22 Symlink Escape Prevention
+
+- **Archive extraction:** Block zip symlink escapes during archive extraction
+- **Media sandbox:** Enforce symlink-escape checks before sandbox-validated reads; prevent relative `../` escapes when sandbox lives under tmp
+- **Control UI static files:** Block symlink-based out-of-root reads via realpath containment + file-identity checks
+- **Gateway avatars:** Block symlink traversal during local avatar `data:` URL resolution; realpath containment + file-identity checks
+- **Avatar serving (`/avatar/:agentId`):** Reject symlink paths; fd-level file identity + size checks; 2 MB max size
+- **Hooks transforms:** Enforce symlink-safe containment for `hooks.transformsDir` and `hooks.mappings[].transform.module` paths; in-root symlinks still supported
+- **Browser uploads:** Accept in-root upload paths when uploads directory is a symlink alias (e.g., `/tmp` → `/private/tmp` on macOS)
+
+#### v2026.2.22 Auth/Identity Hardening
+
+- **Elevated scope bypass fixed:** Match `tools.elevated.allowFrom` against sender identities only (not recipient `ctx.To`)
+- **Feishu display-name collision:** Enforce ID-only allowlist matching; ignore mutable display names
+- **Group policy `toolsBySender`:** Require explicit sender-key types (`id:`, `e164:`, `username:`, `name:`); legacy untyped keys on deprecated ID-only path
+- **Discord allowlist:** Canonicalize resolved names to IDs at runtime. Security audit warnings for name/tag-based entries
+- **Hook auth rate limits:** Normalize IPv4/IPv4-mapped IPv6 to one throttle bucket
+- **Owner display secret:** Auto-generate `commands.ownerDisplaySecret`; remove gateway token fallback
+- **Prototype pollution:** Block `__proto__`, `constructor`, `prototype` traversal in config merge helpers
+
+#### v2026.2.22 Browser Extension Hardening
+
+- **MV3 worker hardening:** Preserve debugger attachments across relay drops. Auto-reconnect with bounded backoff+jitter. Persist/rehydrate attached tab state via `chrome.storage.session`. Recover from `target_closed` navigation detaches. Enforce per-tab operation locks and per-request timeouts
+- **Relay state guards:** Treat extension websocket as connected only when `OPEN`. Guard stale socket message/close handlers. Regression coverage for `409` duplicate rejection and reconnect-after-close races
+- **Remote CDP:** Extend stale-target recovery to reuse sole available tab for remote CDP profiles
 
 #### v2026.2.21 Changes <!-- v2026.2.21 -->
 - **SHA-256 for synthetic IDs** — `feat(security)`: migrate sha1 hashes to sha256 for synthetic IDs (#22528/#7343). All synthetically-generated IDs now use SHA-256; SHA-1 collision resistance was insufficient for untrusted content

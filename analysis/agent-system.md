@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 
-> Updated: 2026-02-23 | Version: v2026.2.21
+> Updated: 2026-02-24 | Version: v2026.2.23
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -926,3 +926,53 @@ When event fires:
 - **What changed**: Per-channel model override resolution was documented and wired into the agent pipeline. In the routing/session resolution path, `channels.modelByChannel` is read during `applyModelOverrideToSessionEntry()` (in `src/sessions/model-overrides.ts`) and applied before the embedded runner selects its model. This allows different channels (e.g. Discord vs Telegram) to be pinned to different models without modifying per-agent config.
 - **Resolution order** (lowest to highest precedence): agent default model → `channels.modelByChannel[channel]` → per-session override → in-message directive override.
 - **Operational impact**: Operators can now set `channels.modelByChannel.discord = "google/gemini-3-flash-preview"` to use a different model for Discord traffic without affecting Telegram or other channels.
+
+---
+
+## v2026.2.22 Changes
+
+<!-- v2026.2.22 -->
+
+### Compaction
+
+- **Count auto-compactions correctly** — Auto-compaction counters now increment only after a non-retry `auto_compaction_end` event, preventing inflated counts from retry attempts.
+- **Restore embedded compaction safeguard** — The embedded compaction safeguard was broken in production builds due to bundler resolution order; now correctly restored.
+- **Strip stale assistant usage snapshots** — Pre-compaction turns now have stale assistant usage snapshots stripped to prevent the compaction logic from immediately re-triggering on the next turn.
+- **Pass model metadata through embedded runtime** — Model metadata is now propagated through the embedded runtime for safeguard summarization when `ctx.model` is unavailable.
+
+### Subagents
+
+- **`alsoAllow` and explicit `allow` entries honored** — `tools.subagents.tools.alsoAllow` and explicit `allow` entries are now correctly honored when resolving built-in subagent deny defaults.
+- **Configurable announce call timeouts** — Announce call timeouts are now configurable via `agents.defaults.subagents.announceTimeoutMs` (default 60s restored after regression).
+
+### Auto-reply
+
+- **Default completion acknowledgement scoped to direct/private tool-only runs** — The default `✅ Done.` completion acknowledgement is now emitted only for direct/private tool-only completions. It is suppressed for channel/group sessions and for runs that delivered output via messaging tools.
+
+---
+
+## v2026.2.23 Changes
+
+<!-- v2026.2.23 -->
+
+### Agent Reasoning
+
+- **Model-default thinking guard** — When model-default thinking is active (`thinking=low`), auto-reasoning stays disabled unless explicitly enabled — prevents `Reasoning:` block leakage in channel replies.
+- **Reasoning-required provider errors reclassified** — Reasoning-required provider errors are no longer classified as context overflow, fixing compaction-style recovery triggering incorrectly.
+- **OpenRouter `/think` level mapping** — `/think` levels are now mapped to `reasoning.effort` in embedded runs; default reasoning is enabled when the model advertises `reasoning: true`.
+
+### Compaction
+
+- **`agentDir` passed into manual `/compact` runs** — `agentDir` is now passed into manual `/compact` runs for correct auth/profile resolution.
+- **Cancel safeguard compaction on summary failure** — When summary generation cannot run, safeguard compaction is now cancelled — preserving conversation history instead of truncating to "Summary unavailable".
+
+### Context Overflow
+
+- **Additional provider error shapes detected** — `input length` + `max_tokens` exceed-context error shapes are now detected as context overflow.
+- **Chinese context-overflow patterns** — Chinese-language context-overflow patterns are now added to `isContextOverflowError` detection.
+- **HTTP 502/503/504 treated as failover-eligible** — HTTP 502, 503, and 504 responses are now treated as failover-eligible transient timeouts.
+- **Groq TPM limit errors no longer classified as overflow** — Groq TPM (tokens-per-minute) rate limit errors are no longer misclassified as context overflow.
+
+### Auto-reply
+
+- **Direct-chat metadata selectively hidden** — `message_id`/`message_id_full` and sender metadata are hidden from the normalized chat type only (not sender-id sentinels) — preserves group metadata visibility for correct routing.

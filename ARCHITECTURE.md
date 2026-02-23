@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-02-23 (v2026.2.21) | Comprehensive reference for contributors
+> Updated: 2026-02-24 (v2026.2.23) | Comprehensive reference for contributors
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## 1. Executive Summary
 
-**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
+**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
 
 Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. The `agents` module (the largest at ~530 files) contains the AI runtime: model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module (~223 files) is the message processing pipeline that sits between channels and agents — handling commands, directives, session management, model routing, queue management, and reply delivery.
 
@@ -53,6 +53,10 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 │  │telegram/ │ │discord/  │ │ slack/   │ │whatsapp/ │ │ signal/  │ │  line/   │ │
 │  │(grammY)  │ │(carbon)  │ │(web-api) │ │(baileys) │ │(RPC/SSE) │ │(bot-sdk) │ │
 │  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ │
+│  ┌──────────┐                                                              │       │
+│  │synology/ │                                                              │       │
+│  │(webhook) │                                                              │       │
+│  └────┬─────┘                                                              │       │
 └───────┼──────────────┼───────────┼────────────┼────────────┼────────────┼────────┘
         │              │           │            │            │            │
         └──────────────┴───────────┴─────┬──────┴────────────┴────────────┘
@@ -201,7 +205,8 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `types/` | ~9 | — | Ambient TypeScript declarations for untyped npm packages | — |
 | `macos/` | ~4 | ~300 | macOS app integration entry points | infra |
 | `wizard/` | ~8 | ~1,200 | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | ~45 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins | plugin-sdk |
+| `extensions/` | ~46 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins | plugin-sdk |
+| `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 
 ---
 
@@ -548,6 +553,15 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 - **Tailscale tokenless auth restricted to WebSocket** — Tailscale-based tokenless auth is accepted only on WebSocket connections; HTTP API calls via Tailscale require explicit token auth.
 - **WhatsApp JID allowlist enforced on all send paths** — All outbound WhatsApp sends (including tool-initiated) now validate the target JID against the configured allowlist.
 
+### v2026.2.23 Security Hardening
+
+- **Exec: obfuscated command detection** — The exec preflight guard now detects obfuscated commands (e.g., base64-encoded payloads, variable-expansion tricks) before consulting the allowlist; obfuscated commands are blocked regardless of allowlist entries.
+- **Exec: safe-bin PATH trust removed** — The implicit trust of `safeBins` resolved via `PATH` has been removed. Explicit trust must be declared via `tools.exec.safeBinTrustedDirs`; binaries outside declared trusted directories are rejected even if their names appear in the safe-bin list.
+- **Exec: shell env sanitization** — Shell execution now sanitizes the environment before spawning child processes; `HOME`, `ZDOTDIR`, `SHELLOPTS`, and `PS4` overrides from untrusted input are blocked to prevent shell startup file hijacking and debug-hook injection.
+- **SSRF: expanded RFC special-use ranges** — The SSRF guard now blocks benchmarking (`198.18.0.0/15`), TEST-NET (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`), and multicast (`224.0.0.0/4`) address ranges in addition to existing private/link-local ranges.
+- **SSRF: IPv6 dotted-quad transition literal normalization** — IPv6 addresses embedding dotted-quad IPv4 literals (e.g., `::ffff:192.168.1.1`) are now fully normalized and checked against private-range rules, closing a bypass via IPv6 transition syntax.
+- **Archive: zip symlink escape blocking** — Archive extraction (skill/plugin install) now rejects zip entries whose resolved target path escapes the extraction root via symlink traversal.
+
 ---
 
 ## 10. Storage & Persistence
@@ -710,7 +724,7 @@ OpenClaw delegates LLM API calls to `@mariozechner/pi-ai` — the external AI ag
 
 ### Supported Providers
 
-Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax**, **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, and any OpenAI-compatible API.
+Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax**, **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, **Mistral**, and any OpenAI-compatible API.
 
 ### Provider-Specific Auth
 
@@ -721,6 +735,16 @@ Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. 
 | Google Antigravity | OAuth (plugin) | `extensions/google-antigravity-auth/` |
 | Gemini CLI | OAuth (plugin) | `extensions/google-gemini-cli-auth/` |
 | MiniMax Portal | OAuth (plugin) | `extensions/minimax-portal-auth/` |
+| Mistral | API key | auth profiles |
+| Vercel AI Gateway | API key + shorthand normalization | auth profiles, `agents/models-config.providers.ts` |
+| Google Vertex AI | OAuth / service account | auth profiles |
+
+### Provider Auto-Detection and Normalization
+
+- **Vercel AI Gateway Claude shorthand normalization** — Model refs of the form `vercel-ai-gateway/claude-*` are automatically normalized to the full Anthropic model ID before the API call, allowing short aliases like `vercel-ai-gateway/claude-opus-4` to resolve correctly without manual config.
+- **Google Vertex AI routing for Claude** — Claude models can be routed through Google Vertex AI by selecting the `vertex` provider in auth profiles; model IDs are translated to Vertex-compatible publisher/model paths automatically.
+- **Grounded Gemini web search support** — Google Gemini models accessed via Vertex AI or the standard Gemini API support grounded web search responses; OpenClaw surfaces the grounding metadata in tool results.
+- **Mistral embeddings and voice support** — Mistral models are available for both text generation and embeddings (via `memory/embeddings.ts` provider selection); Mistral voice/audio models are accessible through the standard TTS pipeline.
 
 ---
 
@@ -781,6 +805,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | iMessage | imsg CLI | JSON-RPC over stdin/stdout, macOS native |
 | BlueBubbles | BlueBubbles server (HTTP/WS) | iMessage via BlueBubbles, macOS server required |
 | WhatsApp | Baileys | QR login, media conversion, broadcast groups |
+| Synology Chat | Webhook (HTTP) | Webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls |
 
 ---
 
@@ -882,10 +907,12 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Category | Count |
 |----------|-------|
-| Channel plugins | 21 |
+| Channel plugins | 22 |
 | Provider plugins | 5 |
 | Tool/Feature plugins | 10 |
-| **Total extensions** | **36** |
+| **Total extensions** | **37** |
+
+> Current versions: v2026.2.22 / v2026.2.23. Bundled skills: 51.
 
 ### Key External Dependencies
 

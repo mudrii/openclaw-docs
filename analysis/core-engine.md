@@ -1,6 +1,6 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 
-> Updated: 2026-02-23 | Version: v2026.2.21 | Codebase: ~/src/openclaw
+> Updated: 2026-02-24 | Version: v2026.2.23 | Codebase: ~/src/openclaw
 > Modules: agents (530 files), gateway (228 files), sessions (9 files), routing (5 files), providers (9 files), hooks (32 files)
 
 ---
@@ -87,6 +87,11 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 - **Observer** — `transcript-events.ts` (listener set with add/remove)
 - **Result type** — `ParsedSessionLabel` uses discriminated union `{ ok: true } | { ok: false }`
 - **Normalization** — Every function defensively trims/lowercases inputs
+
+### Recent Changes
+
+- **v2026.2.23:** Session keys canonicalized to lowercase; legacy case-variant entries migrated automatically. (`sessions/store.ts`)
+- **v2026.2.22:** `session.dmScope` defaults to `per-channel-peer` on new CLI installs. Symlinked state-dir aliases resolved during transcript-path validation.
 
 ---
 
@@ -239,6 +244,11 @@ Provider-specific authentication and model discovery for GitHub Copilot and Qwen
 - **Device Code Flow** — GitHub OAuth device authorization grant
 - **Token caching** — Disk-persisted token with expiry check (5-min safety margin)
 - **Dependency injection** — `resolveCopilotApiToken` accepts `fetchImpl`, `loadJsonFileImpl`, etc. for testing
+
+### Recent Changes
+
+- **v2026.2.23:** Vercel AI Gateway normalizes `vercel-ai-gateway/claude-*` shorthand refs to canonical Anthropic-routed IDs. Anthropic OAuth tokens (`sk-ant-oat-*`) skip `context-1m-*` beta injection. OpenRouter: conflicting top-level `reasoning_effort` removed when injecting `reasoning.effort`. Groq: TPM limit errors no longer classified as context overflow.
+- **v2026.2.22:** Mistral provider added (embeddings + voice). Grounded Gemini web search via `tools.webSearch.provider: "gemini"`. Google Vertex AI available for Claude models. OpenRouter: inject `cache_control` on system prompts for Anthropic models.
 
 ---
 
@@ -668,6 +678,11 @@ The largest module (263 source files, 267 tests). This is the **AI agent runtime
 - **Builder** — System prompt construction
 - **Guard/Circuit breaker** — Context window guard, tool result guard, compaction safeguard
 
+### Recent Changes
+
+- **v2026.2.23:** Reasoning: when `thinking=low` (model-default thinking), auto-reasoning stays disabled. Reasoning-required errors no longer classified as context overflow. Context overflow: detect additional error shapes + Chinese patterns. HTTP 502/503/504 treated as failover-eligible transient timeouts.
+- **v2026.2.22:** Moonshot: `supportsDeveloperRole=false` forced. Kimi token limit errors classified as context overflow. Google: non-base64 `thought_signature` sanitized from replay transcripts. Mistral: tool-call IDs sanitized. Ollama: large integer args preserved as exact strings. Transcripts: tool-call names validated before persistence.
+
 ---
 
 ## 6. Module: gateway
@@ -919,6 +934,11 @@ Channel (Telegram/Discord/...)
 - **Process management** — Gmail watcher, browser control server
 - **Protocol versioning** — Client/server protocol negotiation
 
+### Recent Changes
+
+- **v2026.2.23:** WS: repeated unauthorized request floods closed per-connection with sampled rejection logging. Config Write: `unsetPaths` applied with immutable path-copy updates; prototype-key traversal rejected in `config get/set/unset`.
+- **v2026.2.22:** Auth: unified credential-source precedence via shared resolver helpers. Pairing: `operator.admin` satisfies `operator.*` scope checks; loopback scope-upgrade auto-approved; default scope bundles include `operator.read`/`operator.write`.
+
 ---
 
 ## 7. Cross-Module Data Flow
@@ -1100,6 +1120,56 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **File**: `src/agents/subagent-announce.ts` (319 lines)
 - **What changed**: `buildCompletionDeliveryMessage()` distinguishes between `run` and `session` spawn modes in the header text (e.g. "session remains active" appended for `mode=session` spawns). `buildAnnounceReplyInstruction()` updated to include `expectsCompletionMessage` awareness, routing to the correct instruction variant depending on whether the requester is a subagent, has remaining active siblings, or expects a formatted user-facing completion message.
 - **Operational impact**: Cleaner announce messages for both ephemeral run-mode subagents and persistent session-mode subagents.
+
+---
+
+## v2026.2.22 Changes (2026-02-23)
+
+### Sessions
+- **`session.dmScope` default** — `per-channel-peer` is now the default on new CLI installs.
+- **Transcript path symlink resolution** — Symlinked state-dir aliases resolved during transcript-path validation.
+
+### Providers
+- **Mistral provider** — Embeddings and voice support added.
+- **Grounded Gemini web search** — Available via `tools.webSearch.provider: "gemini"`.
+- **Google Vertex AI** — Available as a routing target for Claude models.
+- **OpenRouter cache_control** — `cache_control` injected on system prompts for Anthropic models.
+
+### Agents
+- **Moonshot** — `supportsDeveloperRole=false` forced.
+- **Kimi context overflow** — Kimi token limit errors classified as context overflow.
+- **Google thought_signature** — Non-base64 `thought_signature` sanitized from replay transcripts.
+- **Mistral tool-call IDs** — Tool-call IDs sanitized.
+- **Ollama integer args** — Large integer args preserved as exact strings.
+- **Transcript validation** — Tool-call names validated before persistence.
+
+### Gateway
+- **Auth credential-source precedence** — Unified via shared resolver helpers across call/probe/status/auth entrypoints.
+- **Pairing scope checks** — `operator.admin` satisfies `operator.*` scope checks; loopback scope-upgrade auto-approved; default scope bundles include `operator.read`/`operator.write`.
+
+---
+
+## v2026.2.23 Changes (2026-02-24)
+
+### Sessions
+- **Session key canonicalization** — Session keys canonicalized to lowercase; legacy case-variant entries migrated automatically. (`sessions/store.ts`)
+
+### Providers
+- **Vercel AI Gateway** — Normalizes `vercel-ai-gateway/claude-*` shorthand refs to canonical Anthropic-routed IDs.
+- **Anthropic OAuth tokens** — `sk-ant-oat-*` tokens skip `context-1m-*` beta injection.
+- **OpenRouter reasoning_effort** — Conflicting top-level `reasoning_effort` removed when injecting `reasoning.effort`.
+- **Groq TPM limit** — TPM limit errors no longer classified as context overflow.
+
+### Agents
+- **Auto-reasoning with thinking=low** — When `thinking=low` (model-default thinking), auto-reasoning stays disabled.
+- **Reasoning-required errors** — No longer classified as context overflow.
+- **Context overflow detection** — Detect additional error shapes + Chinese-language patterns.
+- **HTTP 502/503/504 failover** — Treated as failover-eligible transient timeouts.
+
+### Gateway
+- **WS flood protection** — Repeated unauthorized request floods closed per-connection with sampled rejection logging.
+- **Config write unsetPaths** — `unsetPaths` applied with immutable path-copy updates.
+- **Prototype-key traversal** — Rejected in `config get/set/unset`.
 
 ---
 

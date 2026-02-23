@@ -1,7 +1,9 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 
-> Updated: 2026-02-23 | Version: v2026.2.21 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-02-24 | Version: v2026.2.23 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (100 files), `src/discord` (77 files), `src/signal` (32 files), `src/slack` (67 files), `src/whatsapp` (3 files), `src/imessage` (20 files), `src/line` (46 files), `src/channels` (106 files)
+
+> **v2026.2.22 Breaking:** Unified streaming config — `channels.<channel>.streaming` now uses enum `off | partial | block | progress`. Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 
 ---
 
@@ -16,7 +18,8 @@
 7. [src/whatsapp — WhatsApp Web (Baileys)](#srcwhatsapp)
 8. [src/imessage — iMessage (imsg RPC)](#srcimessage)
 9. [src/line — LINE Messaging API](#srcline)
-10. [Cross-Channel Data Flow](#cross-channel-data-flow)
+10. [Synology Chat Extension](#synology-chat-extension)
+11. [Cross-Channel Data Flow](#cross-channel-data-flow)
 
 ---
 
@@ -327,8 +330,8 @@ type TelegramProbe = { ok: boolean; bot?: { id?; username?; canReadAllGroupMessa
 
 ### Configuration Keys
 - `channels.telegram.accounts.<id>.{botToken, tokenFile, allowFrom, groupAllowFrom, groups, replyToMode, reactionLevel, draftChunk, mediaMaxMb, network, inlineButtonsScope}`
-- `channels.telegram.{token, tokenFile, allowFrom, replyToMode, reactionLevel}`
-- Env: `TELEGRAM_BOT_TOKEN`, `OPENCLAW_TELEGRAM_PROXY`, `OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY`
+- `channels.telegram.{token, tokenFile, allowFrom, replyToMode, reactionLevel, webhookPort}`
+- Env: `TELEGRAM_BOT_TOKEN`, `OPENCLAW_TELEGRAM_PROXY`, `OPENCLAW_TELEGRAM_DISABLE_AUTO_SELECT_FAMILY`, `OPENCLAW_TELEGRAM_DNS_RESULT_ORDER`
 
 ### Channel-Specific Features
 - **Forum topics:** Full thread support via `message_thread_id`
@@ -824,6 +827,22 @@ Tests cover: accounts, auto-reply delivery, bot handlers, bot message context, f
 
 ---
 
+## Synology Chat Extension {#synology-chat-extension}
+
+### Synology Chat (`extensions/synology-chat/`)
+
+**Status:** v2026.2.22 — New channel plugin
+
+**Key capabilities:**
+- Webhook ingress for inbound messages
+- Direct-message routing with DM policy controls
+- Outbound send/media support
+- Per-account config under `channels.synologychat.*`
+
+**Config:** `channels.synologychat.enabled: true`, `channels.synologychat.webhookSecret`, `channels.synologychat.botToken`
+
+---
+
 ## Cross-Channel Data Flow {#cross-channel-data-flow}
 
 ### Inbound Message Processing (all channels)
@@ -1020,6 +1039,68 @@ Agent tool call: message(action="send", target="...", message="...")
   ```
 
   Keys under each channel entry are matched against the inbound `groupId`/`groupChannel`/`groupSubject` using the same candidate-matching logic as `channel-config.ts` (slug normalization, wildcard `*` fallback). Thread-suffixed group IDs (`groupId:thread:xxx`) also check the parent ID. The override is applied before inline `/model` directives but after agent-level defaults.
+
+---
+
+## v2026.2.22 Changes (2026-02-24)
+
+### Telegram
+
+- **WSL2 network hardening** — Disabled `autoSelectFamily` by default under WSL2; WSL2 detection is now memoized to avoid repeated filesystem probes at runtime.
+- **DNS `ipv4first` default for Telegram fetch paths** — Telegram outbound HTTP fetches now default to `ipv4first` DNS result order. Override with `OPENCLAW_TELEGRAM_DNS_RESULT_ORDER` env var.
+- **Forward burst lane** — Forward operations now use a dedicated forward lane with per-chat debounce to prevent burst flooding when forwarding multiple messages quickly.
+- **Streaming: archived draft preview mapping preserved after flush** — Fixed a regression where archived draft preview state was cleared prematurely during a flush, causing reply continuation to lose context.
+- **Polling: safe update-offset watermark persisted** — The long-polling runner now persists a safe watermark offset so restarts never re-process already-handled updates.
+- **Polling: stuck runner force-restart** — Stuck polling runners are detected via an inactivity deadline and force-restarted with exponential backoff.
+- **Media: user-facing reply on download failure** — When a Telegram media download fails the bot now sends a user-visible error reply rather than silently dropping the message.
+- **Webhook: keep monitors alive until gateway abort** — Webhook monitors are kept alive until the gateway signals an abort, preventing premature teardown under load.
+- **Webhook port config** — New `channels.telegram.webhookPort` config key for explicitly binding the webhook HTTP listener to a specific port.
+
+### Discord
+
+- **Allowlist: canonicalize resolved names to IDs at runtime** — Resolved guild member and channel names are now immediately canonicalized to Discord snowflake IDs after lookup, eliminating stale-name mismatches.
+- **Security audit warnings for name/tag-based allowlist entries** — Startup emits a warning when allowlist entries are specified as display names or tags rather than IDs, flagging slug-collision risk.
+
+### Slack
+
+- **Threading: parent-session forking active beyond first turn** — Thread forking from a parent session is now applied across all turns, not just the first message in a thread.
+- **`replyToMode` respected when Slack auto-populates `thread_ts`** — Previously, Slack's implicit `thread_ts` injection bypassed `replyToMode`; now the configured mode is enforced consistently.
+- **Extension: forward `threadId` to `readMessages`** — The `readMessages` extension action now receives the resolved `threadId` so downstream handlers can correctly scope thread reads.
+- **Upload: resolve bare user IDs via `conversations.open`** — File upload targets that are bare Slack user IDs are now resolved to a DM channel ID via `conversations.open` before upload.
+- **Slash: preserve Bolt app receiver for external options handlers** — The Bolt `ExpressReceiver` is preserved and re-used for external-select options endpoints rather than being recreated per request.
+- **Queue routing: preserve string `thread_ts` through collect-mode drain** — String `thread_ts` values are no longer coerced to numbers during collect-mode queue drain, preventing thread routing failures in channels with high-precision timestamps.
+
+### BlueBubbles / iMessage
+
+- **DM history: account-scoped rolling history with bounded backfill retries** — Per-account rolling DM history is maintained with a configurable backfill retry cap to prevent unbounded API calls on reconnect.
+- **Private API cache: treat unknown status as disabled** — Unrecognized Private API feature status values are now treated as disabled rather than propagating an ambiguous state.
+- **Webhooks: accept payloads when `handle` is omitted but `chatGuid` is present** — Inbound webhook payloads that omit the `handle` field but supply a valid `chatGuid` are now accepted and routed correctly.
+
+### Webchat
+
+- **Apply `final` payload messages directly to chat state** — Messages arriving in a `final` payload are now applied directly to the in-memory chat state without an extra round-trip.
+- **Preserve external session routing metadata** — Routing metadata attached to external sessions is preserved across rehydration so sessions resume on the correct agent.
+- **Preserve session `label` across `/new`/`reset`** — The human-readable session label is now preserved when a session is reset or a new session is started via the `/new` or `/reset` endpoints.
+
+### Synology Chat
+
+- **New channel plugin** (`extensions/synology-chat/`) — Webhook ingress, DM routing with DM policy controls, outbound send/media. Config: `channels.synologychat.enabled`, `channels.synologychat.webhookSecret`, `channels.synologychat.botToken`.
+
+---
+
+## v2026.2.23 Changes (2026-02-24)
+
+### Telegram
+
+- **Reactions: soft-fail on policy/token/emoji/API errors** — Reaction delivery no longer propagates errors to the caller when the failure is due to policy restrictions, missing bot token, unsupported emoji, or transient API errors; instead it logs and continues.
+- **Reactions: accept snake_case `message_id`** — Reaction action payloads now accept `message_id` (snake_case) in addition to the previously required camelCase form.
+- **Reactions: fallback to inbound message-id** — When no explicit message ID is supplied for a reaction, the action falls back to the ID of the triggering inbound message.
+- **Polling: scope persisted polling offsets to bot identity** — Persisted update-offset watermarks are now keyed by bot identity (token hash) rather than account ID alone, so token rotations do not cause offset collisions.
+- **Polling: single awaited runner-stop path** — The polling runner shutdown sequence now uses a single awaited stop path, eliminating a race condition where concurrent stop calls could leave orphaned timers.
+
+### Slack
+
+- **Group policy: `groupPolicy` defaulting moved to provider-level schema defaults** — `groupPolicy` is now defaulted at the provider config schema level, enabling correct multi-account inheritance without requiring explicit per-account declarations.
 
 ---
 

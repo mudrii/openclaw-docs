@@ -1,6 +1,6 @@
 # Utilities & Support Modules — Comprehensive Analysis
 
-**Updated:** 2026-02-23 | **Version:** v2026.2.21
+**Updated:** 2026-02-24 | **Version:** v2026.2.23
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~330 .ts files across 14 modules
 
@@ -860,4 +860,38 @@ Shared test utilities and mock factories.
 ### Gateway
 
 <!-- v2026.2.21 -->
+
+## v2026.2.22 Changes <!-- v2026.2.22 -->
+
+### Auto-Reply <!-- v2026.2.22 -->
+
+- **Default completion acknowledgement suppressed** — The default completion acknowledgement `✅ Done.` is suppressed for channel/group sessions and runs that already delivered output via messaging tools. <!-- v2026.2.22 -->
+
+### Logging <!-- v2026.2.22 -->
+
+- **`logging.maxFileBytes` cap** — New `logging.maxFileBytes` config key (default 500 MB) caps single log file size and suppresses additional writes after the cap is hit — prevents disk exhaustion from error storms. <!-- v2026.2.22 -->
+
+### Pairing <!-- v2026.2.22 -->
+
+- **Loopback scope-upgrade auto-approve** — Auto-approve loopback `scope-upgrade` pairing requests (including device-token reconnects) — local clients no longer disconnect on pairing-required scope elevation. `operator.admin` satisfies other `operator.*` scope checks. `operator.read`/`operator.write` included in default operator connect scope bundles. `operator.admin` pairing tokens satisfy `operator.write` requests. <!-- v2026.2.22 -->
+
+### Delivery <!-- v2026.2.22 -->
+
+- **Queue entry quarantine on permanent errors** — Queue entries quarantined immediately on permanent delivery errors (invalid recipients, missing conversation references) — moved to `failed/` instead of retrying on every restart. <!-- v2026.2.22 -->
+
+### Network <!-- v2026.2.22 -->
+
+- **undici `TypeError: fetch failed` classified as transient** — Classifies undici `TypeError: fetch failed` as transient in unhandled-rejection detection even when nested causes are unclassified — prevents gateway crash loops on flaky networks. <!-- v2026.2.22 -->
+
+- **Auth-profile cooldown immutability** — `cooldownUntil`/`disabledUntil` windows kept immutable across retries — only recompute backoff after previous deadline expires. <!-- v2026.2.22 -->
+
+### TUI <!-- v2026.2.22 -->
+
+- **Multiline-paste burst coalescing** — Multiline-paste burst coalescing on macOS Terminal.app and iTerm. RTL script lines (Arabic/Hebrew) isolated with Unicode bidi marks. Immediate renders after `sending`/`waiting` activity states. Ctrl+C exit timing fixed; SIGINT fallback path for active runs. <!-- v2026.2.22 -->
+
+## v2026.2.23 Changes <!-- v2026.2.23 -->
+
+### Auto-Reply <!-- v2026.2.23 -->
+
+- **Direct-chat `message_id` and sender metadata hidden from normalized chat type** — `message_id`/`message_id_full` and sender metadata hidden from normalized chat type only — preserves group metadata visibility; prevents sender-id spoofed direct-mode classification. <!-- v2026.2.23 -->
 - **Inbound metadata stripping** (`src/gateway/chat-sanitize.ts`, backed by `src/auto-reply/reply/strip-inbound-meta.js`) — The WS connection message handler now strips internal metadata blocks from inbound messages before routing them to channel surfaces or agent sessions. `stripEnvelopeFromMessage()` applies `stripInboundMetadata()` to all text content (both string and array-of-blocks forms), then strips `[Channel From Timestamp]` envelope headers and message-id hints from user-role messages. This prevents internal marker blocks (injected by the auto-reply pipeline for message correlation) from leaking into chat surfaces or being re-injected into subsequent agent turns. The function handles `content: string`, `content: [{type:"text", text:...}]`, and `text: string` message shapes, and is applied to every inbound message array via `stripEnvelopeFromMessages()`.

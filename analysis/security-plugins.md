@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 
-> Updated: 2026-02-23 | Version: v2026.2.21
+> Updated: 2026-02-24 | Version: v2026.2.23
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -34,6 +34,72 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Compaction counter reset blocked** — `fix(security)`: OC-65 agents can no longer reset their own compaction counters to circumvent context exhaustion limits
 - **Prototype-chain traversal in webhook templates** — `security(hooks)`: prototype-chain traversal blocked in webhook template `getByPath` (#22213); prevents prototype pollution via crafted template paths
 - **Per-wrapper IDs on untrusted content** — `Security`: each untrusted content wrapper now receives a unique per-wrapper ID for attribution (#19009)
+
+#### v2026.2.22–v2026.2.23 Exec Approval Hardening
+
+**Safe-bin PATH trust removed (v2026.2.22):**
+- `tools.exec.safeBins` no longer trusts PATH-derived directories
+- Add `tools.exec.safeBinTrustedDirs` for explicit trusted directories
+- Pin safe-bin shell execution to resolved absolute executable paths
+- Add `tools.exec.safeBinProfiles` for custom binaries requiring explicit profiles
+- Unprofiled interpreter-style entries cannot be treated as stdin-safe
+
+**Shell wrapper transparency (v2026.2.22):**
+- `env`, `nice`, `nohup`, `stdbuf`, `timeout` treated as transparent wrappers during allowlist analysis
+- Policy checks match effective executable/inline shell payload
+- `allow-always` for shell-wrapper commands: inner executable path persisted (not wrapper binary)
+
+**Shell line continuations (v2026.2.22):**
+- `\\\n`/`\\\r\n` line continuations trigger fail-closed behavior
+- Shell-wrapper execution requires approval in allowlist mode
+
+**Exec env sanitization (v2026.2.22):**
+- Block request-scoped `HOME`, `ZDOTDIR` overrides in host exec env sanitizers
+- Block `SHELLOPTS`/`PS4` — prevent xtrace/PS4 prompt-substitution allowlist bypasses
+- Shell-wrapper env restricted to explicit allowlist: `TERM`, `LANG`, `LC_*`, `COLORTERM`, `NO_COLOR`, `FORCE_COLOR`
+- Login-shell executable paths validated against `/etc/shells` + trusted prefixes
+- Block `SHELL`/`HOME`/`ZDOTDIR` in config env ingestion before fallback execution
+
+**Command obfuscation detection (v2026.2.23):**
+- Detect obfuscated commands before exec allowlist decisions
+- Require explicit approval for obfuscation patterns (base64-encoded, hex-encoded, etc.)
+
+**macOS app allowlist (v2026.2.22):**
+- Enforce path-only matching (drop basename matches like `echo`)
+- Migrate legacy basename entries to resolved paths
+- Fail closed on unsafe shell-chain parse/control syntax (quoted command substitution, backticks)
+
+**Other exec fixes (v2026.2.22):**
+- `sort --compress-program` blocked in allowlist mode
+- `tools.exec.host=sandbox` fails closed when sandbox runtime unavailable
+- Node/macOS exec host: strict Windows allowlist for `cmd.exe /c` shell-wrapper runs
+
+#### v2026.2.23 Skills/Skill-Creator Hardening
+
+- **Skill-creator packaging:** Skip symlink entries during packaging; reject files whose resolved paths escape selected skill root
+- **openai-image-gen XSS fix:** Escape user-controlled prompt, filename, and output-path values in HTML gallery generation — prevents stored XSS in generated `index.html`
+- **Python skill hardening:** Skip self-including `.skill` outputs; handle CRLF frontmatter; strict `--days` validation; safer image file loading. Add `ruff` linting and pytest discovery coverage for `skills/` directory
+
+#### v2026.2.22 Plugin Security
+
+- **Plugin install manifest sanitization:** Strip `workspace:*` devDependency entries from copied plugin manifests before `npm install --omit=dev`. Ignore backup/disabled directory patterns (`.backup-*`, `.bak`, `.disabled*`). Move updater backup dirs under `.openclaw-install-backups`
+- **Plugin allowlist:** `openclaw plugins enable` updates allowlists via shared plugin-enable policy. Auto-enable writes `channels.<id>.enabled=true` (not `plugins.entries.<id>`). Built-in channels also allowlisted when `plugins.allow` is active
+
+#### v2026.2.22 Security Audit New Findings
+
+- `gateway.nodes.allow_commands_dangerous` — audit finding for risky `gateway.nodes.allowCommands` overrides
+- `security.exposure.open_groups_with_runtime_or_fs` — finding for open group policies exposing runtime/filesystem tools without sandbox guards
+- `gateway.real_ip_fallback_enabled` — conditional severity: warn for loopback proxies, critical for non-loopback proxies
+
+#### v2026.2.23 OTEL/Telemetry Redaction
+
+- Redact sensitive values (API keys, tokens, credential fields) from diagnostics-otel log bodies, log attributes, and error/reason span fields before OTLP export
+
+#### v2026.2.23 CI/Pre-commit Security Hooks
+
+- Pre-commit security hooks for private-key detection and production dependency auditing
+- Enforced in CI alongside baseline secret scanning
+- `ruff` linting added for Python scripts in `skills/`
 
 ### Key Files
 

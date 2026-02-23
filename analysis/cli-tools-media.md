@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 
-> Updated: 2026-02-23 | Version: v2026.2.21
+> Updated: 2026-02-24 | Version: v2026.2.23
 
 ## Overview
 
@@ -798,5 +798,19 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 - **`senderIsOwner` forwarded to embedded runner** — `fix(tools)`: `senderIsOwner` is now forwarded through to the embedded runner params so that owner-only tool access checks work correctly when tools are invoked from embedded/subagent runners (issue #22296). Previously, the owner context was not propagated into the embedded run, causing owner-only tool calls to be denied. File: `src/agents/pi-embedded-runner/run.ts` (field `senderIsOwner` threaded through `buildEmbeddedRunnerParams` and passed into `attempt.ts`). <!-- v2026.2.21 -->
 
 - **Image resize filename logging** — `fix(agents)`: when the agent resizes images, the filename is now included in the log output. Improves debuggability when multiple images are processed in one session. <!-- v2026.2.21 -->
+
+## v2026.2.22 Changes <!-- v2026.2.22 -->
+
+### Media <!-- v2026.2.22 -->
+
+- **Inbound media byte limits** — Byte limits enforced during download/read across Discord, Telegram, Zalo, Microsoft Teams, and BlueBubbles — prevents oversized payload memory spikes before rejection. <!-- v2026.2.22 -->
+
+- **`application/pdf` MIME classification preserved** — `application/pdf` MIME type is preserved during text-like file heuristics — PDFs use PDF extraction paths instead of being inlined as raw text. <!-- v2026.2.22 -->
+
+- **Sandbox/Media container workspace path mapping** — Container workspace paths (`/workspace/...`, `file:///workspace/...`) mapped back to host sandbox root for outbound media validation. <!-- v2026.2.22 -->
+
+### Browser <!-- v2026.2.22 -->
+
+- **Upload validation with symlinked uploads directory** — Browser upload validation accepts in-root upload paths when the uploads directory is a symlink alias (e.g., `/tmp` → `/private/tmp` on macOS). <!-- v2026.2.22 -->
 
 - **ACP resource link metadata hardening** — `fix(acp)`: ACP resource link metadata is now more strictly validated and formatted before being emitted. Prevents malformed metadata from silently passing through the resource-link pipeline. <!-- v2026.2.21 -->

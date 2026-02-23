@@ -1,6 +1,6 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 
-> Updated: 2026-02-23 | Codebase: ~/src/openclaw | Version: v2026.2.21
+> Updated: 2026-02-24 | Codebase: ~/src/openclaw | Version: v2026.2.23
 
 ---
 
@@ -43,6 +43,26 @@ The memory module provides **semantic search over markdown files and session tra
 - **Memory ENOENT handling** — The memory system now handles missing file errors (ENOENT) gracefully. Previously a missing memory file could cause a crash; now it returns an empty result and continues.
 
 - **Multilingual FTS stop-word filtering** — Full-text search now applies stop-word filtering for Korean (with particle-aware extraction and mixed Korean/English stems), Japanese (mixed-script katakana/ASCII), Spanish, and Portuguese. Query expansion uses language-appropriate tokenization, improving recall in conversational searches for these languages.
+
+### v2026.2.22 Changes <!-- v2026.2.22 -->
+
+#### Memory FTS
+
+- **Multilingual query expansion expanded** — Query expansion now covers Spanish, Portuguese, Japanese (mixed-script ASCII + katakana), Korean (particle-aware, mixed Korean/English stems), and Arabic (stop-word filtering). Total: 6 languages with stop-word/tokenization support.
+
+#### Memory QMD
+
+- **Migrate legacy unscoped collection bindings** — Legacy unscoped collection bindings (e.g., `memory-root`) are migrated to per-agent scoped names (e.g., `memory-root-main`) during startup, fixing `Collection not found` errors after upgrades.
+- **Normalize Han-script BM25 queries** — Mixed CJK+Latin prompts now have Han-script tokens normalized before BM25 query construction.
+- **Optional mcporter routing** — `memory.qmd.mcporter` can now route QMD searches through mcporter keep-alive flows.
+- **Windows shim resolution** — On Windows, bare `qmd`/`mcporter` binary names are now resolved to their npm `.cmd` shim executables.
+
+#### Memory Embeddings
+
+- **Centralized remote memory HTTP calls** — Remote memory HTTP calls are now routed through a shared guarded helper (`withRemoteHttpResponse`).
+- **Host pinning across embedding providers** — Configured remote-base host pinning (`allowedHostnames`) is now applied across OpenAI, Voyage, and Gemini embedding requests.
+- **Per-input 8k safety cap** — A per-input 8k token safety cap is applied before batching; a 2k fallback is used for local providers.
+- **Automatic full reindex on source-set change** — Memory source-set changes are now detected and trigger a full reindex automatically.
 
 ### File Inventory (63 files)
 
@@ -254,6 +274,16 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 ### v2026.2.21 Changes <!-- v2026.2.21 -->
 
 - **`maxConcurrentRuns` now honored** (`fix(cron)`, #22413) — The `cron.maxConcurrentRuns` config key was previously not enforced in the timer loop. Concurrent cron job executions are now properly limited. This is a significant reliability fix: previously, slow cron jobs could accumulate unbounded parallel runs across timer ticks.
+
+### v2026.2.22 Changes <!-- v2026.2.22 -->
+
+- **`cron.maxConcurrentRuns` enforced in timer loop** — `cron.maxConcurrentRuns` is now actually enforced in the timer loop (previously only some paths checked it). Manual `cron.run` executions and startup catch-up replay runs now also enforce per-job timeout guards. Fresh session IDs are forced for `sessionTarget="isolated"` cron executions. For `every` jobs: `lastRunAtMs + everyMs` is preferred as the next-run anchor when still in the future after restarts.
+
+- **Status visibility** — Execution outcome (`lastRunStatus`) and delivery outcome (`lastDeliveryStatus`) are now split into separate fields in persisted state. `delivered` state is persisted in cron records. Settled per-path run-log write queue entries are cleaned up. `cron.runs` path resolution is hardened to reject path-separator characters in `id`/`jobId` inputs.
+
+- **Auth/Delivery** — Auth-profile resolution is propagated to isolated cron sessions. `agentDir` is passed through isolated cron and queued follow-up runs. Text-only announce jobs with thread/topic targets route through direct outbound delivery. Telegram: `delivery.to` is now validated with shared target parsing.
+
+- **Scheduling** — Runtime cron expressions are validated before schedule evaluation — malformed jobs report a clear error instead of crashing. Abort/timeout signals are now honored in `wakeMode=now` heartbeat contention loops.
 
 ### File Inventory (57 files)
 
