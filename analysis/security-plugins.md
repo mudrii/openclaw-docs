@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 
-> Updated: 2026-02-24 | Version: v2026.2.23 + unreleased (v2026.2.24)
+> Updated: 2026-02-24 | Version: v2026.2.23
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -100,72 +100,6 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - Pre-commit security hooks for private-key detection and production dependency auditing
 - Enforced in CI alongside baseline secret scanning
 - `ruff` linting added for Python scripts in `skills/`
-
----
-
-#### v2026.2.24 (Unreleased)
-
-##### Breaking Changes
-
-- **`allowFrom` ID-only matching** — `allowFrom` matching is now ID-only by default across all channels. Name-based matching is no longer performed implicitly. Migrate existing entries to stable channel IDs (e.g., phone numbers for WhatsApp, user IDs for Telegram) or opt back in per-channel with `channels.<channel>.dangerouslyAllowNameMatching=true` (#24907)
-- **Unified `doctor` + `security audit` detectors** — `openclaw doctor` and `openclaw security audit` now share the same mutable-allowlist detectors and scan all configured accounts, not only the default account. Previously these tools had divergent detection coverage.
-
-##### Exec Approvals
-
-Six hardening fixes applied to the exec approval pipeline:
-
-1. **Cross-node replay prevention** — `host=node` approvals are now bound to an explicit `nodeId`. Cross-node replay of previously approved `system.run` requests is rejected. Target node is included in approval prompts.
-2. **Two-phase approval registration restored** — Approval IDs must be registered before returning `approval-pending`; server-assigned IDs are honored during wait resolution. Prevents orphaned `/approve` flows and immediate-return races under `ask:on-miss` mode in both gateway and node exec paths.
-3. **`env` wrapper canonical execution enforcement** — Allowlist analysis and runtime both enforce canonical wrapper execution plans for `node host` and `gateway host`. Semantic `env` wrapper usage fails closed. Unknown short safe-bin flags are rejected to block `env -S`/`--split-string` interpretation-mismatch bypasses.
-4. **`busybox`/`toybox` multiplexer hardening** — `busybox` and `toybox` shell applets are now recognized in wrapper analysis and `allow-always` persistence. Inner executables (not multiplexer binaries) are persisted to allowlists. Multiplexer unwrapping fails closed when unsafe.
-5. **`autoAllowSkills` path collision prevention** — With `autoAllowSkills` enabled, only pathless invocations plus trusted resolved-path matches satisfy skill auto-allow checks. `./<skill-bin>` and absolute-path basename collisions no longer satisfy the check.
-6. **`safeBins` long-option validation hardened** — Unknown and ambiguous GNU long-option abbreviations are now rejected. `sort` filesystem-dependent flags (`--random-source`, `--temporary-directory`, `-T`) are denied.
-
-##### Shell Security
-
-- **Shell path trust narrowed** — Trusted-prefix shell-path fallback removed from shell env resolution. Only login shells explicitly listed in `/etc/shells` are trusted. When `SHELL` is not registered in `/etc/shells`, execution defaults to `/bin/sh`.
-
-##### iOS / Deep Links
-
-- **iOS deep link confirmation required** — `openclaw://agent` deep link requests from iOS must now be confirmed locally (or signed with a trusted key) before being forwarded to the gateway `agent.request` endpoint. Unkeyed delivery-routing fields are stripped from forwarded requests.
-
-##### Sandbox
-
-- **`apply_patch` workspace enforcement** — `tools.exec.applyPatch.workspaceOnly` and `tools.fs.workspaceOnly` are enforced for `apply_patch` operations on sandbox-mounted paths. To opt out, set `tools.exec.applyPatch.workspaceOnly=false` explicitly.
-
-##### Commands / `allowFrom`
-
-- **Conversation-shaped `From` identities blocked** — `commands.allowFrom` sender matching now blocks conversation-shaped `From` identities (those starting with `channel:`, `group:`, `thread:`, or ending in `@g.us`) while preserving DM fallback behavior when sender fields are absent. This prevents group/channel IDs from satisfying sender-only checks.
-
-##### Config Security
-
-- **Prototype key injection blocked in account-id normalization** — Reserved prototype keys are now blocked during account-id normalization. Account config resolution is routed through own-key lookups to prevent prototype pollution.
-- **Sensitive catchall key redaction in `config.get`** — Sensitive dynamic catchall keys (e.g., `env.*`, `skills.entries.*.env.*`) are redacted from `config.get` snapshots. Round-trip restore behavior is preserved.
-
-##### Voice / Twilio
-
-- **Webhook replay hardening** — Provider event IDs are preserved through normalization. A bounded replay-dedupe window is enforced. Per-call turn-token matching is required, preventing replay of Twilio webhook events across calls.
-
-##### ACP
-
-- **Client permission auto-approval scoped** — ACP client permission auto-approval now requires trusted core tool IDs. Untrusted `toolCall.kind` hints are ignored. `read` auto-approval is scoped to the active working directory.
-
-##### Security Audit / Channels
-
-- **`dangerouslyAllowNameMatching` policy unified** — Policy checks for `dangerouslyAllowNameMatching` are now applied consistently across core and extension channels.
-
-##### CI / Skills / Python
-
-- **Pre-commit: private-key detection and dependency audit** — Pre-commit hooks added for private-key detection and production dependency auditing; enforced in CI alongside baseline secret scanning.
-- **Skills/Python packaging hardened** — Skill script packaging fixes: self-including `.skill` outputs are skipped; CRLF frontmatter is handled correctly; `--days` validation is strict; image file loading is safer.
-- **Skills/Python CI coverage** — `ruff` linting and pytest discovery coverage added for Python scripts and tests under `skills/`.
-- **`openai-image-gen` XSS fix** — User-controlled values (prompt, filename, output-path) are now escaped in HTML gallery generation, preventing stored XSS in generated `index.html`. (This fix was first noted under v2026.2.23 but the full hardening landed in v2026.2.24.)
-- **`skill-creator` symlink hardening** — Packaging skips symlink entries and rejects files whose resolved paths escape the selected skill root. (Landed alongside the above.)
-- **Exec/Bash poll sleep clamped** — Poll sleep duration in process polling loops is clamped to non-negative values.
-
-##### Auto-Reply / Stop Keywords
-
-- **Multilingual stop keywords** — Auto-reply abort shortcuts now accept stop keywords in ES, FR, ZH, HI, AR, JP, DE, PT, and RU, in addition to EN. Trailing punctuation (e.g., `STOP OPENCLAW!!!`) is accepted.
 
 ---
 

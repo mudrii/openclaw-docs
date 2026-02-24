@@ -1,75 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 
-**Updated:** 2026-02-24 | **Version:** v2026.2.23 (+ unreleased)
+**Updated:** 2026-02-24 | **Version:** v2026.2.23
 **Codebase:** ~/src/openclaw
 **Total lines (6 modules):** ~94,080
-
----
-
-## v2026.2.24 (Unreleased)
-
-Changes not yet in a numbered release, tracking OpenClaw `main` after v2026.2.23.
-
-### Breaking — Control UI
-
-> **IMPORTANT: `gateway.controlUi.allowedOrigins` now required for non-loopback Control UI**
->
-> When the Control UI is served from a non-loopback origin, startup now **fails closed** unless
-> `gateway.controlUi.allowedOrigins` is explicitly set to a list of full allowed origins
-> (e.g. `["https://openclaw.example.com"]`).
->
-> A legacy fallback is available via `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback: true`,
-> which restores the previous Host-header origin fallback behavior, but this flag is considered
-> **unsafe for production** — it is susceptible to Host-header injection when OpenClaw sits behind
-> a reverse proxy that does not enforce a fixed Host header.
->
-> **Migration:** Add `gateway.controlUi.allowedOrigins` to your config before upgrading if the
-> Control UI is accessed from a non-loopback host.
-
-### Changes — Config / Kilo Gateway
-
-- **Kilo provider model list updated** (#24921) — The Kilo provider flow now surfaces a refreshed list of available models.
-
-### Fixes — Gateway
-
-- **Prompt builder: safe mixed-content extraction** (#24946) — Text is now safely extracted from mixed content arrays (text + image blocks) when assembling prompts, preventing malformed prompt payloads from reaching providers.
-- **Slug generation: agent-level model config respected** (#24776) — Slug generation flows now correctly honor agent-level model configuration instead of falling back to global defaults.
-- **WebSocket flood protection** (#20168) — Repeated post-handshake `unauthorized role:*` request floods are now closed per-connection, with duplicate rejection logs sampled to prevent a single misbehaving client from degrading gateway responsiveness.
-- **Restart: child listener PID ownership** (#24696) — Child listener PIDs are now treated as owned by the service runtime PID during restart health checks, preventing false stale-process kills and restart timeouts under launchd/systemd.
-- **Config write: immutable `unsetPaths` updates** (#24134) — `unsetPaths` is applied with immutable path-copy semantics so config writes never mutate caller-provided objects. `config get/set/unset` path traversal now rejects prototype-key segments and inherited-property traversal.
-- **Security/Config: sensitive key redaction in snapshots** (#24934) — Dynamic catchall keys (e.g. `env.*`, `skills.entries.*.env.*`) are now redacted in `config.get` snapshots while preserving round-trip restore behavior. *(Backported from v2026.2.23.)*
-
-### Fixes — Providers
-
-- **OpenRouter: `reasoning.effort` injection when thinking is off** (#24863) — When `thinking` is explicitly disabled, `reasoning.effort` is no longer injected into the request, allowing reasoning-required models to use provider defaults instead of failing request validation.
-- **OpenRouter: conflicting top-level `reasoning_effort` removed** (#24120) — The top-level `reasoning_effort` field is removed when injecting nested `reasoning.effort`, preventing OpenRouter 400 payload-validation failures for reasoning models.
-- **Anthropic: skip `context-1m-*` beta for OAuth tokens** (#10647, #20354) — `context-1m-*` beta headers are not injected for OAuth/subscription tokens (`sk-ant-oat-*`), while OAuth-required betas are preserved. Prevents Anthropic 401 failures when `params.context1m` is enabled.
-- **DashScope: `supportsDeveloperRole=false`** (#19130) — DashScope-compatible `openai-completions` endpoints are now marked as not supporting the `developer` role, so OpenClaw sends `system` instead of the unsupported `developer` role on Qwen/DashScope APIs.
-- **Bedrock: disable prompt-cache for non-Anthropic models** (#20866) — Prompt-cache retention is disabled for non-Anthropic Bedrock models (Nova, Mistral, etc.) so those requests do not include unsupported cache metadata.
-- **Bedrock: Anthropic-Claude cacheRetention defaults and pass-through** (#22303) — Anthropic-Claude cacheRetention defaults and runtime pass-through now apply for `amazon-bedrock/*anthropic.claude*` model refs, while non-Anthropic Bedrock models remain excluded.
-- **Groq: TPM limit errors not classified as context overflow** (#16176) — Groq token-per-minute throttling errors are no longer misclassified as context overflow, so throttling no longer incorrectly triggers overflow recovery logic.
-- **Vercel AI Gateway: Claude shorthand normalization** (#23985) — `vercel-ai-gateway/claude-*` shorthand refs are normalized to canonical Anthropic-routed model IDs. *(Backported from v2026.2.23.)*
-
-### Fixes — Auth
-
-- **OAuth: missing scope classified as auth failure** (#24761) — Missing OAuth scopes are now classified as auth failures rather than generic errors, enabling clearer remediation messaging and correct retry behavior.
-- **Onboarding/Custom providers: raised probe token budgets** (#24743) — Verification probe token budgets for OpenAI and Anthropic compatibility checks are raised to avoid false negatives against providers with strict defaults.
-
-### Fixes — Update / Install
-
-- **Update/Systemd: unit file backup before overwrite** (#24350, #24937) — An existing systemd unit file is backed up before being overwritten during update flows.
-- **Install/Global: symlink resolution for pnpm/bun paths** (#24744) — Symlinks are resolved when detecting pnpm/bun global install paths, fixing false non-global-install detections.
-- **Doctor/UX: suppress redundant `--fix` hint** (#24666) — The "Run doctor --fix" hint is suppressed when already running in fix mode with no pending changes.
-- **CLI/Doctor: corrected stale recovery hints** (#24485) — Stale recovery hints now reference valid commands: `openclaw gateway status --deep` and `openclaw configure --section model`.
-- **Doctor/Nix: skip Nix store symlink false positives** (#24901) — State-integrity checks no longer emit false-positive permission warnings for Nix store symlinks.
-- **Status/Pairing recovery: explicit approval command hints** (#24771) — When gateway probe failures report pairing-required closures, the status output now shows an explicit pairing-approval command hint including the `requestId` where safe to display.
-- **Infra/Windows TOCTOU: `dev=0` edge case** (#24939) — Same-file identity checks now handle Windows `dev=0` edge cases correctly.
-
-### Fixes — Plugins / Config
-
-- **Plugin config key uses manifest `id`** (#24796) — Plugin config entry keys now use the plugin manifest `id` field instead of the npm package name, so plugin settings remain correctly bound after package renames or scoped installs.
-- **Legacy plugin schema fallback** (#24933) — Plugin schemas without a `toJSONSchema()` method now fall back to a permissive object schema instead of failing config validation.
-- **Channels/WhatsApp: `channels.whatsapp.enabled` accepted** (#24263) — `channels.whatsapp.enabled` is now accepted in config validation to match built-in channel auto-enable behavior.
 
 ---
 
