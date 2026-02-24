@@ -32,15 +32,6 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 | Security & Plugins | [analysis/security-plugins.md](analysis/security-plugins.md) |
 | Utilities & Support (auto-reply, logging, pairing) | [analysis/utils-support.md](analysis/utils-support.md) |
 
-### PR Reviews
-
-Example PR analyses demonstrating how to use DEVELOPER-REFERENCE.md for code review:
-
-| PR | Analysis |
-|----|----------|
-| [#16960](https://github.com/openclaw/openclaw/pull/16960) — perf: hook cache-busting | [pr-16960-analysis.md](pr-reviews/pr-16960-analysis.md) |
-| [#16946](https://github.com/openclaw/openclaw/pull/16946) — fix: cron timer spin loop | [Opus review](pr-reviews/pr-16946-validation-opus.md) · [MiniMax review](pr-reviews/pr-16946-validation-minimax.md) |
-
 ## For AI Agents
 
 Load `DEVELOPER-REFERENCE.md` before making any code changes to OpenClaw. It provides:
