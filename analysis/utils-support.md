@@ -2,7 +2,7 @@
 
 **Updated:** 2026-02-24 | **Version:** v2026.2.23
 **Cluster:** Utilities & Support Modules  
-**Total files analyzed:** ~330 .ts files across 14 modules
+**Total files analyzed:** ~330 TypeScript files + 313 Swift files across 14 modules
 
 ---
 
@@ -16,7 +16,7 @@
 6. [src/process (11 files)](#srcprocess)
 7. [src/pairing (5 files)](#srcpairing)
 8. [src/node-host (7 files)](#srcnode-host)
-9. [src/macos (4 files)](#srcmacos)
+9. [apps/macos (313 Swift files)](#appsmacos)
 10. [src/compat (1 file)](#srccompat)
 11. [src/scripts (1 file)](#srcscripts)
 12. [src/docs (1 file)](#srcdocs)
@@ -667,27 +667,32 @@ Node host agent — runs on remote machines (Mac, Pi, etc.) and connects to the 
 
 ---
 
-## src/macos
+## apps/macos
 
 ### Module Overview
 
-macOS-specific integration — gateway daemon entry point and WhatsApp relay (Baileys-based).
+macOS app codebase for the OpenClaw menubar application, including gateway lifecycle, onboarding/settings UI, voice wake controls, canvas windows, and local IPC.
 
 ### File Inventory
 
 | File | Description |
 |------|-------------|
-| `gateway-daemon.ts` | macOS gateway daemon entry point — starts gateway with process respawn support |
-| `relay.ts` | WhatsApp relay entry point — patches Bun Long for protobuf, starts relay |
-| `relay-smoke.ts` | `parseRelaySmokeTest()`, `runRelaySmokeTest()` — QR code smoke test for relay |
+| `apps/macos/Sources/OpenClaw/AppState.swift` | Top-level app state, lifecycle wiring, and shared stores |
+| `apps/macos/Sources/OpenClaw/GatewayProcessManager.swift` | Gateway process start/stop/restart, status tracking, and health integration |
+| `apps/macos/Sources/OpenClaw/LaunchdManager.swift` | LaunchAgent install/remove/status integration for persistent gateway startup |
+| `apps/macos/Sources/OpenClaw/VoiceWakeForwarder.swift` | Voice wake command forwarding into the local OpenClaw runtime |
 
 ### Internal Dependencies
 
-- `src/infra` — gateway lock, process respawn
+- `src/gateway` — runtime process/API counterpart used by the macOS app
+- `src/config` — shared config model consumed by app-driven configuration flows
+- `apps/macos/Sources/OpenClawIPC` — IPC transport and request/response models
 
 ### Test Coverage
 
-- `relay-smoke.test.ts` — smoke test CLI argument parsing
+- `apps/macos/Tests/OpenClawIPCTests/GatewayProcessManagerTests.swift` — gateway lifecycle behavior
+- `apps/macos/Tests/OpenClawIPCTests/GatewayLaunchAgentManagerTests.swift` — LaunchAgent management
+- `apps/macos/Tests/OpenClawIPCTests/VoiceWakeForwarderTests.swift` — voice wake forwarding behavior
 
 ---
 
@@ -894,4 +899,4 @@ Shared test utilities and mock factories.
 ### Auto-Reply <!-- v2026.2.23 -->
 
 - **Direct-chat `message_id` and sender metadata hidden from normalized chat type** — `message_id`/`message_id_full` and sender metadata hidden from normalized chat type only — preserves group metadata visibility; prevents sender-id spoofed direct-mode classification. <!-- v2026.2.23 -->
-- **Inbound metadata stripping** (`src/gateway/chat-sanitize.ts`, backed by `src/auto-reply/reply/strip-inbound-meta.js`) — The WS connection message handler now strips internal metadata blocks from inbound messages before routing them to channel surfaces or agent sessions. `stripEnvelopeFromMessage()` applies `stripInboundMetadata()` to all text content (both string and array-of-blocks forms), then strips `[Channel From Timestamp]` envelope headers and message-id hints from user-role messages. This prevents internal marker blocks (injected by the auto-reply pipeline for message correlation) from leaking into chat surfaces or being re-injected into subsequent agent turns. The function handles `content: string`, `content: [{type:"text", text:...}]`, and `text: string` message shapes, and is applied to every inbound message array via `stripEnvelopeFromMessages()`.
+- **Inbound metadata stripping** (`src/gateway/chat-sanitize.ts`, backed by `src/auto-reply/reply/strip-inbound-meta.ts`) — The WS connection message handler now strips internal metadata blocks from inbound messages before routing them to channel surfaces or agent sessions. `stripEnvelopeFromMessage()` applies `stripInboundMetadata()` to all text content (both string and array-of-blocks forms), then strips `[Channel From Timestamp]` envelope headers and message-id hints from user-role messages. This prevents internal marker blocks (injected by the auto-reply pipeline for message correlation) from leaking into chat surfaces or being re-injected into subsequent agent turns. The function handles `content: string`, `content: [{type:"text", text:...}]`, and `text: string` message shapes, and is applied to every inbound message array via `stripEnvelopeFromMessages()`.

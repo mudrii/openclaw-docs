@@ -192,18 +192,18 @@ type SessionFileEntry = { path, absPath, mtimeMs, size, hash, content, lineMap }
 | `parseQmdQueryJson` | `(stdout, stderr) → QmdQueryResult[]` | Parses qmd CLI output |
 
 ### Internal Dependencies
-- `src/config/config.js` — OpenClawConfig type
-- `src/config/types.memory.js` — MemoryBackend, MemoryQmdConfig types
-- `src/config/sessions/paths.js` — session transcript paths
-- `src/config/sessions.js` — session store operations
-- `src/agents/agent-scope.js` — workspace/agent directory resolution
-- `src/agents/memory-search.js` — ResolvedMemorySearchConfig
-- `src/agents/model-auth.js` — API key resolution
-- `src/cli/parse-duration.js` — duration string parsing
-- `src/infra/env.js`, `src/infra/retry.js`, `src/infra/warning-filter.js`
-- `src/logging/subsystem.js`, `src/logging/redact.js`
-- `src/sessions/transcript-events.js`, `src/sessions/session-key-utils.js`
-- `src/utils.js` — resolveUserPath, truncateUtf16Safe
+- `src/config/config.ts` — OpenClawConfig type
+- `src/config/types.memory.ts` — MemoryBackend, MemoryQmdConfig types
+- `src/config/sessions/paths.ts` — session transcript paths
+- `src/config/sessions.ts` — session store operations
+- `src/agents/agent-scope.ts` — workspace/agent directory resolution
+- `src/agents/memory-search.ts` — ResolvedMemorySearchConfig
+- `src/agents/model-auth.ts` — API key resolution
+- `src/cli/parse-duration.ts` — duration string parsing
+- `src/infra/env.ts`, `src/infra/retry.ts`, `src/infra/warning-filter.ts`
+- `src/logging/subsystem.ts`, `src/logging/redact.ts`
+- `src/sessions/transcript-events.ts`, `src/sessions/session-key-utils.ts`
+- `src/utils.ts` — resolveUserPath, truncateUtf16Safe
 
 ### External Dependencies
 - `chokidar` — file watching
@@ -367,16 +367,16 @@ type CronRunLogEntry = { ts, jobId, action, status?, error?, summary?, sessionId
 | `normalizeCronJobInput` | `(input, opts?) → CronJobCreate` | Normalize/validate job input |
 
 ### Internal Dependencies
-- `src/config/config.js`, `src/config/types.cron.js`, `src/config/sessions.js`
-- `src/agents/agent-scope.js`, `src/agents/cli-runner.js`, `src/agents/model-selection.js`, `src/agents/model-auth.js`, `src/agents/pi-embedded.js`, etc.
-- `src/routing/session-key.js` — session key building/sanitization
-- `src/channels/registry.js`, `src/channels/plugins/types.js`
-- `src/infra/heartbeat-wake.js`, `src/infra/outbound/deliver.js`, `src/infra/outbound/targets.js`
-- `src/security/external-content.js`
-- `src/auto-reply/heartbeat.js`, `src/auto-reply/tokens.js`
-- `src/cli/parse-duration.js`
-- `src/sessions/session-key-utils.js`
-- `src/utils.js`
+- `src/config/config.ts`, `src/config/types.cron.ts`, `src/config/sessions.ts`
+- `src/agents/agent-scope.ts`, `src/agents/cli-runner.ts`, `src/agents/model-selection.ts`, `src/agents/model-auth.ts`, `src/agents/pi-embedded.ts`, etc.
+- `src/routing/session-key.ts` — session key building/sanitization
+- `src/channels/registry.ts`, `src/channels/plugins/types.ts`
+- `src/infra/heartbeat-wake.ts`, `src/infra/outbound/deliver.ts`, `src/infra/outbound/targets.ts`
+- `src/security/external-content.ts`
+- `src/auto-reply/heartbeat.ts`, `src/auto-reply/tokens.ts`
+- `src/cli/parse-duration.ts`
+- `src/sessions/session-key-utils.ts`
+- `src/utils.ts`
 
 ### External Dependencies
 - `croner` — cron expression parsing
@@ -497,16 +497,16 @@ const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 | `encodePng` | `(width, height, rgba) → Buffer` | Minimal PNG encoding |
 
 ### Internal Dependencies
-- `src/infra/net/ssrf.js`, `src/infra/net/fetch-guard.js` — SSRF protection
-- `src/infra/fs-safe.js` — safe file open within root
-- `src/infra/ports.js`, `src/infra/tailscale.js` — port checking, Tailscale hostname
-- `src/globals.js` — danger flags
-- `src/runtime.js` — runtime environment
-- `src/process/exec.js` — shell execution (for sips)
-- `src/markdown/fences.js` — fence parsing for MEDIA token extraction
-- `src/utils/directive-tags.js` — inline directive parsing
-- `src/web/media.js` — web media loading
-- `src/cli/command-format.js`
+- `src/infra/net/ssrf.ts`, `src/infra/net/fetch-guard.ts` — SSRF protection
+- `src/infra/fs-safe.ts` — safe file open within root
+- `src/infra/ports.ts`, `src/infra/tailscale.ts` — port checking, Tailscale hostname
+- `src/globals.ts` — danger flags
+- `src/runtime.ts` — runtime environment
+- `src/process/exec.ts` — shell execution (for sips)
+- `src/markdown/fences.ts` — fence parsing for MEDIA token extraction
+- `src/utils/directive-tags.ts` — inline directive parsing
+- `src/web/media.ts` — web media loading
+- `src/cli/command-format.ts`
 
 ### External Dependencies
 - `express` — HTTP server
@@ -634,15 +634,15 @@ type MediaUnderstandingDecision = { capability; outcome; attachments: MediaUnder
 | ZAI | image | glm-4.6v |
 
 ### Internal Dependencies
-- `src/auto-reply/templating.js` — MsgContext type
-- `src/config/config.js`, `src/config/types.tools.js`
-- `src/agents/model-auth.js`, `src/agents/model-catalog.js`, `src/agents/model-selection.js`
-- `src/agents/pi-embedded.js`, `src/agents/minimax-vlm.js`
-- `src/globals.js` — verbose logging
-- `src/infra/net/ssrf.js`, `src/infra/net/fetch-guard.js`
-- `src/media/fetch.js`, `src/media/mime.js`
-- `src/process/exec.js` — CLI command execution
-- `src/channels/chat-type.js`
+- `src/auto-reply/templating.ts` — MsgContext type
+- `src/config/config.ts`, `src/config/types.tools.ts`
+- `src/agents/model-auth.ts`, `src/agents/model-catalog.ts`, `src/agents/model-selection.ts`
+- `src/agents/pi-embedded.ts`, `src/agents/minimax-vlm.ts`
+- `src/globals.ts` — verbose logging
+- `src/infra/net/ssrf.ts`, `src/infra/net/fetch-guard.ts`
+- `src/media/fetch.ts`, `src/media/mime.ts`
+- `src/process/exec.ts` — CLI command execution
+- `src/channels/chat-type.ts`
 
 ### External Dependencies
 - `@mariozechner/pi-ai` — model completion API
@@ -704,14 +704,14 @@ type LinkUnderstandingResult = { urls: string[]; outputs: string[] };
 | `formatLinkUnderstandingBody` | `(params) → string` | Format outputs into body |
 
 ### Internal Dependencies
-- `src/auto-reply/templating.js`, `src/auto-reply/reply/inbound-context.js`
-- `src/config/config.js`, `src/config/types.tools.js`
-- `src/globals.js`
-- `src/infra/net/ssrf.js` — blocked host/IP detection
-- `src/media-understanding/defaults.js` — CLI_OUTPUT_MAX_BUFFER
-- `src/media-understanding/resolve.js` — resolveTimeoutMs
-- `src/media-understanding/scope.js` — scope resolution
-- `src/process/exec.js` — CLI execution
+- `src/auto-reply/templating.ts`, `src/auto-reply/reply/inbound-context.ts`
+- `src/config/config.ts`, `src/config/types.tools.ts`
+- `src/globals.ts`
+- `src/infra/net/ssrf.ts` — blocked host/IP detection
+- `src/media-understanding/defaults.ts` — CLI_OUTPUT_MAX_BUFFER
+- `src/media-understanding/resolve.ts` — resolveTimeoutMs
+- `src/media-understanding/scope.ts` — scope resolution
+- `src/process/exec.ts` — CLI execution
 
 ### Configuration
 - `tools.links.enabled` — enable/disable
@@ -780,15 +780,15 @@ type TtsDirectiveParseResult = { cleanedText; ttsText?; hasDirective; overrides;
 | `get/setTtsMaxLength` | pref helpers | Manage max length preference |
 
 ### Internal Dependencies
-- `src/config/config.js`, `src/config/types.tts.js`
-- `src/agents/model-auth.js`, `src/agents/model-selection.js`
-- `src/agents/pi-embedded-runner/model.js`
-- `src/auto-reply/types.js` — ReplyPayload
-- `src/channels/plugins/index.js`, `src/channels/plugins/types.js`
-- `src/globals.js` — verbose logging
-- `src/line/markdown-to-line.js` — `stripMarkdown()`
-- `src/media/audio.js` — voice compatibility check
-- `src/utils.js`
+- `src/config/config.ts`, `src/config/types.tts.ts`
+- `src/agents/model-auth.ts`, `src/agents/model-selection.ts`
+- `src/agents/pi-embedded-runner/model.ts`
+- `src/auto-reply/types.ts` — ReplyPayload
+- `src/channels/plugins/index.ts`, `src/channels/plugins/types.ts`
+- `src/globals.ts` — verbose logging
+- `src/line/markdown-to-line.ts` — `stripMarkdown()`
+- `src/media/audio.ts` — voice compatibility check
+- `src/utils.ts`
 
 ### External Dependencies
 - `@mariozechner/pi-ai` — LLM completion for summarization
@@ -885,8 +885,8 @@ type ParsedFrontmatter = Record<string, string>;
 | `convertMarkdownTables` | `(markdown, mode) → string` | Convert tables to bullets/text |
 
 ### Internal Dependencies
-- `src/config/types.base.js` — MarkdownTableMode type
-- `src/auto-reply/chunk.js` — text chunking
+- `src/config/types.base.ts` — MarkdownTableMode type
+- `src/auto-reply/chunk.ts` — text chunking
 
 ### External Dependencies
 - `markdown-it` — markdown parser

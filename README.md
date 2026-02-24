@@ -2,7 +2,7 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Current version: v2026.2.23**
+**Current source version: 2026.2.23-beta.1 (git cafa8226d)**
 
 ## What's Here
 
@@ -74,8 +74,8 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **4,250 TypeScript files** analyzed (`src/`, `extensions/`, `test/`, `scripts/`, `packages/`; current checkout)
-- **756,959 lines of TypeScript** covered (same scope as above)
+- **4,311 TypeScript files** analyzed (`src/`, `extensions/`, `test/`, `scripts/`, `packages/`; current checkout)
+- **771,630 lines of TypeScript** covered (same scope as above)
 - **50+ modules** documented, **40 extension directories** (**31 extension packages**), **52 bundled skills**
 - **~480KB** of documentation (5 core MD files + 10 analysis files)
 

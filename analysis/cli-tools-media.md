@@ -231,7 +231,7 @@ The actual business logic for all CLI commands: `agent`, `doctor`, `onboard`, `c
 | `sandbox.ts` + related | Sandbox management |
 | `sessions.ts` | Session management |
 | `message.ts` | `openclaw message` command |
-| `docs.ts` | Documentation |
+| `src/commands/docs.ts` | Documentation |
 | `dashboard.ts` | Dashboard |
 | `reset.ts` | Factory reset |
 | `setup.ts` | Initial setup |
@@ -434,7 +434,7 @@ Full browser automation system. Runs an Express HTTP server for browser control,
 
 ### Dependents
 - `src/cli/browser-cli*.ts` — CLI browser commands
-- `src/tools/` — agent browser tool
+- `src/agents/tools/` — agent browser tool
 - Gateway daemon — starts browser server
 
 ---
@@ -625,7 +625,7 @@ Multi-provider TTS system supporting Edge TTS (free, default), OpenAI TTS, and E
 
 ### Dependents
 - `src/auto-reply/` — `maybeApplyTtsToPayload()` in reply pipeline
-- `src/tools/tts-tool.ts` — agent TTS tool
+- `src/agents/tools/tts-tool.ts` — agent TTS tool
 - `src/cli/` — TTS CLI commands
 
 ---
@@ -672,9 +672,9 @@ type MarkdownStyle = "bold" | "italic" | "strikethrough" | "code" | "code_block"
 - `src/config/types.base.ts` — `MarkdownTableMode` type
 
 ### Dependents
-- `src/channels/plugins/telegram/` — Telegram message formatting
-- `src/channels/plugins/whatsapp/` — WhatsApp formatting
-- `src/channels/plugins/discord/` — Discord formatting
+- `src/channels/plugins/outbound/telegram.ts` — Telegram message formatting
+- `src/channels/plugins/outbound/whatsapp.ts` — WhatsApp formatting
+- `src/channels/plugins/outbound/discord.ts` — Discord formatting
 - `src/auto-reply/` — message formatting
 - `src/line/` — line-based text conversion
 

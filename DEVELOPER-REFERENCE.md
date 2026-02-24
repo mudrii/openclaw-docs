@@ -239,10 +239,10 @@ pnpm test
 pnpm vitest run src/config/
 
 # Single file
-pnpm vitest run src/config/io.test.ts
+pnpm vitest run src/config/io.write-config.test.ts
 
 # Watch mode
-pnpm vitest src/config/io.test.ts
+pnpm vitest src/config/io.write-config.test.ts
 
 # With coverage
 pnpm vitest run --coverage
@@ -258,8 +258,8 @@ pnpm vitest run --coverage
 
 | Pattern      | Example                                |
 | ------------ | -------------------------------------- |
-| Unit test    | `src/config/io.test.ts`                |
-| E2E test     | `src/cli/program.smoke.e2e.test.ts`    |
+| Unit test    | `src/config/io.write-config.test.ts`                |
+| E2E test     | `src/cli/program.smoke.test.ts`    |
 | Test harness | `src/cron/service.test-harness.ts`     |
 | Test helpers | `src/test-helpers/`, `src/test-utils/` |
 | Mock file    | `src/cron/isolated-agent.mocks.ts`     |
@@ -458,8 +458,8 @@ src/<module>/
 
 | Pattern             | Meaning                             | Example                     |
 | ------------------- | ----------------------------------- | --------------------------- |
-| `*.test.ts`         | Unit test                           | `io.test.ts`                |
-| `*.e2e.test.ts`     | End-to-end test                     | `program.smoke.e2e.test.ts` |
+| `*.test.ts`         | Unit test                           | `io.write-config.test.ts`   |
+| `*.e2e.test.ts`     | End-to-end test                     | `program.nodes-basic.e2e.test.ts` |
 | `*.test-harness.ts` | Reusable test fixture               | `service.test-harness.ts`   |
 | `*.mocks.ts`        | Test mock definitions               | `isolated-agent.mocks.ts`   |
 | `*.impl.ts`         | Implementation (when barrel exists) | `auto-reply.impl.ts`        |

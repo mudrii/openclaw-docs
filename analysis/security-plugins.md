@@ -377,7 +377,7 @@ Used by: `node-host/invoke` (exec), `security/fix` (runExec), `plugins/install` 
 
 ---
 
-## 8. `src/macos/` — macOS-Specific
+## 8. `apps/macos/` — macOS-Specific
 
 ### Purpose
 macOS app integration — gateway daemon entry point, Swift relay bridge, deep links.
@@ -420,7 +420,7 @@ Interactive CLI setup wizard using `@clack/prompts` for initial configuration.
 Imports from: `@clack/prompts`, `cli/`, `config/`, `channels/`, `plugins/`
 
 ### Dependents
-Used by: CLI `openclaw init` / `openclaw setup`
+Used by: CLI `openclaw setup` / `openclaw onboard`
 
 ---
 

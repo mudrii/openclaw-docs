@@ -306,8 +306,8 @@ type RouteSpec = {
 - `src/agents` — agent scope, defaults
 - `src/routing` — session key parsing
 - `src/logging` — console capture, subsystem logging
-- `src/runtime` — default runtime
-- `src/version` — VERSION constant
+- `src/runtime.ts` — default runtime
+- `src/version.ts` — VERSION constant
 
 ### External Dependencies
 - `commander` — CLI framework
@@ -348,7 +348,7 @@ type RouteSpec = {
 | `program.force.test.ts` | Force flag behavior |
 | `program.nodes-basic.e2e.test.ts` | Nodes basic E2E |
 | `program.nodes-media.e2e.test.ts` | Nodes media E2E |
-| `program.smoke.e2e.test.ts` | CLI smoke tests |
+| `program.smoke.test.ts` | CLI smoke tests |
 | `program.test-mocks.ts` | Test mock helpers |
 | `program/command-registry.test.ts` | Command registry |
 | `program/config-guard.test.ts` | Config guard |
@@ -567,7 +567,7 @@ The commands module contains **business logic implementations** for all CLI comm
 | File | Description |
 |------|-------------|
 | `dashboard.ts` | Open Control UI dashboard |
-| `docs.ts` | Documentation browser |
+| `src/commands/docs.ts` | Documentation browser |
 | `message.ts` | Message command implementations |
 | `message-format.ts` | Message formatting |
 | `reset.ts` | Reset config/state |
@@ -599,8 +599,8 @@ The commands module contains **business logic implementations** for all CLI comm
 - `src/channels` — channel registry, plugins
 - `src/daemon` — service management
 - `src/wizard` — onboarding flows
-- `src/runtime` — default runtime
-- `src/version` — VERSION
+- `src/runtime.ts` — default runtime
+- `src/version.ts` — VERSION
 
 ---
 
@@ -882,16 +882,16 @@ resolveConfigIncludes(config, basePath): OpenClawConfig // $include merging
 ```
 
 ### Internal Dependencies
-- `src/channels/registry.js` — CHANNEL_IDS
-- `src/channels/chat-type.js` — ChatType enum
-- `src/agents/defaults.js` — DEFAULT_CONTEXT_TOKENS
-- `src/agents/model-selection.js` — parseModelRef
-- `src/infra/dotenv.js` — loadDotEnv
-- `src/infra/home-dir.js` — resolveRequiredHomeDir
-- `src/infra/shell-env.js` — shell env fallback
-- `src/version.js` — VERSION
-- `src/logging/subsystem.js` — logging
-- `src/utils.js` — resolveUserPath
+- `src/channels/registry.ts` — CHANNEL_IDS
+- `src/channels/chat-type.ts` — ChatType enum
+- `src/agents/defaults.ts` — DEFAULT_CONTEXT_TOKENS
+- `src/agents/model-selection.ts` — parseModelRef
+- `src/infra/dotenv.ts` — loadDotEnv
+- `src/infra/home-dir.ts` — resolveRequiredHomeDir
+- `src/infra/shell-env.ts` — shell env fallback
+- `src/version.ts` — VERSION
+- `src/logging/subsystem.ts` — logging
+- `src/utils.ts` — resolveUserPath
 
 ### External Dependencies
 - `zod` — schema validation

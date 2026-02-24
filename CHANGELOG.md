@@ -430,7 +430,7 @@ The sandbox browser container no longer runs with `--no-sandbox` by default. The
 
 - noVNC observer sessions now require password auth and use one-time observer tokens.
 - Sandbox browser containers default to a dedicated Docker network (`openclaw-sandbox-browser`).
-- `openclaw security --audit` warns when browser sandbox runs on bridge network without source-range limits.
+- `openclaw security audit` warns when browser sandbox runs on bridge network without source-range limits.
 
 **Impact for this setup:** No sandbox browser in use on this setup. No action needed.
 
@@ -1248,4 +1248,3 @@ This update cycle continues the security-hardening focus with expanded exec appr
 ---
 
 *Generated: 2026-02-24*
-

@@ -82,7 +82,7 @@ The shared channel framework that all channel implementations depend on. Contain
 | `targets.ts` | `MessagingTarget` type, `buildMessagingTarget()`, target parsing |
 | `typing.ts` | `createTypingCallbacks()` — typing indicator lifecycle |
 | `account-summary.ts` | `buildChannelAccountSnapshot()` for status display |
-| `web/index.ts` | Re-exports WhatsApp Web functions from `channel-web.js` |
+| `web/index.ts` | Re-exports WhatsApp Web functions from `channel-web.ts` |
 
 #### plugins/ subdirectory
 
@@ -639,7 +639,7 @@ Tests cover: actions read, channel migration, client, format, monitor (threading
 ## src/whatsapp — WhatsApp Web (Baileys) {#srcwhatsapp}
 
 ### Module Overview
-Minimal utility module for WhatsApp target normalization. The actual WhatsApp Web implementation (Baileys socket, QR login, message monitoring) lives in `src/channel-web.js` and `src/web/`, re-exported through `src/channels/web/index.ts`.
+Minimal utility module for WhatsApp target normalization. The actual WhatsApp Web implementation (Baileys socket, QR login, message monitoring) lives in `src/channel-web.ts` and `src/web/`, re-exported through `src/channels/web/index.ts`.
 
 ### File Inventory
 
@@ -665,10 +665,10 @@ resolveWhatsAppOutboundTarget(params): WhatsAppOutboundTargetResolution
 ```
 
 ### Internal Dependencies
-- `src/utils.js` — `normalizeE164()`
-- `src/infra/outbound/target-errors.js` — `missingTargetError()`
+- `src/utils.ts` — `normalizeE164()`
+- `src/infra/outbound/target-errors.ts` — `missingTargetError()`
 
-### Channel-Specific Features (via channel-web.js)
+### Channel-Specific Features (via channel-web.ts)
 - **QR login:** WhatsApp Web QR code linking
 - **Reactions:** Emoji reactions
 - **Polls:** Native WhatsApp polls
@@ -1002,7 +1002,7 @@ Agent tool call: message(action="send", target="...", message="...")
 
 <!-- v2026.2.21 -->
 - **Voice channel support** (new files: `src/discord/voice/manager.ts` ~676 lines, `src/discord/voice/command.ts` ~341 lines) — Bot can join and participate in Discord voice channels for realtime voice conversations:
-  - `DiscordVoiceManager` (`manager.ts`) — manages active voice sessions keyed by `guildId:channelId`. Handles audio capture (48kHz/stereo/16-bit PCM via `@discordjs/voice`), silence detection (1s gap), TTS playback queue, and per-guild session lifecycle. Integrates with the TTS pipeline (`src/tts/tts.js`) and media understanding runner for speech-to-text. Exposes `join()`, `leave()`, `getStatus()`.
+  - `DiscordVoiceManager` (`manager.ts`) — manages active voice sessions keyed by `guildId:channelId`. Handles audio capture (48kHz/stereo/16-bit PCM via `@discordjs/voice`), silence detection (1s gap), TTS playback queue, and per-guild session lifecycle. Integrates with the TTS pipeline (`src/tts/tts.ts`) and media understanding runner for speech-to-text. Exposes `join()`, `leave()`, `getStatus()`.
   - `createDiscordVoiceCommand()` (`command.ts`) — builds the `/vc` slash command group with subcommands `join`, `leave`, and `status`. Each subcommand is scoped to guild channels only and respects the same allowlist/group-policy authorization as other Discord commands. `ephemeralDefault` is forwarded from the account slash-command config.
   - Auto-join: if `channels.discord.accounts.<id>.voice.autoJoin` is set, the bot joins the configured voice channel on startup.
   - Requires `VoicePlugin` from `@buape/carbon/voice` registered on the Carbon client.

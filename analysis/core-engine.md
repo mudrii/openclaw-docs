@@ -284,7 +284,7 @@ Event-driven extensibility system. Hooks are triggered on lifecycle events (comm
 | `internal-hooks.ts` | Core event bus: register, unregister, trigger handlers |
 | `llm-slug-generator.ts` | Generate filename slugs via LLM for session memory |
 | `loader.ts` | Load and register hooks from directories + legacy config |
-| `plugin-hooks.ts` | Load hooks from plugin directories |
+| `src/plugins/hooks.ts` | Plugin hook runner (lifecycle/tool/message/subagent hooks) |
 | `types.ts` | All hook type definitions |
 | `workspace.ts` | Discover hooks from bundled/managed/workspace/extra directories |
 
@@ -323,7 +323,7 @@ Event-driven extensibility system. Hooks are triggered on lifecycle events (comm
 | `stopGmailWatcher` | gmail-watcher.ts | Stop Gmail watch service |
 | `runGmailSetup` | gmail-ops.ts | Full Gmail setup CLI (gcloud, Pub/Sub, Tailscale, config) |
 | `generateSlugViaLLM` | llm-slug-generator.ts | Generate filename slug from session content via embedded agent |
-| `registerPluginHooksFromDir` | plugin-hooks.ts | Load and register hooks from plugin directory |
+| `createHookRunner` | src/plugins/hooks.ts | Build typed plugin hook runner for lifecycle/tool/message events |
 
 ### Hook Discovery Order (workspace.ts)
 Hooks are loaded from multiple sources with later sources overriding by name:

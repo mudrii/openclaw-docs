@@ -32,7 +32,7 @@ Two call sites migrated:
 1. Directory-based hook loading — passes `entry.hook.source` (correct, source comes from `HookEntry`)
 2. Legacy handler loading — hardcodes `"openclaw-workspace"` (correct, legacy handlers are always workspace-relative)
 
-### `src/hooks/plugin-hooks.ts` (modified)
+### `src/plugins/hooks.ts` (modified)
 One call site migrated — passes `entry.hook.source` (correct, plugin hooks carry their source).
 
 ## 3. Detailed Analysis
@@ -56,10 +56,10 @@ One call site migrated — passes `entry.hook.source` (correct, plugin hooks car
 ### Is the `Date.now()` fallback sufficient?
 **Yes.** It's the exact behavior before this PR. Stat failure on a file you're about to `import()` is extremely unlikely (permissions, deleted file). If stat fails, the import will likely also fail — the fallback just ensures the import attempt uses a fresh URL.
 
-### Any hooks loaded outside `loader.ts` and `plugin-hooks.ts`?
+### Any hooks loaded outside `loader.ts` and `src/plugins/hooks.ts`?
 **No.** Grep confirms:
 - `loadInternalHooks` (in `loader.ts`) is only called from `server-startup.ts`
-- `plugin-hooks.ts` handles all plugin hook loading
+- `src/plugins/hooks.ts` handles plugin hook execution wiring
 - No other files use `Date.now()` cache-busting for imports
 - All three import sites are migrated
 
@@ -101,7 +101,7 @@ The 1.3s → ~170ms improvement observed in the issue is primarily OS page cache
 
 ### Minor Observations
 1. `IMMUTABLE_SOURCES` as a module-level `Set` is good — but with only one member, a simple `=== "openclaw-bundled"` would also work. The Set is future-proof though (e.g., if `openclaw-managed` becomes immutable).
-2. The `pathToFileURL` import was correctly removed from `loader.ts` and `plugin-hooks.ts` since it's now encapsulated in `import-url.ts`.
+2. The `pathToFileURL` import was correctly removed from `loader.ts` and `src/plugins/hooks.ts` since it's now encapsulated in `import-url.ts`.
 
 ## 5. Cross-Reference with Issue #16953
 
