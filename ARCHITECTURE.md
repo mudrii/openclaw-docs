@@ -905,14 +905,13 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 ### Extension Ecosystem
 
-| Category | Count |
-|----------|-------|
-| Channel plugins | 22 |
-| Provider plugins | 5 |
-| Tool/Feature plugins | 10 |
-| **Total extensions** | **37** |
+| Metric | Count |
+|--------|-------|
+| Extension directories (`extensions/*`) | 40 |
+| Extension packages (`extensions/*/package.json`) | 31 |
+| Bundled skills (`skills/*`) | 52 |
 
-> Current versions: v2026.2.22 / v2026.2.23. Bundled skills: 51.
+> Current versions: v2026.2.22 / v2026.2.23. Counts measured from the current `/Users/mudrii/src/openclaw` checkout.
 
 ### Key External Dependencies
 

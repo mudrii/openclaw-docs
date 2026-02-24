@@ -14,12 +14,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [DEVELOPER-REFERENCE.md](DEVELOPER-REFERENCE.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG-v2026.2.23.md](CHANGELOG-v2026.2.23.md) | Changelog for v2026.2.22 → v2026.2.23 (Vercel AI Gateway normalization, session hardening, reasoning fixes, security sweep). UNRELEASED. |
-| [CHANGELOG-v2026.2.22.md](CHANGELOG-v2026.2.22.md) | Changelog for v2026.2.21 → v2026.2.22 (Synology Chat, Mistral, Gemini web search, multilingual FTS, 30+ security fixes, 4 breaking changes). |
-| [CHANGELOG-v2026.2.21.md](CHANGELOG-v2026.2.21.md) | Changelog for v2026.2.19 → v2026.2.21 (provider expansion, Discord maturity, security breadth, Telegram/cron reliability). |
-| [CHANGELOG-v2026.2.19.md](CHANGELOG-v2026.2.19.md) | Changelog for v2026.2.17 → v2026.2.19 (security surge, gateway auth defaults, cron/heartbeat fixes). |
-| [CHANGELOG-v2026.2.17.md](CHANGELOG-v2026.2.17.md) | Changelog for v2026.2.15 → v2026.2.17 (behavior/docs-impact focus). |
-| [CHANGELOG-v2026.2.15.md](CHANGELOG-v2026.2.15.md) | Changelog for v2026.2.14 → v2026.2.15 (880 commits, 12 security fixes, 11 features). |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for v2026.2.14 → v2026.2.23 (`v2026.2.23` currently UNRELEASED). |
 
 ### Detailed Analysis
 
@@ -67,7 +62,7 @@ Both models independently confirmed the reference doc significantly reduced time
 
 Each release is tagged to match the OpenClaw version it documents:
 - `v2026.2.23` (2026-02-24) — Updated for v2026.2.22 → v2026.2.23 (UNRELEASED): Vercel AI Gateway Claude shorthand normalization, session key canonicalization, Telegram reactions/polling hardening, agent reasoning fixes (thinking-block leak, error classification), context overflow detection expansion (Chinese patterns, HTTP 502/503/504), auto-reply metadata fix, Slack group policy inheritance, Anthropic OAuth token beta injection fix, OpenRouter reasoning_effort conflict fix, Gateway/WS flood protection, Config/Write immutability + path traversal hardening, exec obfuscation detection, openai-image-gen stored XSS fix, OTEL credential redaction, Python skill packaging hardening + CI linting.
-- `v2026.2.22` (2026-02-24) — Updated for v2026.2.21 → v2026.2.22: new Synology Chat channel, new Mistral provider, grounded Gemini web search, Google Vertex AI for Claude, full Control UI cron edit parity, memory FTS multilingual expansion (Spanish, Portuguese, Japanese, Korean, Arabic), optional auto-updater, 4 breaking changes (Google Antigravity removed, tool-failure verbosity, dmScope default, unified streaming config + device-auth v1 removed), 30+ security fixes (exec-approval bypass, SSRF hardening, symlink escape, auth hardening across every channel).
+- `v2026.2.22` (2026-02-24) — Updated for v2026.2.21 → v2026.2.22: new Synology Chat channel, new Mistral provider, grounded Gemini web search, full Control UI cron edit parity, memory FTS multilingual expansion (Spanish, Portuguese, Japanese, Korean, Arabic), optional auto-updater, 4 breaking changes (Google Antigravity removed, tool-failure verbosity, dmScope default, unified streaming config + device-auth v1 removed), 30+ security fixes (exec-approval bypass, SSRF hardening, symlink escape, auth hardening across every channel).
 - `v2026.2.21` (2026-02-23) — Updated for v2026.2.19 → v2026.2.21: Gemini 3.1 + Volcengine/Doubao provider expansion, per-channel model overrides (`channels.modelByChannel`), kimi-coding implicit provider fix, Discord thread-bound subagents + voice + stream preview + lifecycle reactions, Telegram streaming config simplified + reasoning/answer lane split, cron `maxConcurrentRuns` fix, compaction safeguard production fix, SHA-1→SHA-256 synthetic ID migration, 40+ security fixes (heredoc allowlist bypass, shell startup-file injection, sandbox browser hardening, TTS provider-hop injection, compaction retry amplification, prototype-chain traversal in webhook templates, WhatsApp JID auth hardening).
 - `v2026.2.19` (2026-02-20) — Updated for v2026.2.17 → v2026.2.19: massive security hardening (SSRF, exec safeBins, plugin integrity, gateway auth defaults), cron/heartbeat Telegram topic delivery fix, heartbeat skip-on-empty behavior, YAML 1.2 frontmatter schema, browser relay token auth, macOS LaunchAgent `TMPDIR` fix, and DEVELOPER-REFERENCE gotchas 33–45.
 - `v2026.2.17` (2026-02-18) — Updated for v2026.2.15 → v2026.2.17: subagent spawn/announce behavior hardening, cron stagger defaults + CLI controls, config `$include` confinement hardening, Telegram forum topic creation action support, Z.AI `tool_stream` defaults, and DEVELOPER-REFERENCE gotcha refresh.
@@ -78,9 +73,9 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **~2,542+ TypeScript files** analyzed (2026.2.23 codebase)
-- **~530,000+ lines of code** covered
-- **50+ modules** documented, **37 extensions**, **51 bundled skills**
+- **4,250 TypeScript files** analyzed (`src/`, `extensions/`, `test/`, `scripts/`, `packages/`; current checkout)
+- **756,959 lines of TypeScript** covered (same scope as above)
+- **50+ modules** documented, **40 extension directories** (**31 extension packages**), **52 bundled skills**
 - **~440KB** of documentation
 
 ## Contributing
