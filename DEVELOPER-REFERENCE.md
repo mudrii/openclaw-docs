@@ -721,6 +721,10 @@ src/<module>/
 
 84. **Exec approval two-phase registration is now required** — The exec approval flow now requires approval IDs to be registered server-side before the `approval-pending` response is returned to the caller. Custom integrations that poll or hook into the exec approval flow must handle the server-assigned approval IDs during `wait` resolution rather than relying on client-generated IDs. `ask:on-miss` behavior is corrected to prevent immediate-return races where the approval was returned before the ID was registered. If you have tooling that reads approval IDs from pending responses, verify it reads the server-assigned ID from the `wait` resolution, not a locally generated value.
 
+85. **Emergency stop matching is broader and multilingual** — Standalone stop phrases now include variants like `stop openclaw`, `stop action`, `stop run`, `stop agent`, and `please stop`, accept trailing punctuation (`STOP OPENCLAW!!!`), and match multilingual keywords (ES/FR/ZH/HI/AR/JP/DE/PT/RU). If you maintain custom "stop" filters or wrappers around inbound messages, keep them aligned with the new matcher to avoid double-triggering or missed aborts.
+
+86. **Doctor recovery hints changed to valid commands** — Stale doctor recovery hints were replaced with `openclaw gateway status --deep` and `openclaw configure --section model`; redundant "Run doctor --fix" output is suppressed when already in fix mode with no changes. If you have runbooks, bots, or screenshots that reference old hint strings, update them.
+
 ---
 
 ## 10. PR & Bug Filing Best Practices

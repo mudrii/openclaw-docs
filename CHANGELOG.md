@@ -4,6 +4,16 @@ Consolidated changelog assembled from versioned changelog files in this reposito
 
 ---
 
+## Post-v2026.2.23 Updates (Unreleased)
+
+> **Window analyzed:** `v2026.2.23..HEAD` (as of 2026-02-24)
+
+- **Auto-reply/Abort:** normalize standalone stop matching, accept punctuation, and add multilingual stop triggers for emergency abort handling (`#25103`).
+- **CLI/Doctor:** replace stale recovery hints with valid commands (`openclaw gateway status --deep`, `openclaw configure --section model`) and remove redundant no-op `--fix` guidance (`#24485`).
+- **Docs:** maintainers list update (no runtime behavior change) (`#25197`).
+
+---
+
 # Changelog: v2026.2.14 → v2026.2.15
 
 > **Released:** 2026-02-15 | **Commits:** 880 | **Files changed:** 1,526 | **Lines changed:** ~113,000
@@ -920,17 +930,17 @@ This release is a major security hardening cycle. Fixes organized by subsystem:
 ---
 
 
-# OpenClaw v2026.2.23 — Synthesis Review (Unreleased)
+# OpenClaw v2026.2.23 — Synthesis Review (Released)
 
-**Cycle:** v2026.2.22 → v2026.2.23 (Active Development)  
-**Status:** UNRELEASED — tracking `main` branch  
+**Cycle:** v2026.2.22 → v2026.2.23 (Release Cycle)
+**Status:** RELEASED — tag `v2026.2.23` (2026-02-24)
 **Scope:** Provider normalization, session hardening, reasoning fixes, security sweep  
 
 ---
 
 ## Executive Summary
 
-v2026.2.23 is currently in active development. The primary feature addition is Vercel AI Gateway Claude shorthand normalization. The bulk of the release is fixes: session key canonicalization, Telegram stability (reactions, polling), agent reasoning improvements, context overflow detection expansion (including Chinese patterns), and a significant security sweep covering exec obfuscation detection, XSS prevention in skill HTML output, OTEL credential redaction, and Python skill packaging hardening.
+v2026.2.23 shipped on 2026-02-24. The primary feature addition is Vercel AI Gateway Claude shorthand normalization. The bulk of the release is fixes: session key canonicalization, Telegram stability (reactions, polling), agent reasoning improvements, context overflow detection expansion (including Chinese patterns), and a significant security sweep covering exec obfuscation detection, XSS prevention in skill HTML output, OTEL credential redaction, and Python skill packaging hardening.
 
 ---
 
@@ -1107,7 +1117,7 @@ Add pre-commit security hook coverage for private-key detection and production d
 
 ## Upgrade Notes for v2026.2.23
 
-Since this is unreleased, no migration steps are required yet. Changes to watch when it releases:
+Now that `v2026.2.23` is released, apply these checks after upgrade:
 
 1. **Session keys:** If you have case-variant session keys in legacy configs, they will be automatically migrated to lowercase.
 2. **Reasoning with thinking:** Models with `thinking=low` will no longer enable auto-reasoning by default — verify your reasoning-dependent workflows.
@@ -1116,10 +1126,10 @@ Since this is unreleased, no migration steps are required yet. Changes to watch 
 
 ---
 
-# Synthesis Review: v2026.2.22 → v2026.2.23 (Current/Unreleased)
+# Synthesis Review: v2026.2.22 → v2026.2.23 (Released)
 
-> **Window analyzed:** `v2026.2.22..HEAD` (active development)
-> **Status:** UNRELEASED - tracking changes for next release
+> **Window analyzed:** `v2026.2.22..v2026.2.23` (release window)
+> **Status:** RELEASED (2026-02-24)
 
 ---
 
@@ -1134,7 +1144,7 @@ This update cycle continues the security-hardening focus with expanded exec appr
 
 ---
 
-## Critical Security Fixes (Unreleased)
+## Critical Security Fixes
 
 ### Exec Approval System
 
@@ -1161,7 +1171,7 @@ This update cycle continues the security-hardening focus with expanded exec appr
 
 ---
 
-## Major Changes (Unreleased)
+## Major Changes
 
 ### Providers
 
@@ -1192,14 +1202,14 @@ This update cycle continues the security-hardening focus with expanded exec appr
 
 ---
 
-## Breaking Changes (Unreleased)
+## Breaking Changes
 
 1. **Control UI origin requirements** — Non-loopback Control UI requires explicit `gateway.controlUi.allowedOrigins`; fails closed without `dangerouslyAllowHostHeaderOriginFallback=true`
 2. **Channel `allowFrom` ID-only default** — Mutable name/tag/email matching disabled by default; use `dangerouslyAllowNameMatching=true` for compatibility mode (#24907)
 
 ---
 
-## Fixes (Unreleased Selection)
+## Fixes (Release Selection)
 
 ### Agents & Runtime
 - Bootstrap file snapshots cached per session key, cleared on reset (#22220)
@@ -1237,7 +1247,7 @@ This update cycle continues the security-hardening focus with expanded exec appr
 
 ---
 
-## Recommended Operational Checks (Pending Release)
+## Recommended Operational Checks (Post-Release)
 
 1. **Review `allowFrom` configurations** — If relying on mutable name matching, migrate to stable IDs or set `dangerouslyAllowNameMatching=true`
 2. **Control UI origin settings** — Non-loopback deployments need explicit `gateway.controlUi.allowedOrigins`

@@ -153,59 +153,56 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 
 | Module | Files (src) | Lines (approx) | Purpose | Key Dependencies |
 |--------|-------------|-----------------|---------|------------------|
-| `agents/` | ~545 | ~60,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration), auth profiles | config, routing, sessions, hooks, channels, infra, pi-ai |
-| `auto-reply/` | ~223 | ~25,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
-| `gateway/` | ~228 | ~83,000 | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control | agents, config, routing, channels, plugins, infra |
-| `config/` | ~85 | ~48,500 | Config loading, Zod schemas, session store, legacy migration, path resolution | channels (types), infra |
-| `infra/` | ~130 | ~71,000 | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
-| `channels/` | ~60 | ~8,000 | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
-| `channels/status-reactions` | ~3 | ~400 | Shared lifecycle reaction controller for Telegram and Discord status events | channels, config, infra |
-| `telegram/` | ~45 | ~8,000 | Telegram Bot API via grammY: long-poll/webhook, topics, reactions, streaming | grammY, config, auto-reply, channels |
-| `discord/` | ~45 | ~8,500 | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
+| `agents/` | 649 | ~123,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration), auth profiles | config, routing, sessions, hooks, channels, infra, pi-ai |
+| `auto-reply/` | 223 | ~47,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
+| `gateway/` | 282 | ~62,000+ | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control | agents, config, routing, channels, plugins, infra |
+| `config/` | 191 | ~34,000+ | Config loading, Zod schemas, session store, legacy migration, path resolution | channels (types), infra |
+| `infra/` | 297 | ~53,000+ | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
+| `channels/` | 137 | ~17,000+ | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
+| `channels/status-reactions.ts` | 2 | ~850 | Shared lifecycle reaction controller for Telegram and Discord status events | channels, config, infra |
+| `telegram/` | 96 | ~24,000+ | Telegram Bot API via grammY: long-poll/webhook, topics, reactions, streaming | grammY, config, auto-reply, channels |
+| `discord/` | 120 | ~30,000+ | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
 | `discord/voice/` | ~6 | ~800 | Discord voice channel join/leave management, auto-join, realtime conversation | discord, config, channels |
 | `discord/monitor/thread-bindings/` | ~4 | ~500 | Thread-bound subagent session management for Discord | discord, sessions, config |
-| `slack/` | ~34 | ~6,000 | Slack via Socket Mode: channels, threads, slash commands, file uploads | @slack/web-api, config, auto-reply |
-| `signal/` | ~17 | ~3,000 | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
-| `line/` | ~30 | ~5,000 | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
-| `imessage/` | ~13 | ~2,000 | iMessage via custom `imsg` CLI (JSON-RPC over stdin/stdout) | config, auto-reply, channels |
-| `bluebubbles/` | ~8 | ~1,200 | iMessage via BlueBubbles server (HTTP/WebSocket) | config, auto-reply, channels |
-| `whatsapp/` | ~2 | ~300 | WhatsApp target normalization (bulk via src/web/) | utils, infra |
-| `web/` | ~30 | ~5,000 | WhatsApp Web via Baileys: session, QR login, media, auto-reply | @whiskeysockets/baileys, config |
-| `memory/` | ~61 | ~8,000 | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
-| `cron/` | ~52 | ~6,000 | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
-| `hooks/` | ~32 | ~5,000 | Event-driven hooks: lifecycle events, Gmail integration, slug generation | config, agents, plugins |
-| `plugins/` | ~30 | ~5,000 | Plugin discovery, loading (jiti), registry, hook runner, HTTP routes, services | config, agents, channels |
-| `plugin-sdk/` | ~7 | ~500 | SDK re-exports for plugin authors | channels, config, routing |
-| `cli/` | ~130 | ~22,000 | CLI entry point (Commander.js), subcommands, argument parsing | commands, config, agents |
-| `commands/` | ~160 | ~32,000 | Command implementations: agent, doctor, onboard, configure, models, status | cli, config, agents, gateway, daemon |
-| `tui/` | ~22 | ~4,500 | Terminal UI (pi-tui): interactive chat, slash commands, streaming | @mariozechner/pi-tui, gateway |
-| `browser/` | ~55 | ~12,000 | Browser automation: Express server, CDP, Playwright, Chrome extension relay | playwright, express, ws |
-| `media/` | ~27 | ~2,500 | Media handling: MIME detection, store with TTL, SSRF-safe fetch, image ops | file-type, sharp, express |
-| `media-understanding/` | ~43 | ~3,600 | AI media analysis: audio transcription, image/video description, multi-provider | agents (model-auth), media |
-| `link-understanding/` | ~7 | ~300 | URL extraction and CLI-based content summarization | media-understanding (scope), process |
-| `tts/` | ~4 | ~1,600 | Text-to-speech: Edge TTS, OpenAI, ElevenLabs; auto-mode, directives | node-edge-tts, agents (model-auth) |
-| `markdown/` | ~15 | ~1,600 | Markdown IR parser/renderer, WhatsApp conversion, frontmatter, tables | markdown-it, yaml |
-| `canvas-host/` | ~3 | ~700 | Canvas/A2UI web server for node displays with live-reload | ws, chokidar |
-| `security/` | ~15 | ~2,500 | Audit framework, content sanitization, code scanning, SSRF, permission fix | config, agents, channels |
-| `logging/` | ~20 | ~3,000 | Structured logging (tslog), subsystem filtering, redaction, diagnostics | config, tslog |
-| `process/` | ~11 | ~1,500 | Process execution, lane-based command queue, signal bridging | globals, logging |
-| `daemon/` | ~25 | ~5,000 | OS service management: launchd (macOS), systemd (Linux), schtasks (Windows) | infra, cli |
-| `routing/` | ~5 | ~1,600 | Agent route resolution, session key construction, binding matching | config, channels, sessions |
-| `sessions/` | ~9 | ~1,200 | Session utilities: key parsing, send policy, transcript events, provenance | config, channels |
-| `providers/` | ~9 | ~1,500 | Provider-specific auth: GitHub Copilot OAuth, Qwen refresh | config, agents (auth-profiles) |
-| `acp/` | ~10 | ~1,500 | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
-| `pairing/` | ~5 | ~500 | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
-| `node-host/` | ~7 | ~1,000 | Remote node agent: gateway connection, command invocation, browser proxy, APNs wake support | gateway, browser, config |
+| `slack/` | 84 | ~14,500+ | Slack via Socket Mode: channels, threads, slash commands, file uploads | @slack/web-api, config, auto-reply |
+| `signal/` | 31 | ~5,000+ | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
+| `line/` | 45 | ~7,800+ | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
+| `imessage/` | 22 | ~3,000+ | iMessage via custom `imsg` CLI (JSON-RPC over stdin/stdout) | config, auto-reply, channels |
+| `whatsapp/` | 4 | ~500+ | WhatsApp target normalization (bulk via src/web/) | utils, infra |
+| `web/` | 80 | ~12,600+ | WhatsApp Web via Baileys: session, QR login, media, auto-reply | @whiskeysockets/baileys, config |
+| `memory/` | 84 | ~17,000+ | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
+| `cron/` | 71 | ~14,800+ | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
+| `hooks/` | 38 | ~6,600+ | Event-driven hooks: lifecycle events, Gmail integration, slug generation | config, agents, plugins |
+| `plugins/` | 62 | ~12,000+ | Plugin discovery, loading (jiti), registry, hook runner, HTTP routes, services | config, agents, channels |
+| `plugin-sdk/` | 28 | ~2,400+ | SDK re-exports for plugin authors | channels, config, routing |
+| `cli/` | 254 | ~35,900+ | CLI entry point (Commander.js), subcommands, argument parsing | commands, config, agents |
+| `commands/` | 304 | ~52,400+ | Command implementations: agent, doctor, onboard, configure, models, status | cli, config, agents, gateway, daemon |
+| `tui/` | 45 | ~7,500+ | Terminal UI (pi-tui): interactive chat, slash commands, streaming | @mariozechner/pi-tui, gateway |
+| `browser/` | 117 | ~19,100+ | Browser automation: Express server, CDP, Playwright, Chrome extension relay | playwright, express, ws |
+| `media/` | 30 | ~3,800+ | Media handling: MIME detection, store with TTL, SSRF-safe fetch, image ops | file-type, sharp, express |
+| `media-understanding/` | 51 | ~6,300+ | AI media analysis: audio transcription, image/video description, multi-provider | agents (model-auth), media |
+| `link-understanding/` | 6 | ~300+ | URL extraction and CLI-based content summarization | media-understanding (scope), process |
+| `tts/` | 4 | ~2,200+ | Text-to-speech: Edge TTS, OpenAI, ElevenLabs; auto-mode, directives | node-edge-tts, agents (model-auth) |
+| `markdown/` | 14 | ~2,600+ | Markdown IR parser/renderer, WhatsApp conversion, frontmatter, tables | markdown-it, yaml |
+| `canvas-host/` | 5 | ~1,100+ | Canvas/A2UI web server for node displays with live-reload | ws, chokidar |
+| `security/` | 28 | ~10,800+ | Audit framework, content sanitization, code scanning, SSRF, permission fix | config, agents, channels |
+| `logging/` | 24 | ~2,700+ | Structured logging (tslog), subsystem filtering, redaction, diagnostics | config, tslog |
+| `process/` | 24 | ~3,100+ | Process execution, lane-based command queue, signal bridging | globals, logging |
+| `daemon/` | 40 | ~5,700+ | OS service management: launchd (macOS), systemd (Linux), schtasks (Windows) | infra, cli |
+| `routing/` | 10 | ~1,800+ | Agent route resolution, session key construction, binding matching | config, channels, sessions |
+| `sessions/` | 8 | ~600+ | Session utilities: key parsing, send policy, transcript events, provenance | config, channels |
+| `providers/` | 11 | ~1,200+ | Provider-specific auth: GitHub Copilot OAuth, Qwen refresh | config, agents (auth-profiles) |
+| `acp/` | 17 | ~2,800+ | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
+| `pairing/` | 7 | ~1,500+ | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
+| `node-host/` | 11 | ~2,300+ | Remote node agent: gateway connection, command invocation, browser proxy, APNs wake support | gateway, browser, config |
 | `node-host/invoke-system-run` | ~2 | ~300 | Extracted system.run hardened command resolver (security-critical) | node-host, config, process |
-| `watch-companion/` | ~3 | ~400 | Apple Watch companion: glanceable status, quick actions, haptic notifications | node-host, config |
-| `shared/` | ~16 | ~1,500 | Pure types/constants: frontmatter, requirements, reasoning tags | compat |
-| `utils/` | ~22 | ~2,000 | General utilities: boolean parse, delivery context, usage format, shell argv | channels, config |
-| `terminal/` | ~11 | ~1,000 | ANSI styling, tables, progress lines for CLI output | chalk |
-| `compat/` | ~1 | ~50 | Legacy project name constants | — |
-| `types/` | ~9 | — | Ambient TypeScript declarations for untyped npm packages | — |
-| `macos/` | ~4 | ~300 | macOS app integration entry points | infra |
-| `wizard/` | ~8 | ~1,200 | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | ~46 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins | plugin-sdk |
+| `shared/` | 36 | ~2,700+ | Pure types/constants: frontmatter, requirements, reasoning tags | compat |
+| `utils/` | 28 | ~2,000+ | General utilities: boolean parse, delivery context, usage format, shell argv | channels, config |
+| `terminal/` | 16 | ~1,200+ | ANSI styling, tables, progress lines for CLI output | chalk |
+| `compat/` | 1 | ~20 | Legacy project name constants | — |
+| `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
+| `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
+| `extensions/` | ~40 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins | plugin-sdk |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 
 ---
@@ -230,7 +227,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                               │            │
                 Level 3  ┌────┴────────────┴────┐
                          │       agents/        │  ← Core runtime (28+ modules depend on it)
-                         │    (530 files)        │
+                         │    (649 files)        │
                          └──────────┬───────────┘
                                     │
                 Level 4  ┌──────────┴──────────┐
@@ -245,7 +242,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                                     │
                 Level 6  ┌──────────┴──────────┐
                          │      gateway/        │  ← Server orchestrator
-                         │    (228 files)        │
+                         │    (282 files)        │
                          └──────────┬───────────┘
                                     │
                 Level 7  ┌──────┬───┴───┬──────┐
@@ -864,10 +861,10 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Value |
 |--------|-------|
-| **Total src/ modules** | ~50 directories |
-| **Total source files** | ~2,980 .ts files |
-| **Total test files** | ~1,000 .test.ts files |
-| **Estimated total lines** | ~350,000+ |
+| **Total src/ modules** | 49 directories |
+| **Total source files** | 3,706 `.ts` files |
+| **Total test files** | 1,383 `.test.ts` files |
+| **Total src lines** | 665,094 (`src/**/*.ts`) |
 | **External framework** | @mariozechner/pi-ai, pi-agent-core, pi-coding-agent |
 | **Language** | TypeScript (Node.js) |
 | **Test framework** | Vitest |
@@ -877,16 +874,16 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Rank | Module | Source Files | Test Files |
 |------|--------|-------------|------------|
-| 1 | `agents/` | ~278 | ~267 |
-| 2 | `auto-reply/` | ~137 | ~86 |
-| 3 | `gateway/` | ~154 | ~83 |
-| 4 | `commands/` | ~160 | ~30 |
-| 5 | `cli/` | ~130 | ~20 |
-| 6 | `infra/` | ~130 | ~40 |
-| 7 | `config/` | ~85 | ~50 |
-| 8 | `memory/` | ~30 | ~20 |
-| 9 | `browser/` | ~55 | ~15 |
-| 10 | `cron/` | ~25 | ~20 |
+| 1 | `agents/` | 337 | 312 |
+| 2 | `commands/` | 213 | 91 |
+| 3 | `infra/` | 184 | 113 |
+| 4 | `gateway/` | 183 | 99 |
+| 5 | `cli/` | 173 | 81 |
+| 6 | `auto-reply/` | 164 | 59 |
+| 7 | `config/` | 118 | 73 |
+| 8 | `channels/` | 94 | 43 |
+| 9 | `discord/` | 75 | 45 |
+| 10 | `browser/` | 73 | 44 |
 
 ### Most-Imported Modules
 
@@ -911,7 +908,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Extension packages (`extensions/*/package.json`) | 31 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current source package: `2026.2.23-beta.1` (git `cafa8226d`). Counts measured from the current `/Users/mudrii/src/openclaw` checkout.
+> Current source package: `2026.2.23` (git `097a6a83a`, post-release fixes included). Counts measured from the current `/Users/mudrii/src/openclaw` checkout.
 
 ### Key External Dependencies
 
@@ -1155,6 +1152,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - **Subagents/Sessions** — `agents.defaults.subagents.runTimeoutSeconds`: configurable default spawn timeout inherited by `sessions_spawn` when `runTimeoutSeconds` is omitted (0 = no timeout).
 - **Auto-reply/Abort** — Expanded multilingual emergency stop keywords (ES/FR/ZH/HI/AR/JP/DE/PT/RU forms of "stop" and related phrases), trailing punctuation accepted (`STOP OPENCLAW!!!`).
 - **Kilo Gateway** — Updated provider model list.
+- **CLI/Doctor UX** — Corrected stale recovery hints to valid commands (`openclaw gateway status --deep`, `openclaw configure --section model`) and suppress redundant "Run doctor --fix" output when already in fix mode with no changes.
 
 ### Security Hardening
 
