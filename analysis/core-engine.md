@@ -1173,4 +1173,48 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ---
 
+## v2026.2.24 (Unreleased)
+
+### Breaking
+
+- **allowFrom ID-only** — Channel `allowFrom` principal matching is now ID-only by default across all channels that previously allowed mutable name/tag/email matching. Routing decisions that relied on name, tag, or email principals will silently fail to match. Migrate to stable IDs, or opt back in per channel with `channels.<channel>.dangerouslyAllowNameMatching=true`. (#24907)
+
+### Sessions
+
+- **Session store key canonicalization** — Inbound mixed-case session keys for metadata and route updates are now canonicalized to lowercase on arrival. Legacy case-variant entries are migrated to a single lowercase key on first access, preventing duplicate sessions and missing TUI/WebUI history entries caused by case-divergent writes. (`sessions/store.ts`, #9561)
+- **Sub-agent model overrides preserved in allow-any mode** — When `agents.defaults.models` is empty (allow-any), stored per-session sub-agent model overrides are no longer reset to defaults on patch/update. (#21088)
+- **`reasoningLevel: "off"` persisted explicitly** — Session overrides setting `reasoningLevel` to `"off"` are now written explicitly to the session entry rather than deleted, so the override survives subsequent patch and update flows. (#24406, #24559)
+
+### Providers
+
+- **OpenRouter: thinking=off no longer injects `reasoning.effort`** — When thinking is explicitly disabled, OpenClaw skips injecting `reasoning.effort` entirely, allowing reasoning-required models to use provider defaults rather than receiving an unsupported parameter. (#24863)
+- **OpenRouter: conflicting top-level `reasoning_effort` removed** — When injecting nested `reasoning.effort`, any top-level `reasoning_effort` field is now stripped from the payload, preventing OpenRouter 400 payload-validation failures for reasoning models. (#24120)
+- **Anthropic: OAuth tokens skip `context-1m-*` beta** — `sk-ant-oat-*` (OAuth/subscription) tokens no longer receive `context-1m-*` beta header injection while still receiving other OAuth-required betas. Prevents Anthropic 401 auth failures when `params.context1m` is enabled. (#10647, #20354)
+- **DashScope: `supportsDeveloperRole=false`** — DashScope-compatible `openai-completions` endpoints are marked as not supporting the `developer` role so OpenClaw sends `system` instead, preventing Qwen/DashScope API rejections. (#19130)
+- **Bedrock: prompt-cache disabled for non-Anthropic models** — Cache retention metadata is no longer sent for Nova, Mistral, and other non-Anthropic Bedrock model requests that do not support it. (#20866)
+- **Bedrock: cache retention for `amazon-bedrock/*anthropic.claude*`** — Anthropic-Claude model refs routed through Bedrock now receive the full `cacheRetention` defaults and runtime pass-through. Non-Anthropic Bedrock models remain excluded. (#22303)
+- **Groq: TPM throttle errors not classified as context overflow** — Groq tokens-per-minute limit errors are now classified as throttling rather than context overflow, preventing incorrect overflow recovery logic from triggering. (#16176)
+- **Vercel AI Gateway: Claude shorthand normalization** — `vercel-ai-gateway/claude-*` model refs are normalized to canonical Anthropic-routed model IDs on ingestion. (Previously documented in v2026.2.23 if not already applied, #23985)
+
+### Agents / Context & Failover
+
+- **Additional provider context-overflow shapes detected** — The overflow classifier recognizes additional provider error formats, including Chinese-language context-overflow messages.
+- **HTTP 502/503/504 as failover-eligible transient timeouts** — Gateway and upstream 502/503/504 responses are now treated as transient timeouts eligible for provider/model failover, so fallback chains can switch during upstream outages. (#20999)
+
+### Gateway / Config
+
+- **WebSocket flood protection** — Repeated post-handshake `unauthorized role:*` request floods are now closed per-connection; duplicate rejection log lines are sampled to reduce log noise. (`gateway/server/ws-connection/`, #20168)
+- **Restart: child listener PIDs treated as owned** — During restart health checks, child listener PIDs are recognized as owned by the service runtime PID, preventing false stale-process kills and restart timeouts under launchd and systemd supervision. (#24696)
+- **Prompt builder: mixed content array extraction** — Text is safely extracted from mixed content arrays (text + image blocks) when assembling prompts, preventing malformed prompt payloads. (#24946)
+- **Slug generation respects agent model config** — Agent-level model configuration is now consulted in slug generation flows instead of falling back to defaults. (#24776)
+- **Config write: `unsetPaths` with immutable path-copy updates** — `unsetPaths` operations use immutable copy-on-update semantics; `config get/set/unset` path traversal rejects prototype-key segments and inherited-property paths to prevent prototype pollution. (`gateway/server-methods/config.ts`, #24134)
+- **Security: reserved prototype keys blocked in account-id normalization** — Account-id normalization and route account config resolution use own-key lookups only, blocking reserved prototype keys (`__proto__`, `constructor`, `prototype`) throughout the config write path.
+
+### Auth
+
+- **OAuth missing-scope errors classified as auth failures** — When an OAuth token lacks required scopes, the error is classified as an auth failure (rather than a generic error), triggering clearer remediation messages and correct retry behavior. (#24761)
+- **Onboarding provider verification: raised token budgets** — Verification probe token budgets for OpenAI and Anthropic compatibility checks are increased to avoid false negatives caused by strict provider defaults rejecting minimal probes. (#24743)
+
+---
+
 *End of Core Engine Analysis*

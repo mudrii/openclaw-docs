@@ -1,6 +1,6 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 
-> Updated: 2026-02-24 | Version: v2026.2.23 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-02-24 | Version: v2026.2.24 (unreleased) | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (100 files), `src/discord` (77 files), `src/signal` (32 files), `src/slack` (67 files), `src/whatsapp` (3 files), `src/imessage` (20 files), `src/line` (46 files), `src/channels` (106 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — `channels.<channel>.streaming` now uses enum `off | partial | block | progress`. Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
@@ -1085,6 +1085,89 @@ Agent tool call: message(action="send", target="...", message="...")
 ### Synology Chat
 
 - **New channel plugin** (`extensions/synology-chat/`) — Webhook ingress, DM routing with DM policy controls, outbound send/media. Config: `channels.synologychat.enabled`, `channels.synologychat.webhookSecret`, `channels.synologychat.botToken`.
+
+---
+
+## v2026.2.24 (Unreleased)
+
+### BREAKING — allowFrom ID-Only Matching (All Channels)
+
+> **Migration required.** Channel `allowFrom` matching is now **ID-only** by default across all channels that previously accepted mutable principal names (display name, username/tag, email address). Entries that relied on name-based matching will silently stop matching.
+
+**What changed:** The shared allowlist match path (`src/channels/allowlist-match.ts`, `src/channels/plugins/allowlist-match.ts`) no longer resolves or compares against mutable name/tag/email fields by default. Only stable, platform-assigned identifiers (Telegram numeric user ID, Discord snowflake, Slack member ID, WhatsApp JID/E.164, Signal phone/UUID, etc.) are evaluated.
+
+**Why:** Mutable names are a known privilege-escalation vector — a user who renames themselves to a trusted display name could previously bypass allowlists on several channels. This closes that class of bypass permanently.
+
+**Detection:** `openclaw doctor` and `openclaw security audit` now share a unified mutable-allowlist detector (previously separate per-channel implementations) and scan all configured accounts. Any `allowFrom` entry that contains a non-ID string (display name, @tag, email) will be flagged. (#24907)
+
+**Migration options:**
+
+1. **Recommended:** Replace name-based entries with stable IDs. Use `openclaw doctor --fix` to attempt automatic resolution for Discord (snowflakes), Slack (member IDs), and Telegram (numeric IDs).
+2. **Opt-out (not recommended):** Set `channels.<channel>.dangerouslyAllowNameMatching: true` on the affected account to restore prior behavior. This opt-out exists for compatibility only and emits a runtime security warning.
+
+```json
+// Before (unsafe — display name, can be changed by the user)
+{ "channels": { "telegram": { "allowFrom": ["Alice"] } } }
+
+// After (stable ID — cannot be changed)
+{ "channels": { "telegram": { "allowFrom": [123456789] } } }
+
+// Or opt out (not recommended)
+{ "channels": { "telegram": { "dangerouslyAllowNameMatching": true, "allowFrom": ["Alice"] } } }
+```
+
+---
+
+### Auto-Reply / Abort Shortcuts (All Channels)
+
+- **Expanded standalone stop phrases** — The emergency-stop detection in `src/auto-reply/` now recognizes additional English phrase variants: `stop openclaw`, `stop action`, `stop run`, `stop agent`, `please stop`. Previously only `stop` alone was matched in most contexts.
+- **Trailing punctuation tolerance** — Stop phrases now accept trailing punctuation (e.g., `STOP OPENCLAW!!!`, `stop.`, `stop!`).
+- **Multilingual stop keywords** — New stop keyword forms added for ES, FR, ZH, HI, AR, JP, DE, PT, and RU to support non-English users triggering emergency abort reliably.
+
+---
+
+### WhatsApp
+
+- **Auto-reply payload filtering** — The WhatsApp auto-reply path now sends only final payloads. Tool call results and internal block payloads (reasoning/thinking blocks) are suppressed before delivery. Block streaming is forced off for the WhatsApp channel so there is no partial-delivery path that could leak intermediate content silently. (#24962)
+- **DM routing: isolated dmScope state preserved** — Main-session last-route state is only updated when the DM traffic is actually bound to the main session. Traffic routed to an isolated `dmScope` session no longer pollutes the main-session routing state. (#24949)
+- **Access control: `selfChatMode` honored on inbound** — Inbound access-control checks now respect the `selfChatMode` config value. Previously self-sourced messages could bypass the check in configurations that enabled self-chat. (#24738)
+- **Logging: outbound recipient redaction** — Outbound recipient identifiers (phone numbers, JIDs) are now redacted in outbound and heartbeat log lines. Message preview text and poll preview text have also been removed from those log lines to avoid leaking message content to log sinks. (#24980)
+- **Group policy: `groupAllowFrom` sender filtering fixed** — When `groupPolicy: "allowlist"` is set without an explicit `groups` key, the sender filter for `groupAllowFrom` was previously not applied, causing all group messages to be blocked even for allowlisted senders. This is now fixed. (#24670)
+- **Config validation: `channels.whatsapp.enabled` accepted** — The Zod config validation schema now accepts `channels.whatsapp.enabled` as a valid key. Previously, setting this key (which is the standard built-in channel auto-enable pattern) caused an `Unrecognized key: "enabled"` validation failure. (#24263)
+
+---
+
+### Discord
+
+- **Reasoning suppression in delivery** — Reasoning-only and thinking-only payload blocks are now suppressed in the Discord reply delivery path (`src/discord/monitor/reply-delivery.ts`). Previously, if the agent produced a reply consisting solely of a reasoning block, Discord would receive and display the raw thinking text. (#24969)
+- **Threading: missing thread parent ID recovery** — When a Discord thread's parent channel ID is absent from the cached thread metadata, the delivery path now refetches thread metadata via the REST API before attempting to resolve the parent channel context. This prevents delivery failures in threads whose metadata was not fully populated at creation time. (#24897)
+
+---
+
+### Channels / Reasoning (Shared)
+
+- **Shared reasoning suppression in channel dispatch** — The shared channel dispatch path (`src/infra/outbound/deliver.ts` or equivalent shared deliver layer) now strips reasoning/thinking payload segments before forwarding to channel-specific send adapters. This ensures that non-Telegram channels (including WhatsApp, Discord, and Web UI) do not emit raw internal reasoning blocks as user-visible replies, regardless of channel-specific filtering. (#24991)
+
+---
+
+### Telegram
+
+- **Media SSRF: RFC2544 benchmark range blocked by default** — The SSRF policy for Telegram media downloads now explicitly blocks `198.18.0.0/15` (RFC2544 benchmark range) by default, matching the block applied to other reserved ranges. An explicit SSRF-policy opt-in is required to allow downloads from this range. (#24982)
+- **Reactions: soft-fail extended** — In addition to the policy/token/emoji/API soft-fail behavior introduced in v2026.2.23, the reaction action now also accepts `message_id` in snake_case form and falls back to the inbound message ID when `messageId` is omitted from the action payload. (#20236, #21001)
+- **Polling: bot-identity-scoped offsets** — Persisted polling offsets are now scoped to the bot token identity (not just account ID), and the runner uses a single awaited stop path on abort/retry to prevent cross-token offset bleed and overlapping pollers. (#10850, #11347)
+- **Reasoning: `/reasoning off` suppresses reasoning delivery** — When `/reasoning off` is active for a session, reasoning-only delivery segments are now suppressed. The raw fallback `Reasoning:` / `<think>` text is also blocked from being resent as a plain message, preventing the reasoning content from surfacing through the fallback path. (#24626, #24518)
+
+---
+
+### Synology Chat
+
+- **Webhook deregistration on restart** — Stale webhook routes are now explicitly deregistered before re-registering on channel restart. Previously, restarting the Synology Chat channel left the old route handler in the HTTP registry, causing duplicate route handling for incoming webhook payloads.  (#24971)
+
+---
+
+### Web UI
+
+- **i18n locale hydration on startup** — Saved locale translations are now loaded and applied during startup. Non-English locale sessions previously required manual locale toggling after startup before translations took effect; the saved locale is now applied immediately. (#24795)
 
 ---
 

@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 
-> Updated: 2026-02-24 | Version: v2026.2.23
+> Updated: 2026-02-24 | Version: v2026.2.23 (+ v2026.2.24 unreleased)
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -976,3 +976,45 @@ When event fires:
 ### Auto-reply
 
 - **Direct-chat metadata selectively hidden** — `message_id`/`message_id_full` and sender metadata are hidden from the normalized chat type only (not sender-id sentinels) — preserves group metadata visibility for correct routing.
+
+---
+
+## v2026.2.24 Changes (Unreleased)
+
+<!-- v2026.2.24-unreleased -->
+
+### Subagents/Sessions Config
+
+- **`agents.defaults.subagents.runTimeoutSeconds`** — New config key that sets a default run timeout for `sessions_spawn` tool calls that omit `runTimeoutSeconds`. When unset (or `0`), behavior is unchanged: no timeout is enforced. (#24594)
+
+### Agents
+
+- **Workspace path hardening** — Null bytes are now stripped and `undefined` `.trim()` calls are guarded in workspace-path handling, preventing `ENOTDIR` and `TypeError` crashes on malformed paths. (#24876, #24875)
+- **`sessions_send` relay error suppression** — Transient inter-session transport errors from `sessions_send` relay are no longer forwarded to chat-facing warning payloads, preventing leakage of internal delivery failures to end users. (#24740)
+- **`cache-ttl` pruning extended to Moonshot/Kimi and ZAI/GLM** — `contextPruning.mode: "cache-ttl"` is now applied to Moonshot/Kimi and ZAI/GLM providers (including OpenRouter model refs pointing to these providers), where it was previously silently skipped. (#24497)
+- **Model override type boundary** — `agents.defaults.model` and `agents.defaults.imageModel` config inputs are now codified as `string | { primary, fallbacks }`, with explicit vs effective model resolution split into distinct paths. (#24210)
+
+### Sessions
+
+- **Model overrides preserved in allow-any mode** — Stored sub-agent model overrides are no longer reset to defaults when `agents.defaults.models` is empty (allow-any mode); the stored override is retained as-is. (#21088)
+- **Session key canonicalization** — Inbound mixed-case session keys for metadata and route updates are now canonicalized to lowercase. Legacy case-variant entries are migrated to a single lowercase key on access, eliminating duplicate sessions and missing TUI/WebUI history. (#9561)
+
+### Subagents
+
+- **Orphaned run pruning before retry** — Subagent registry now prunes orphaned restored runs (entries missing a child session or `sessionId`) before retry/announce-resume, preventing zombie entries and stale completion retries. Status output also clarifies bootstrap-file presence semantics. (#24244)
+- **Exponential backoff on announce queue drain failures** — The announce queue applies exponential backoff when drain delivery fails, reducing retry storms caused by transient delivery errors. (#24783)
+
+### Reasoning
+
+- **`reasoningLevel: "off"` persisted explicitly** — `reasoningLevel: "off"` is now written to the session store instead of being deleted, so session overrides survive patch/update flows without being silently dropped. (#24406, #24559)
+- **Inbound flags moved to user-context conversation info** — Dynamic inbound `flags` (reply/forward/thread/history) are moved from system metadata to user-context conversation info, preventing prompt-cache invalidation on every turn caused by flag toggles. (#21785)
+
+### Auto-reply
+
+- **Expanded stop-phrase set** — Standalone stop phrases (`stop openclaw`, `stop action`, `stop run`, `stop agent`, `please stop`) now accept trailing punctuation and are matched case-insensitively. Multilingual stop keywords added for ES, FR, ZH, HI, AR, JP, DE, PT, and RU. (#25103)
+- **Auth-key labels removed from `/new` and `/reset` confirmations** — API key prefixes are no longer included in confirmation messages for `/new` and `/reset` commands, preventing accidental key-prefix leakage in chat history. (#24384, #24409)
+
+### Cron
+
+- **Full prompt mode for isolated cron runs** — Isolated cron session runs now use full prompt mode, ensuring skills and extensions are available during cron execution (previously they were omitted). (#24944)
+- **`openclaw sessions cleanup` enhancements** — `sessions cleanup` gains per-agent store targeting, disk-budget controls (`session.maintenance.maxDiskBytes` / `highWaterBytes`), safer transcript/archive cleanup, and correct run-log retention behavior. (#24753)

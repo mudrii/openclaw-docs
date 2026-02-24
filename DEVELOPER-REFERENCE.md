@@ -484,16 +484,19 @@ src/<module>/
 
 ### Gotcha Index by Domain
 
-- **Config & Auth:** #1, #6, #16, #33, #34, #37, #44, #61, #62, #67, #68
+- **Config & Auth:** #1, #6, #16, #33, #34, #37, #44, #61, #62, #67, #68, #73, #74, #82
 - **Routing & Sessions:** #3, #6, #17, #18, #20, #67, #70
-- **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36
-- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52, #63, #66
-- **Security/Network:** #38, #42, #43, #45, #46, #47, #48, #53, #54, #55, #56, #57, #58, #64, #65, #66
-- **Channel/Streaming Config:** #36, #49, #50, #62, #72
+- **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36, #83
+- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52, #63, #66, #79, #80, #84
+- **Security/Network:** #38, #42, #43, #45, #46, #47, #48, #53, #54, #55, #56, #57, #58, #64, #65, #66, #73, #74, #75
+- **Channel/Streaming Config:** #36, #49, #50, #62, #72, #81, #83
 - **Subagent/Ownership:** #48, #53
 - **Provider/Model:** #59, #68, #69, #71, #72
 - **Breaking Changes (v2026.2.22):** #59, #60, #61, #62, #63
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
+- **Breaking Changes (post-v2026.2.23, unreleased):** #73, #74, #75, #76, #77, #78, #79, #80, #81, #82, #83, #84
+- **Exec/Shell Security (post-v2026.2.23):** #75, #76, #77, #78, #79, #80
+- **Plugin/Command Config (post-v2026.2.23):** #81, #82
 
 (Use this index first, then read only the relevant gotchas for your change.)
 
@@ -691,6 +694,32 @@ src/<module>/
 71. **Vercel AI Gateway Claude shorthand** — Use `vercel-ai-gateway/claude-opus-4-6` etc. — shorthand refs normalize to canonical Anthropic-routed IDs automatically. No config change needed.
 
 72. **Reasoning thinking-block leak** — When a model has `thinking=low` (model-default thinking active), `auto-reasoning` is now kept disabled by default. If your agent config enables auto-reasoning AND the model has default thinking, the auto-reasoning was previously leaking `Reasoning:` blocks into channel replies. This is now fixed — but if you explicitly need reasoning output, enable it explicitly rather than relying on auto.
+
+### Post-v2026.2.23 Unreleased Breaking Changes
+
+73. **Control UI `allowedOrigins` is now required for non-loopback deployments** — The Control UI no longer falls back to the request `Host` header for CORS origin validation when accessed from non-loopback addresses. Startup fails closed (Control UI disabled) unless `gateway.controlUi.allowedOrigins` is set to an explicit list of full origins (e.g., `["https://myhost.com"]`). Break-glass escape hatch: set `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true`, but this re-enables the old insecure behavior. Affected config keys: `gateway.controlUi.allowedOrigins`, `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback`.
+
+74. **`allowFrom` matching is now ID-only by default** — Channel `allowFrom` entries that matched by mutable names, tags, or email addresses will silently stop matching after this change. All channels now resolve `allowFrom` exclusively against stable IDs (user IDs, phone numbers, etc.). To restore the old behavior: `channels.<channel>.dangerouslyAllowNameMatching=true`. Recommendation: migrate all `allowFrom` entries to stable IDs — display names and email addresses can change and are no longer safe for allowlist matching. Both `openclaw doctor` and `openclaw security audit` now emit warnings for any allowlist entries using mutable-name identifiers and scan all configured accounts. Affected config keys: `channels.<channel>.allowFrom`, `channels.<channel>.dangerouslyAllowNameMatching`.
+
+75. **Shell env fallback restricted to `/etc/shells`** — Shell-path resolution no longer uses trusted-prefix fallback to determine shell legitimacy. Only shells explicitly registered in `/etc/shells` are trusted. If `$SHELL` resolves to a path not listed in `/etc/shells`, OpenClaw defaults to `/bin/sh` instead. Custom shell installations (e.g., nix-managed shells, user-compiled binaries) that relied on trusted-prefix matching will no longer be auto-trusted for exec approval. Fix: register the custom shell in `/etc/shells`, or configure the shell path explicitly. Related to gotcha #65.
+
+76. **Exec approval `host=node` entries are now node-scoped** — Exec approval entries with `host=node` are now bound to the specific `nodeId` where the approval was granted. An approved `system.run` command on node A cannot be replayed on node B. Approval prompts now include the target node in the displayed context. Multi-node setups that shared approval state across nodes (e.g., via a shared config or synced approval store) will need to re-approve commands per node. Check `nodeId` in approval prompts to verify targeting.
+
+77. **`env -S`/`--split-string` bypass is now blocked in exec approvals** — Unknown short flags for `env` (including `-S`/`--split-string`) are now rejected during wrapper analysis. Exec approval canonical wrapper enforcement is stricter: semantic `env` wrapper usage with unrecognized flags fails closed. The analysis plan must match the runtime execution plan exactly. Scripts using `env -S` to pass arguments inline will require explicit re-approval under the new stricter analysis. If approval was previously granted for such a script, the approval is no longer valid and must be regenerated.
+
+78. **busybox/toybox allow-always entries persist inner executable, not multiplexer** — If you allow-always a busybox or toybox applet command, the allow-always entry now records the inner executable name rather than the multiplexer binary path (e.g., `cat` instead of `/bin/busybox`). Old allow-always entries that targeted the multiplexer path directly will not match and require regeneration. Review existing busybox/toybox allow-always entries after upgrade and re-approve as needed.
+
+79. **`apply_patch` inside sandbox-mounted paths enforces `workspaceOnly`** — `apply_patch` applied to sandbox-mounted paths now respects `tools.exec.applyPatch.workspaceOnly` and `tools.fs.workspaceOnly`. Out-of-workspace mount paths (e.g., `/agent`) are blocked by default. Previously this was unrestricted. To allow patches to out-of-workspace paths: set `tools.exec.applyPatch.workspaceOnly=false` explicitly. Affected config keys: `tools.exec.applyPatch.workspaceOnly`, `tools.fs.workspaceOnly`.
+
+80. **`autoAllowSkills` requires pathless invocations with trusted resolved-path match** — When `autoAllowSkills` is enabled (non-default), auto-allow checks now require both a pathless invocation AND a trusted resolved-path match. Absolute-path or `./`-prefixed invocations that share a basename with a skill binary no longer satisfy the auto-allow check, even if the resolved path is trusted. Explicitly approve those paths via the normal exec approval flow. Affected config key: `autoAllowSkills`.
+
+81. **`commands.allowFrom` blocks conversation-shaped `From` identities** — `commands.allowFrom` now enforces sender-only matching. Conversation-shaped `From` identities with `channel:`, `group:`, `thread:`, or `@g.us` suffixes are blocked and will not match. If any command allowlist entries relied on group or thread identity matching to gate command access, those entries must be updated to use sender (user) IDs instead. Review all `commands.allowFrom` config entries and migrate group/thread identity entries to individual user IDs.
+
+82. **Plugin config entries must use manifest `id`, not npm package name** — Plugin configuration in `openclaw.json` is now keyed by the plugin manifest `id` field (from the plugin's `manifest.json`), not the npm package name. Inline plugin config using npm-package-name keys will not be loaded — the keys are silently ignored. Migrate all plugin config entries to use the `id` value declared in the plugin's manifest. To find the correct `id`, inspect `<plugin-dir>/manifest.json`.
+
+83. **`reasoning`/`thinking` payload segments no longer leak to non-Telegram channels** — Reasoning and thinking payload segments were previously leaking to WhatsApp, Discord, and Web channel replies. This is now suppressed in the shared dispatch path. If you had downstream workarounds (e.g., stripping reasoning blocks in webhooks or post-processors), those workarounds are now redundant and should be reviewed to avoid double-suppression. Additionally, WhatsApp now has block streaming forced off to prevent silent turns caused by streaming state mismatches.
+
+84. **Exec approval two-phase registration is now required** — The exec approval flow now requires approval IDs to be registered server-side before the `approval-pending` response is returned to the caller. Custom integrations that poll or hook into the exec approval flow must handle the server-assigned approval IDs during `wait` resolution rather than relying on client-generated IDs. `ask:on-miss` behavior is corrected to prevent immediate-return races where the approval was returned before the ID was registered. If you have tooling that reads approval IDs from pending responses, verify it reads the server-assigned ID from the `wait` resolution, not a locally generated value.
 
 ---
 

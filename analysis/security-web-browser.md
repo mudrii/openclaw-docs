@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 
-> Updated: 2026-02-24 | Version: v2026.2.23 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-02-24 | Version: v2026.2.23 (+ unreleased post-v2026.2.23) | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -13,6 +13,34 @@
 5. [src/plugins](#5-srcplugins)
 6. [src/plugin-sdk](#6-srcplugin-sdk)
 7. [src/acp](#7-srcacp)
+
+---
+
+## v2026.2.24 (Unreleased)
+
+Cross-cutting security fixes across the security, browser, and image-tool subsystems. No stable release tag yet; changes are tracked on the openclaw main branch post-v2026.2.23.
+
+### Session Export XSS Hardening
+
+- **HTML token escaping in session viewer** — Raw markdown-derived HTML tokens in the exported session viewer are now escaped before injection into the output document; tree/header metadata rendering is hardened against HTML injection via attribute and content escaping
+- **Session export image sanitization** — Image `data:` URL MIME types in export output are now validated and sanitized; malformed or non-allowlisted MIME types are rejected to prevent stored XSS when exported HTML files are opened in a browser
+- **Data-URL attribute injection prevention** — Image `data:` URL attributes are validated for well-formed MIME type and base64 content fields before rendering; malformed base64 input in media ingestion paths is rejected; invalid tool-image payloads are dropped rather than passed through
+
+### Image Tool Workspace Boundary Enforcement
+
+- **`tools.fs.workspaceOnly` enforced for sandboxed image paths** — The `image` tool now enforces `tools.fs.workspaceOnly` during sandboxed path resolution; mounted out-of-workspace paths are blocked before any media bytes are loaded or sent to vision providers. Previously, sandboxed `image` calls could resolve paths outside the declared workspace root (#workspaceOnly)
+
+### SSRF Policy Changes
+
+- **RFC2544 benchmark range kept blocked** — The `198.18.0.0/15` RFC2544 benchmark range remains in the default SSRF block list; it is not subject to the `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` trusted-network opt-in (#24982)
+- **Telegram media SSRF opt-in** — Telegram media download paths now require an explicit SSRF-policy opt-in; other channel and URL-fetch paths remain blocked by default (#24982)
+- **Browser SSRF policy key rename (breaking from v2026.2.23)** — `browser.ssrfPolicy.allowPrivateNetwork` is replaced by `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork`. When unset, the browser module now defaults to trusted-network mode (`dangerouslyAllowPrivateNetwork=true`). Update any explicit `allowPrivateNetwork` config keys to the new name
+
+### Browser/Chrome Hardening
+
+- **Browser control server startup fix** — `src/browser/server.js` is now loaded during browser-control startup, ensuring the control listener starts reliably when browser control is enabled rather than silently failing to bind (#23974)
+- **Debugger detach handling with bounded auto-reattach** — Full-page navigation detaches in the Chrome relay now trigger bounded auto-reattach retries with a configurable retry ceiling; user-initiated and devtools-initiated detaches are distinguished and handled with better cancellation semantics to prevent unbounded reattach loops (#19766)
+- **Chrome extension options: relay port validation** — The relay `/json/version` payload shape and `Content-Type` header are now validated (not just the HTTP status code) to reliably detect wrong-port gateway misconfiguration; relay port derivation for custom gateway ports is clarified to `gateway + 3` (#22252)
 
 ---
 
