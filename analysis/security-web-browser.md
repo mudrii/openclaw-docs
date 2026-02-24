@@ -404,6 +404,9 @@ Browser automation module providing a local HTTP control server for Playwright a
 - **Chrome extension relay auth** — Both `/extension` and `/cdp` endpoints now require `gateway.auth.token` authentication
 - **Canvas node-scoped sessions** — Canvas session capabilities are node-scoped, replacing shared-IP fallback auth
 
+#### v2026.2.23 Changes
+- **BREAKING: Browser SSRF default flipped to trusted-network** — `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` now defaults to `true` (trusted-network mode) when unset, allowing browser navigation to private/LAN addresses. Canonical config key is `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` (was `browser.ssrfPolicy.allowPrivateNetwork`). `openclaw doctor --fix` migrates the legacy key automatically. To enforce strict SSRF blocking, explicitly set `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork: false`.
+
 ### File Inventory (non-test, ~60 source files)
 
 | File | Description |

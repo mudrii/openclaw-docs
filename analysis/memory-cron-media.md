@@ -64,6 +64,10 @@ The memory module provides **semantic search over markdown files and session tra
 - **Per-input 8k safety cap** — A per-input 8k token safety cap is applied before batching; a 2k fallback is used for local providers.
 - **Automatic full reindex on source-set change** — Memory source-set changes are now detected and trigger a full reindex automatically.
 
+### v2026.2.23 Changes <!-- v2026.2.23 -->
+
+- **Bootstrap file caching** — Bootstrap file snapshots (`AGENTS.md`/`MEMORY.md`) are now cached per session key and cleared on session reset/delete. Reduces prompt-cache invalidations caused by in-session writes to these files. (#22220)
+
 ### File Inventory (63 files)
 
 | File | Description |
@@ -284,6 +288,11 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - **Auth/Delivery** — Auth-profile resolution is propagated to isolated cron sessions. `agentDir` is passed through isolated cron and queued follow-up runs. Text-only announce jobs with thread/topic targets route through direct outbound delivery. Telegram: `delivery.to` is now validated with shared target parsing.
 
 - **Scheduling** — Runtime cron expressions are validated before schedule evaluation — malformed jobs report a clear error instead of crashing. Abort/timeout signals are now honored in `wakeMode=now` heartbeat contention loops.
+
+### v2026.2.23 Changes <!-- v2026.2.23 -->
+
+- **Sessions maintenance hardening** — `openclaw sessions cleanup` CLI command added with per-agent store targeting and disk-budget controls (`session.maintenance.maxDiskBytes` / `session.maintenance.highWaterBytes`). Provides safer transcript/archive cleanup with run-log retention behavior. (#24753)
+- **Isolated cron full prompt mode** — Isolated cron sessions now use full prompt mode so skills/extensions are available during cron execution. (#24944)
 
 ### File Inventory (57 files)
 

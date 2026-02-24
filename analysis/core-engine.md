@@ -1155,6 +1155,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **Session key canonicalization** — Session keys canonicalized to lowercase; legacy case-variant entries migrated automatically. (`sessions/store.ts`)
 
 ### Providers
+- **Kilocode provider** — First-class `kilocode` provider: auth, onboarding, implicit provider detection, model defaults (`kilocode/anthropic/claude-opus-4.6`), transcript/cache-ttl handling. (#20212)
 - **Vercel AI Gateway** — Normalizes `vercel-ai-gateway/claude-*` shorthand refs to canonical Anthropic-routed IDs.
 - **Anthropic OAuth tokens** — `sk-ant-oat-*` tokens skip `context-1m-*` beta injection.
 - **OpenRouter reasoning_effort** — Conflicting top-level `reasoning_effort` removed when injecting `reasoning.effort`.

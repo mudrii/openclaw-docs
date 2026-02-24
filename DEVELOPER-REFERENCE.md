@@ -692,6 +692,10 @@ src/<module>/
 
 72. **Reasoning thinking-block leak** — When a model has `thinking=low` (model-default thinking active), `auto-reasoning` is now kept disabled by default. If your agent config enables auto-reasoning AND the model has default thinking, the auto-reasoning was previously leaking `Reasoning:` blocks into channel replies. This is now fixed — but if you explicitly need reasoning output, enable it explicitly rather than relying on auto.
 
+**BREAKING CHANGES (v2026.2.23):**
+
+73. **Browser SSRF default flipped to trusted-network** — `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` now defaults to `true` (trusted-network mode) when unset, meaning browser navigation to private/LAN addresses is allowed by default. To enforce strict SSRF blocking, explicitly set `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork: false`. The legacy key `browser.ssrfPolicy.allowPrivateNetwork` is still accepted but deprecated — `openclaw doctor --fix` migrates it automatically.
+
 ---
 
 ## 10. PR & Bug Filing Best Practices
