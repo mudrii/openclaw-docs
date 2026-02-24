@@ -1103,7 +1103,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ---
 
-## v2026.2.23 Changes (Unreleased)
+## v2026.2.23 Changes
 
 ### New Providers
 
@@ -1121,8 +1121,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ### Breaking Changes
 
-1. **Control UI Origin Requirements** — Non-loopback requires explicit `gateway.controlUi.allowedOrigins`; fails closed without opt-in
-2. **Channel `allowFrom` ID-Only Default** — Mutable name/tag/email matching disabled; use `dangerouslyAllowNameMatching=true` for compatibility
+1. **Browser SSRF Policy Default** — Browser SSRF policy now defaults to trusted-network mode (`browser.ssrfPolicy.dangerouslyAllowPrivateNetwork=true` when unset); canonical config key is `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` (replaces `browser.ssrfPolicy.allowPrivateNetwork`). `openclaw doctor --fix` migrates the legacy key automatically.
 
 ### Security Fixes
 
@@ -1141,6 +1140,67 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - Browser control reliability, relay port derivation
 - Isolated cron full prompt mode
 - Plugin config schema fallback
+
+---
+
+## Unreleased Changes (post-v2026.2.23)
+
+### Breaking Changes
+
+1. **Control UI Origin Requirements** — Non-loopback Control UI now requires explicit `gateway.controlUi.allowedOrigins` (full origins). Startup fails CLOSED when the key is absent. Escape-hatch: `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true`. Applies to any gateway host that is not loopback.
+2. **Channel `allowFrom` ID-Only Default** — `allowFrom` matching across all channels is now ID-only. Mutable name/tag/email principal matching is disabled by default. Migrate allowlists to stable IDs, or opt back in per-channel with `channels.<channel>.dangerouslyAllowNameMatching=true`. `openclaw doctor` and `openclaw security audit` now share mutable-allowlist detectors and scan all configured accounts.
+
+### New Features
+
+- **Subagents/Sessions** — `agents.defaults.subagents.runTimeoutSeconds`: configurable default spawn timeout inherited by `sessions_spawn` when `runTimeoutSeconds` is omitted (0 = no timeout).
+- **Auto-reply/Abort** — Expanded multilingual emergency stop keywords (ES/FR/ZH/HI/AR/JP/DE/PT/RU forms of "stop" and related phrases), trailing punctuation accepted (`STOP OPENCLAW!!!`).
+- **Kilo Gateway** — Updated provider model list.
+
+### Security Hardening
+
+#### Exec Approvals (6 fixes)
+- `host=node` approvals bound to explicit `nodeId` — cross-node replay rejected; target node shown in approval prompt
+- Two-phase approval registration required — approval IDs must be registered before `approval-pending` is returned; server-assigned IDs honored during wait resolution
+- Canonical wrapper execution plans enforced — `env` wrapper usage fails closed; unknown short safe-bin flags (including `-S/--split-string`) rejected
+- `busybox`/`toybox` applets recognized — inner executables persisted, not multiplexer binaries; unsafe unwrapping fails closed
+- `autoAllowSkills`: requires pathless invocations + trusted resolved-path — basename collisions from `./`/absolute paths no longer satisfy auto-allow
+- `safeBins` long-option validation: unknown/ambiguous GNU long-option abbreviations rejected; sort filesystem-dependent flags (`--random-source`, `--temporary-directory`, `-T`) denied
+
+#### Other Security Fixes
+- **Shell env**: only shells in `/etc/shells` trusted; default to `/bin/sh` when `SHELL` is unregistered (removes trusted-prefix fallback)
+- **iOS deep links**: local confirmation or trusted key required before forwarding `openclaw://agent` to gateway `agent.request`
+- **Session export XSS**: HTML token escaping, tree/header metadata hardening, image data-URL MIME sanitization in export viewer
+- **Image tool**: `tools.fs.workspaceOnly` enforced for sandboxed image path resolution
+- **Sandbox apply_patch**: `tools.exec.applyPatch.workspaceOnly` and `tools.fs.workspaceOnly` enforced; opt-out: `tools.exec.applyPatch.workspaceOnly=false`
+- **Commands allowFrom**: conversation-shaped `From` identities (`channel:`, `group:`, `thread:`, `@g.us`) blocked; DM fallback preserved
+- **Config writes**: prototype keys blocked in account-id normalization; own-key lookups enforced
+- **Voice Call/Twilio**: webhook replay hardened with event-ID normalization, bounded dedupe, per-call turn-token matching
+- **ACP**: permission auto-approval requires trusted core tool IDs; `read` approval scoped to active working directory
+
+### Channel Fixes
+
+**WhatsApp:** final-only payload delivery (reasoning/thinking suppressed, block streaming forced off), `dmScope` routing isolation, `selfChatMode` honored, outbound recipient/message-preview log redaction, `groupAllowFrom` sender filtering fixed, `channels.whatsapp.enabled` accepted in config validation
+
+**Discord:** reasoning-only block suppression, thread parent ID recovery via REST refetch
+
+**Channels/Reasoning:** shared dispatch layer suppresses reasoning/thinking segments for all non-Telegram channels
+
+**Telegram:** RFC2544 SSRF range blocked for media downloads (explicit opt-in required), reactions soft-fail extended, polling offsets scoped to bot identity, `/reasoning off` suppresses reasoning delivery and raw `<think>` fallback
+
+**Synology Chat:** stale webhook route deregistration before re-registration on restart
+
+**Web UI:** saved locale translations loaded and hydrated on startup
+
+### Provider/Gateway Fixes
+
+- OpenRouter: no `reasoning.effort` injection when thinking is explicitly off; conflicting top-level `reasoning_effort` removed
+- Anthropic: `context-1m-*` beta skipped for OAuth tokens (`sk-ant-oat-*`)
+- Bedrock: prompt-cache metadata suppressed for non-Anthropic models; cacheRetention applied for `amazon-bedrock/*anthropic.claude*` refs
+- Groq: TPM limit errors classified as throttling (not context overflow)
+- Gateway WS: post-handshake `unauthorized role:*` flood protection; sampled duplicate logs
+- Gateway restart: child listener PIDs treated as service-owned (prevents false stale-process kills)
+- Config write: `unsetPaths` immutable path-copy semantics; prototype-key traversal rejected
+- Plugins: manifest `id` used for config entry keys; legacy schema fallback added
 
 ---
 

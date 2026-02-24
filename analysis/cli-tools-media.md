@@ -814,3 +814,33 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 - **Upload validation with symlinked uploads directory** — Browser upload validation accepts in-root upload paths when the uploads directory is a symlink alias (e.g., `/tmp` → `/private/tmp` on macOS). <!-- v2026.2.22 -->
 
 - **ACP resource link metadata hardening** — `fix(acp)`: ACP resource link metadata is now more strictly validated and formatted before being emitted. Prevents malformed metadata from silently passing through the resource-link pipeline. <!-- v2026.2.21 -->
+
+## v2026.2.23 Changes <!-- v2026.2.23 -->
+
+### Tools <!-- v2026.2.23 -->
+
+- **`web_search` provider "kimi"** — New Moonshot/Kimi web search provider with key/config schema wiring and corrected two-step `$web_search` tool flow with citation extraction (#16616, #18822). Adds `kimi` as a selectable `web_search` provider alongside existing providers. <!-- v2026.2.23 -->
+
+### Media <!-- v2026.2.23 -->
+
+- **Video/Moonshot provider** — Native Moonshot video provider added to `src/media-understanding/providers/`. Refactors video execution to honor `entry/config/provider` `baseUrl` + header precedence so per-entry overrides are applied correctly throughout the video processing pipeline (#12063). <!-- v2026.2.23 -->
+
+## v2026.2.24 Changes (Unreleased) <!-- unreleased -->
+
+### Exec Tools <!-- unreleased -->
+
+- **Exec/Bash poll sleep clamp** — Clamp poll sleep duration to non-negative values in process polling loops (#24889). Prevents potential negative sleep values caused by timing edge cases in bash tool process monitoring that could produce unexpected behavior in long-running exec calls. <!-- unreleased -->
+
+### Image/Media Security <!-- unreleased -->
+
+- **Image tool workspace boundary** — Enforce `tools.fs.workspaceOnly` for sandboxed `image` tool path resolution so mounted out-of-workspace paths are blocked before media bytes are loaded and sent to vision providers. Set `tools.fs.workspaceOnly=false` to opt out. <!-- unreleased -->
+
+- **`apply_patch` workspace boundary** — Enforce `tools.exec.applyPatch.workspaceOnly` and `tools.fs.workspaceOnly` for `apply_patch` in sandbox-mounted paths so writes and deletes cannot escape the workspace boundary via mounts like `/agent`. Opt-out: set `tools.exec.applyPatch.workspaceOnly=false`. <!-- unreleased -->
+
+### Browser <!-- unreleased -->
+
+- **Gateway/Browser control server load** — Load `src/browser/server.js` during browser-control startup so the control listener starts reliably when browser control is enabled (#23974). Fixes a race where the control server was not initialized before the first browser command arrived. <!-- unreleased -->
+
+- **Chrome relay debugger detach hardening** — Harden debugger detach handling during full-page navigation with bounded auto-reattach retries and better cancellation behavior for user/devtools detaches (#19766). Prevents unbounded retry loops when the user or devtools disconnects the debugger mid-navigation. <!-- unreleased -->
+
+- **Chrome extension relay port validation** — Validate relay `/json/version` payload shape and content type (not just HTTP status) to detect wrong-port gateway checks; clarify relay port derivation for custom gateway ports (`gateway + 3`) (#22252). Reduces false-positive relay connection errors when a non-Chrome service responds on the expected port. <!-- unreleased -->

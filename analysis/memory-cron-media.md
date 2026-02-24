@@ -64,6 +64,12 @@ The memory module provides **semantic search over markdown files and session tra
 - **Per-input 8k safety cap** — A per-input 8k token safety cap is applied before batching; a 2k fallback is used for local providers.
 - **Automatic full reindex on source-set change** — Memory source-set changes are now detected and trigger a full reindex automatically.
 
+### v2026.2.24 Changes (Unreleased) <!-- unreleased -->
+
+#### Memory / Bootstrap Context
+
+- **Bootstrap file caching per session key** (#22220) — Bootstrap file snapshots (`AGENTS.md`, `MEMORY.md`) are now cached per session key and cleared on session reset or delete. Previously, in-session writes to `AGENTS.md`/`MEMORY.md` triggered unnecessary prompt-cache invalidations because the files were re-read on every turn. Caching the snapshot for the lifetime of a session key avoids redundant re-reads and reduces prompt-cache churn for long-running sessions.
+
 ### File Inventory (63 files)
 
 | File | Description |
@@ -284,6 +290,16 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - **Auth/Delivery** — Auth-profile resolution is propagated to isolated cron sessions. `agentDir` is passed through isolated cron and queued follow-up runs. Text-only announce jobs with thread/topic targets route through direct outbound delivery. Telegram: `delivery.to` is now validated with shared target parsing.
 
 - **Scheduling** — Runtime cron expressions are validated before schedule evaluation — malformed jobs report a clear error instead of crashing. Abort/timeout signals are now honored in `wakeMode=now` heartbeat contention loops.
+
+### v2026.2.24 Changes (Unreleased) <!-- unreleased -->
+
+#### Cron / Isolated Sessions
+
+- **Full prompt mode for isolated cron runs** (#24944) — Isolated cron sessions (`sessionTarget: "isolated"`) now run with full prompt mode, ensuring that skills, extensions, `AGENTS.md`, and `MEMORY.md` are available during cron execution. Previously, isolated cron sessions launched without loading the agent's skill/extension context, causing failures when cron agents attempted to invoke skills or extensions. Full prompt mode aligns isolated cron sessions with the same context setup used for interactive agent turns.
+
+#### Session Maintenance
+
+- **`openclaw sessions cleanup` with per-agent targeting and disk-budget controls** (#24753) — The `sessions cleanup` CLI command now supports per-agent store targeting, allowing cleanup to be scoped to a specific agent's session store rather than the global store. Two new config keys control disk-budget enforcement: `session.maintenance.maxDiskBytes` sets the hard cap (sessions are pruned until under budget) and `session.maintenance.highWaterBytes` sets the high-water trigger threshold. Transcript and archive cleanup logic is hardened with safer path handling, and run-log retention behavior is updated so run logs are preserved independent of transcript pruning.
 
 ### File Inventory (57 files)
 

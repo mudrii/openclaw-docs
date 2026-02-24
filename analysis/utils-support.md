@@ -900,3 +900,32 @@ Shared test utilities and mock factories.
 
 - **Direct-chat `message_id` and sender metadata hidden from normalized chat type** — `message_id`/`message_id_full` and sender metadata hidden from normalized chat type only — preserves group metadata visibility; prevents sender-id spoofed direct-mode classification. <!-- v2026.2.23 -->
 - **Inbound metadata stripping** (`src/gateway/chat-sanitize.ts`, backed by `src/auto-reply/reply/strip-inbound-meta.ts`) — The WS connection message handler now strips internal metadata blocks from inbound messages before routing them to channel surfaces or agent sessions. `stripEnvelopeFromMessage()` applies `stripInboundMetadata()` to all text content (both string and array-of-blocks forms), then strips `[Channel From Timestamp]` envelope headers and message-id hints from user-role messages. This prevents internal marker blocks (injected by the auto-reply pipeline for message correlation) from leaking into chat surfaces or being re-injected into subsequent agent turns. The function handles `content: string`, `content: [{type:"text", text:...}]`, and `text: string` message shapes, and is applied to every inbound message array via `stripEnvelopeFromMessages()`.
+
+## v2026.2.24 Changes (Unreleased)
+
+### Auto-Reply
+
+- **Abort shortcuts/multilingual stop phrases** — Expands standalone stop phrases (`stop openclaw`, `stop action`, `stop run`, `stop agent`, `please stop`, and variants) to accept trailing punctuation (e.g. `STOP OPENCLAW!!!`) and adds multilingual stop keywords (ES/FR/ZH/HI/AR/JP/DE/PT/RU forms) so emergency stop messages are caught more reliably across languages. (#25103)
+- **Inbound metadata — dynamic `flags` moved to user context** — Dynamic inbound `flags` (reply/forward/thread/history) are moved from system metadata to user-context conversation info, preventing turn-by-turn prompt-cache invalidation caused by flag toggles changing the system prompt on every turn. (#21785)
+- **Session reset notices no longer expose API key labels** — Auth-key labels removed from `/new` and `/reset` confirmation messages so session reset notices never leak API key prefixes or env-key labels into chat output. (#24384, #24409)
+
+### Logging/Redaction
+
+- **WhatsApp outbound log redaction** — Outbound recipient identifiers in WhatsApp outbound and heartbeat logs are now redacted, and message/poll preview text is removed from those log lines. (#24980)
+- **Config snapshot redaction for dynamic catchall keys** — Sensitive dynamic catchall keys in `config.get` snapshots (e.g. `env.*`, `skills.entries.*.env.*`) are redacted while preserving round-trip restore behavior. (#24980)
+
+### Delivery
+
+- **Reasoning/thinking segments suppressed in shared channel dispatch** — Reasoning and thinking payload segments are suppressed in the shared channel dispatch path so non-Telegram channels no longer emit internal reasoning blocks as user-visible replies. (#24991)
+- **WhatsApp block streaming enforced** — Block streaming is forced off for WhatsApp dispatch so final-only delivery cannot cause silent turns. (#24962)
+- **Discord reasoning-only blocks suppressed** — Reasoning/thinking-only payload blocks are suppressed from Discord delivery output, matching the shared dispatch suppression behavior. (#24969)
+
+### Pairing/Status
+
+- **Pairing recovery hints on probe failure** — When gateway probe failures report pairing-required closures, explicit pairing-approval command hints are shown (including `requestId` when safe to surface). (#24771)
+- **Missing OAuth scopes classified as auth failures** — Missing OAuth scopes are classified as auth failures rather than generic errors, enabling clearer remediation messaging and correct retry behavior. (#24761)
+
+### Doctor/CLI
+
+- **Redundant "Run doctor --fix" hint suppressed in fix mode** — The "Run doctor --fix" hint is suppressed when already running in fix mode with no changes to apply, eliminating a confusing no-op suggestion. (#24666)
+- **Stale recovery hints corrected** — Stale recovery hints updated to `openclaw gateway status --deep` and `openclaw configure --section model`, replacing outdated command references. (#24485)
