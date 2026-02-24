@@ -98,17 +98,20 @@
 - If local Vitest runs cause memory pressure (common on non-Mac-Studio hosts), use `OPENCLAW_TEST_PROFILE=low OPENCLAW_TEST_SERIAL_GATEWAY=1 pnpm test` for land/gate runs.
 - Live tests (real keys): `CLAWDBOT_LIVE_TEST=1 pnpm test:live` (OpenClaw-only) or `LIVE=1 pnpm test:live` (includes provider live tests). Docker: `pnpm test:docker:live-models`, `pnpm test:docker:live-gateway`. Onboarding Docker E2E: `pnpm test:docker:onboard`.
 - Full kit + what’s covered: `docs/help/testing.md`.
-- Changelog: user-facing changes only; no internal/meta notes (version alignment, appcast reminders, release process).
-- Pure test additions/fixes generally do **not** need a changelog entry unless they alter user-facing behavior or the user asks for one.
+- Changelog: in maintainer workflow, changelog updates are required for every PR (including internal/test-only changes). Use `(#<PR>)` and `thanks @<author>` when author metadata is available.
 - Mobile: before using a simulator, check for connected real devices (iOS + Android) and prefer them when available.
 
 ## Commit & Pull Request Guidelines
 
-**Full maintainer PR workflow (optional):** If you want the repo's end-to-end maintainer workflow (triage order, quality bar, rebase rules, commit/changelog conventions, co-contributor policy, and the `review-pr` > `prepare-pr` > `merge-pr` pipeline), see `.agents/skills/PR_WORKFLOW.md`. Maintainers may use other workflows; when a maintainer specifies a workflow, follow that. If no workflow is specified, default to PR_WORKFLOW.
+**Maintainer PR workflow (required):** Use `.agents/skills/PR_WORKFLOW.md` as the source of truth. Execute `review-pr` -> `prepare-pr` -> `merge-pr` in order, with a maintainer checkpoint between stages.
 
 - Create commits with `scripts/committer "<msg>" <file...>`; avoid manual `git add`/`git commit` so staging stays scoped.
 - Follow concise, action-oriented commit messages (e.g., `CLI: add verbose flag to send`).
 - Group related changes; avoid bundling unrelated refactors.
+- Before substantive review or prep, rebase the PR branch onto current `main` and resolve conflicts.
+- Run gates before merge: `pnpm build`, `pnpm check`, and `pnpm test` unless docs-only criteria explicitly allow skipping heavy lanes.
+- Keep PRs focused, describe what/why, and mark AI-assisted PRs with testing depth.
+- For new feature/architecture work, start with GitHub Discussion before implementation.
 - PR submission template (canonical): `.github/pull_request_template.md`
 - Issue submission templates (canonical): `.github/ISSUE_TEMPLATE/`
 

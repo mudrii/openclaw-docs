@@ -4,6 +4,24 @@ Consolidated changelog assembled from versioned changelog files in this reposito
 
 ---
 
+## OpenClaw v2026.2.23 — Current Released Summary
+
+> **Released:** 2026-02-24 | **Policy note:** latest released section stays at top; no `Unreleased` section is used.
+
+## Highlights
+
+- Session-key canonicalization and migration for mixed-case session IDs.
+- Routing/model/provider hardening (Vercel AI Gateway Claude shorthand normalization, OpenRouter reasoning-effort conflict mitigation).
+- Telegram reliability fixes (polling fallback behavior, reaction handling, metadata delivery safety).
+- Security hardening across config writes, exec obfuscation checks, OTEL redaction, and stored-XSS defenses.
+
+For full detail, see the detailed v2026.2.23 synthesis sections later in this file:
+
+- `# OpenClaw v2026.2.23 — Synthesis Review (Released)`
+- `# Synthesis Review: v2026.2.22 → v2026.2.23 (Released)`
+
+---
+
 # Changelog: v2026.2.14 -> v2026.2.15
 
 > **Released:** 2026-02-15 | **Commits:** 880 | **Files changed:** 1,526 | **Lines changed:** ~113,000

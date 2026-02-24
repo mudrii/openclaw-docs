@@ -74,10 +74,22 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 Found an inaccuracy? File paths changed? Module structure updated? PRs welcome.
 
+This docs repo follows OpenClaw contributor policy from:
+- `openclaw/openclaw/CONTRIBUTING.md`
+- `openclaw/maintainers/.agents/skills/PR_WORKFLOW.md`
+
 When updating, please:
 1. Verify all file paths against the current OpenClaw source
 2. Cross-reference with at least one other analysis file
 3. Note which OpenClaw version you verified against
+4. Keep PR scope focused to one logical change
+5. Run `pnpm build && pnpm check && pnpm test` before PR (docs-only PRs may use docs-only CI criteria)
+6. Include a changelog update for maintainer workflow PRs (including internal/test-only changes)
+7. Mark AI-assisted PRs clearly and describe testing coverage
+
+For new features/architecture proposals in OpenClaw itself, start with a GitHub Discussion before implementation.
+
+For security issues, report to the relevant repository security process, or email `security@openclaw.ai` if uncertain.
 
 ## License
 
