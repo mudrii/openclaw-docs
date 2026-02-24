@@ -1189,6 +1189,14 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 **Web UI:** saved locale translations loaded and hydrated on startup
 
+### Agent/Session Fixes
+
+- Workspace path null-byte stripping and `undefined.trim()` guard to prevent `ENOTDIR`/`TypeError` crashes (#24876, #24875)
+- `sessions_send` relay errors suppressed from chat-facing warning payloads (#24740)
+- Sub-agent model overrides preserved when `agents.defaults.models` is empty (allow-any mode) (#21088)
+- Orphaned subagent restored runs pruned before retry/announce resume to prevent zombie entries (#24244)
+- Subagent announce queue exponential backoff on drain failures to reduce retry storms (#24783)
+
 ### Provider/Gateway Fixes
 
 - OpenRouter: no `reasoning.effort` injection when thinking is explicitly off; conflicting top-level `reasoning_effort` removed

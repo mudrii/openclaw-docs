@@ -487,7 +487,7 @@ src/<module>/
 - **Config & Auth:** #1, #6, #16, #33, #34, #37, #44, #61, #62, #67, #68, #73, #74, #82
 - **Routing & Sessions:** #3, #6, #17, #18, #20, #67, #70
 - **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36, #83
-- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52, #63, #66, #79, #80, #84
+- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52, #63, #66, #79, #80, #84, #88, #89
 - **Security/Network:** #38, #42, #43, #45, #46, #47, #48, #53, #54, #55, #56, #57, #58, #64, #65, #66, #73, #74, #75
 - **Channel/Streaming Config:** #36, #49, #50, #62, #72, #81, #83
 - **Subagent/Ownership:** #48, #53
@@ -496,6 +496,7 @@ src/<module>/
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
 - **Breaking Changes (post-v2026.2.23, unreleased):** #73, #74, #75, #76, #77, #78, #79, #80, #81, #82, #83, #84
 - **Exec/Shell Security (post-v2026.2.23):** #75, #76, #77, #78, #79, #80
+- **Agent/Session Runtime (post-v2026.2.23):** #87 (Twilio), #88 (null-byte paths), #89 (allow-any model override)
 - **Plugin/Command Config (post-v2026.2.23):** #81, #82
 
 (Use this index first, then read only the relevant gotchas for your change.)
@@ -724,6 +725,12 @@ src/<module>/
 85. **Emergency stop matching is broader and multilingual** — Standalone stop phrases now include variants like `stop openclaw`, `stop action`, `stop run`, `stop agent`, and `please stop`, accept trailing punctuation (`STOP OPENCLAW!!!`), and match multilingual keywords (ES/FR/ZH/HI/AR/JP/DE/PT/RU). If you maintain custom "stop" filters or wrappers around inbound messages, keep them aligned with the new matcher to avoid double-triggering or missed aborts.
 
 86. **Doctor recovery hints changed to valid commands** — Stale doctor recovery hints were replaced with `openclaw gateway status --deep` and `openclaw configure --section model`; redundant "Run doctor --fix" output is suppressed when already in fix mode with no changes. If you have runbooks, bots, or screenshots that reference old hint strings, update them.
+
+87. **Twilio webhook turn-token matching is now stricter** — Voice Call/Twilio webhook replay handling now enforces per-call turn-token matching in addition to event-ID-based bounded dedupe. If you have custom Twilio webhook integrations or test harnesses that replay webhook events (e.g., for retry testing), those replays will now be rejected if the turn-token doesn't match. Ensure each webhook delivery has a unique, stable event ID and that test harnesses use realistic turn-token sequences rather than replaying identical payloads.
+
+88. **Workspace paths with null bytes or missing `.trim()` now sanitized** — Agent workspace path inputs are now sanitized at entry: null bytes are stripped and undefined paths that previously caused `.trim()` crashes are guarded. If you pass workspace paths programmatically (e.g., via tool calls or session config), paths containing null bytes (`\0`) will be silently cleaned rather than propagating to filesystem operations. If you relied on null bytes for any path manipulation, those paths will now resolve differently. Affected subsystem: `agents/` workspace-path resolution.
+
+89. **Sub-agent model overrides preserved in allow-any mode** — When `agents.defaults.models` is set to empty (allow-any mode, `[]`), stored per-agent model overrides are now preserved across patch/update flows instead of being reset to defaults. Previously, updating agent config in allow-any mode could silently discard stored model selections. If you have agents with explicit model overrides AND use allow-any mode, verify that the preserved overrides are the intended ones after upgrading — previously they would have been wiped on each config update. Affected config key: `agents.defaults.models`. (#21088)
 
 ---
 

@@ -8,8 +8,67 @@ Consolidated changelog assembled from versioned changelog files in this reposito
 
 > **Window analyzed:** `v2026.2.23..HEAD` (as of 2026-02-24)
 
-- **Auto-reply/Abort:** normalize standalone stop matching, accept punctuation, and add multilingual stop triggers for emergency abort handling (`#25103`).
-- **CLI/Doctor:** replace stale recovery hints with valid commands (`openclaw gateway status --deep`, `openclaw configure --section model`) and remove redundant no-op `--fix` guidance (`#24485`).
+### Breaking Changes
+
+- **Control UI `allowedOrigins` required** — Non-loopback Control UI now requires explicit `gateway.controlUi.allowedOrigins`; startup fails closed when absent. Escape-hatch: `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback=true`.
+- **`allowFrom` ID-only matching** — Channel `allowFrom` now matches stable IDs only by default. Mutable name/tag/email matching disabled. Opt back in per-channel with `channels.<channel>.dangerouslyAllowNameMatching=true`. (#24907)
+
+### New Features
+
+- **Auto-reply/Abort:** multilingual stop keywords (ES/FR/ZH/HI/AR/JP/DE/PT/RU), trailing punctuation accepted (`STOP OPENCLAW!!!`) (`#25103`).
+- **Subagents:** `agents.defaults.subagents.runTimeoutSeconds` configurable default spawn timeout for `sessions_spawn` (0 = no timeout) (`#24594`).
+- **Kilo Gateway:** updated provider model list (`#24921`).
+
+### Security Fixes
+
+- **Exec approvals (6 fixes):** cross-node replay prevented (`nodeId` binding); two-phase registration + wait-decision required; canonical `env` wrapper enforcement blocks `env -S` bypasses; `busybox`/`toybox` applet recognition with safe inner-executable persistence; `autoAllowSkills` pathless-invocation requirement; `safeBins` unknown GNU long-option and sort filesystem-flag rejection.
+- **Shell env:** only `/etc/shells`-registered shells trusted; default `/bin/sh` when `SHELL` is unregistered.
+- **iOS deep links:** local confirmation or trusted key required before forwarding `openclaw://agent` to gateway.
+- **Session export XSS:** HTML token escaping, tree/header metadata hardening, image `data:` MIME sanitization; MIME/base64 field validation rejects malformed input and invalid tool-image payloads.
+- **Image tool:** `tools.fs.workspaceOnly` enforced for sandboxed image path resolution.
+- **Sandbox `apply_patch`:** `tools.exec.applyPatch.workspaceOnly` + `tools.fs.workspaceOnly` enforced; opt-out: `tools.exec.applyPatch.workspaceOnly=false`.
+- **Commands `allowFrom`:** conversation-shaped `From` identities (`channel:`, `group:`, `thread:`, `@g.us`) blocked; DM fallback preserved.
+- **Config writes:** prototype keys blocked in account-id normalization; own-key lookups enforced.
+- **Voice Call/Twilio:** webhook replay hardened with event-ID normalization, bounded dedupe window, per-call turn-token matching.
+- **ACP:** permission auto-approval requires trusted core tool IDs; `read` approval scoped to active working directory.
+
+### Channel Fixes
+
+- **WhatsApp:** final-only payloads (reasoning/thinking suppressed, block streaming off), `dmScope` isolation, `selfChatMode` honored, log redaction, `groupAllowFrom` filter fix, `enabled` key accepted (#24962, #24949, #24738, #24980, #24670, #24263)
+- **Discord:** reasoning-only suppression (#24969), thread parent ID recovery (#24897)
+- **Channels/Reasoning:** shared dispatch suppresses reasoning/thinking for all non-Telegram channels (#24991)
+- **Telegram:** RFC2544 SSRF blocked for media (#24982), reactions soft-fail (#20236), polling scoped to bot identity (#10850), `/reasoning off` suppresses leakage (#24626)
+- **Synology Chat:** stale webhook route deregistration (#24971)
+- **Web UI:** locale hydration on startup (#24795)
+
+### Agent/Session Fixes
+
+- **Agents/Workspace paths:** null bytes stripped, undefined `.trim()` guarded (#24876, #24875)
+- **Agents/Tool warnings:** `sessions_send` relay errors suppressed from chat-facing payloads (#24740)
+- **Sessions/Model overrides:** sub-agent overrides preserved when `agents.defaults.models` is empty (allow-any mode) (#21088)
+- **Subagents/Registry:** orphaned restored runs pruned before retry/announce (#24244)
+- **Subagents/Announce queue:** exponential backoff on queue-drain failure (#24783)
+- **Sessions/Reasoning:** `reasoningLevel: "off"` persisted explicitly (#24406, #24559)
+- **Cron/Isolated sessions:** full prompt mode so skills/extensions available (#24944)
+
+### Provider/Gateway/CLI Fixes
+
+- OpenRouter: no `reasoning.effort` when thinking is off (#24863); conflicting top-level `reasoning_effort` removed (#24120)
+- Anthropic: `context-1m-*` beta skipped for OAuth tokens (#10647)
+- Bedrock: cache retention suppressed for non-Anthropic models (#20866, #22303)
+- Groq: TPM limit errors classified as throttling, not overflow (#16176)
+- Gateway WS: `unauthorized role:*` flood protection (#20168); restart child-PID ownership fix (#24696)
+- Config write: `unsetPaths` immutable path-copy; prototype-key traversal rejected (#24134)
+- Plugins: manifest `id` for config keys (#24796); legacy schema fallback (#24933)
+- Auth/OAuth: missing scopes classified as auth failures (#24761)
+- Pairing recovery: explicit approval hints with `requestId` (#24771)
+- Doctor/UX: redundant `--fix` hint suppressed (#24666)
+- **CLI/Doctor:** correct stale hints to `openclaw gateway status --deep` and `openclaw configure --section model` (`#24485`).
+- Doctor/Nix: Nix store symlink false-positive warnings skipped (#24901)
+- Systemd update: unit backed up before overwrite (#24350, #24937)
+- Install: symlinks resolved for pnpm/bun global paths (#24744)
+- Infra/Windows TOCTOU: `dev=0` edge cases handled (#24939)
+- Exec/Bash: poll sleep clamped to non-negative values (#24889)
 - **Docs:** maintainers list update (no runtime behavior change) (`#25197`).
 
 ---
