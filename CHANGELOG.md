@@ -1113,3 +1113,139 @@ Since this is unreleased, no migration steps are required yet. Changes to watch 
 2. **Reasoning with thinking:** Models with `thinking=low` will no longer enable auto-reasoning by default — verify your reasoning-dependent workflows.
 3. **Vercel AI Gateway:** Shorthand Claude refs now normalize automatically — no config change needed.
 4. **OTEL users:** Review OTLP exports — credential fields are now redacted.
+
+---
+
+# Synthesis Review: v2026.2.22 → v2026.2.23 (Current/Unreleased)
+
+> **Window analyzed:** `v2026.2.22..HEAD` (active development)
+> **Status:** UNRELEASED - tracking changes for next release
+
+---
+
+## Executive Summary
+
+This update cycle continues the security-hardening focus with expanded exec approval protections, channel security unification, and automated reasoning/thinking leak prevention. Key themes include:
+
+1. **Exec approval system hardened** — Multi-layer fixes for wrapper bypasses, busybox/toybox applet handling, shell env sanitization, and two-phase approval registration.
+2. **Channel security unified** — `dangerouslyAllowNameMatching` policy applied consistently across all channels with shared audit/doctor detection.
+3. **Reasoning block leaks eliminated** — Automatic suppression of thinking/reasoning blocks in channel delivery paths, with provider-specific handling.
+4. **Webhooks and plugins stabilized** — Synology Chat webhook deregistration, plugin config schema fallback, and Feishu media handling fixes.
+
+---
+
+## Critical Security Fixes (Unreleased)
+
+### Exec Approval System
+
+| Fix | Impact |
+|-----|--------|
+| Bind `host=node` approvals to explicit `nodeId` | Prevents cross-node replay attacks |
+| Two-phase approval registration + wait-decision | Eliminates orphaned `/approve` flows and immediate-return races |
+| Canonical wrapper execution plans | Prevents `env -S/--split-string` interpretation-mismatch bypasses |
+| Busybox/toybox applet recognition | Inner executables persisted instead of wrapper binaries |
+| `autoAllowSkills` pathless invocation requirement | `./<skill-bin>`/absolute-path basename collisions blocked |
+| Safe-bin long-option validation | Unknown/ambiguous GNU long-option abbreviations rejected |
+| Sort filesystem-dependent flags denied | `--random-source`, `--temporary-directory`, `-T` blocked |
+| Shell env fallback hardening | Only trust login shells registered in `/etc/shells` |
+
+### Channel & Messaging Security
+
+| Fix | Impact |
+|-----|--------|
+| WhatsApp JID allowlist on all sends | Tool-initiated sends now validate JID |
+| Reasoning/thinking payload suppression | Non-Telegram channels no longer emit internal reasoning blocks |
+| Telegram media SSRF policy | RFC2544 benchmark range blocked by default with explicit opt-in |
+| `commands.allowFrom` sender-only matching | Blocks conversation-shaped `From` identities |
+| Config prototype pollution prevention | Blocks `__proto__`, `constructor`, `prototype` traversal |
+
+---
+
+## Major Changes (Unreleased)
+
+### Providers
+
+- **Kilo Gateway** — First-class `kilocode` provider support with auth, onboarding, implicit detection, and default model `kilocode/anthropic/claude-opus-4.6` (#20212)
+- **Vercel AI Gateway** — Claude shorthand normalization (`vercel-ai-gateway/claude-*`) (#23985)
+- **Moonshot/Kimi** — Native video provider, grounded web search support, `supportsDeveloperRole=false` enforced
+
+### Tools & Capabilities
+
+- **`web_search` provider: "kimi"** — Moonshot search with citation extraction (#16616, #18822)
+- **Media understanding/Video** — Native Moonshot video provider with auto key detection (#12063)
+- **`agents.defaults.subagents.runTimeoutSeconds`** — Configurable default timeout for `sessions_spawn`
+
+### Sessions & Cron
+
+- **Session maintenance hardening** — `openclaw sessions cleanup`, per-agent store targeting, disk-budget controls (#24753)
+- **Isolated cron sessions** — Full prompt mode for skill/extension availability (#24944)
+- **Cron webhook deregistration** — Synology Chat stale route cleanup (#24971)
+
+### Gateway & Channels
+
+- **HTTP security headers** — Optional `gateway.http.securityHeaders.strictTransportSecurity` (#24753)
+- **Telegram reactions** — Soft-fail errors, snake_case `message_id`, context fallback (#20236, #21001)
+- **Telegram polling** — Scoped offsets, single runner-stop path (#10850, #11347)
+- **Slack group policy** — Inheritance fix for multi-account configs (#17579)
+- **Discord threading** — Parent ID recovery, thread-bound subagents (#24897)
+- **Web UI i18n** — Locale hydration on startup (#24795)
+
+---
+
+## Breaking Changes (Unreleased)
+
+1. **Control UI origin requirements** — Non-loopback Control UI requires explicit `gateway.controlUi.allowedOrigins`; fails closed without `dangerouslyAllowHostHeaderOriginFallback=true`
+2. **Channel `allowFrom` ID-only default** — Mutable name/tag/email matching disabled by default; use `dangerouslyAllowNameMatching=true` for compatibility mode (#24907)
+
+---
+
+## Fixes (Unreleased Selection)
+
+### Agents & Runtime
+- Bootstrap file snapshots cached per session key, cleared on reset (#22220)
+- Context pruning `cache-ttl` extended to Moonshot/Kimi and ZAI/GLM (#24497)
+- Kimi `token limit` failures classified as context overflows (#9562)
+- Consecutive-user turn merging for non-OpenAI providers (#7693)
+- OpenRouter `cache_control` injection for Anthropic models (#17473)
+- Anthropic OAuth tokens skip `context-1m` beta (#10647, #20354)
+- Bedrock cache retention disabled for non-Anthropic models (#20866, #22303)
+- Groq TPM errors no longer classified as context overflow (#16176)
+
+### Telegram
+- Reaction soft-fail for policy/token/emoji/API errors (#20236)
+- Polling offset scoped to bot identity (#10850, #11347)
+- Reasoning suppression when `/reasoning off` active (#24626, #24518)
+
+### WhatsApp
+- Group policy `groupAllowFrom` fix when no explicit `groups` (#24670)
+- DM routing only updates main-session when bound (#24949)
+- `selfChatMode` honored in access control (#24738)
+- Outbound recipient identifier redaction (#24980)
+
+### Webchat/UI
+- Locale hydration during startup (#24795)
+- Assistant `final` payloads applied directly (#14928, #11139)
+- External session routing metadata preserved (#23258)
+- Session `label` preserved across resets (#23755)
+
+### Gateway & Infra
+- Browser control loads `server.js` reliably (#23974)
+- Chrome relay debugger detach handling (#19766)
+- Relay port derivation clarified for custom gateway ports (#22252)
+- Pairing recovery shows explicit approval hints (#24771)
+- OAuth scope failures classified as auth failures (#24761)
+
+---
+
+## Recommended Operational Checks (Pending Release)
+
+1. **Review `allowFrom` configurations** — If relying on mutable name matching, migrate to stable IDs or set `dangerouslyAllowNameMatching=true`
+2. **Control UI origin settings** — Non-loopback deployments need explicit `gateway.controlUi.allowedOrigins`
+3. **Test reasoning suppression** — Verify thinking-capable models don't leak reasoning blocks in channel replies
+4. **Review exec allowlists** — Busybox/toybox and wrapper command patterns may need re-approval
+5. **Kimi provider testing** — Verify `kimi-coding/k2p5` works without 403 errors
+
+---
+
+*Generated: 2026-02-24*
+

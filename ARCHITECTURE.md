@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-02-24 (v2026.2.23) | Comprehensive reference for contributors
+> Updated: 2026-02-24 (v2026.2.23 UNRELEASED) | Comprehensive reference for contributors
 
 ---
 
@@ -1018,6 +1018,129 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - **`cron.maxConcurrentRuns` now enforced** — Timer loop now enforces the `maxConcurrentRuns` limit; previously silently ignored
 - **`senderIsOwner` propagated to subagent runners** — Ownership context is now forwarded to embedded/subagent runners; owner-only tools no longer fail silently in subagent contexts
 - **`channels.telegram.streaming` simplified to boolean** — Legacy `streamMode` enum replaced with boolean; auto-mapper handles old values but explicit config should be updated
+
+---
+
+## v2026.2.22 Changes (2026-02-24)
+
+### New Channel
+
+- **Synology Chat** — Native webhook-based channel plugin with DM routing, outbound send/media, per-account config, and DM policy controls (`extensions/synology-chat/`)
+
+### New Provider
+
+- **Mistral** — Full provider support including memory embeddings and voice capabilities; use `model: "mistral/<model-id>"`
+
+### Major Features
+
+- **Grounded Gemini Web Search** — Web search with grounding via Gemini provider; enable with `tools.webSearch.provider: "gemini"`
+- **Full Control UI Cron Edit Parity** — Complete web cron management: clone, validation, run history with pagination/search/sort/multi-filter
+- **Optional Auto-Updater** — Built-in auto-updater (`update.auto.*`), default-off; `openclaw update --dry-run` for previews
+- **Memory FTS Multilingual Expansion** — Full-text search now supports Spanish, Portuguese, Japanese, Korean, and Arabic stop-word filtering and tokenization
+- **Tools Panel Data-Driven** — Control UI Tools panel driven from runtime `tools.catalog` with per-tool provenance labels
+
+### Breaking Changes
+
+1. **Google Antigravity Provider Removed** — `google-antigravity/*` model refs no longer work; migrate to `google-gemini-cli`
+2. **Tool-Failure Replies Hide Raw Errors** — Detailed error suffixes hidden by default; use `/verbose on` or `/verbose full`
+3. **`session.dmScope` Defaults to `per-channel-peer`** — New installs default to per-channel-peer; set `"session": {"dmScope": "main"}` for shared DM continuity
+4. **Unified Streaming Config + Device Auth v1 Removed** — `channels.<channel>.streaming` uses enum `off | partial | block | progress`; device auth v1 signatures rejected
+
+### Security Hardening (30+ fixes)
+
+#### Exec Approval System
+- Safe-bin PATH hijacking prevention — `tools.exec.safeBinTrustedDirs` for explicit trusted directories
+- Wrapper-path bypass fix — Inner executable persisted, not wrapper binary
+- Shell line continuation blocking — `\\\n`/`\\\r\n` fail closed
+- `env` wrapper transparency
+- Safe-bin profiles required for custom binaries
+- `sort --compress-program` bypass blocked
+- macOS app basename matching hardened
+- Sandbox fail-closed when unavailable
+- Shell exec env sanitization — `HOME`/`ZDOTDIR`/`SHELLOPTS`/`PS4` blocked
+- Shell startup injection prevention
+
+#### SSRF Hardening
+- Expanded IPv4 fetch guard to RFC special-use ranges
+- IPv6 dotted-quad transition literal normalization
+- `autoSelectFamily` for IPv6 fallback
+- MSTeams SharePoint allowlist enforcement
+
+#### Symlink Escape Prevention
+- Browser uploads accept in-root symlink paths
+- Zip extraction blocks symlink escapes
+- Media sandbox enforces symlink checks
+- Control UI blocks symlink-based out-of-root reads
+- Gateway avatars block symlink traversal
+- Hooks transforms enforce symlink-safe containment
+
+#### Auth and Identity
+- Elevated scope bypass fix — `tools.elevated.allowFrom` matches sender only
+- Feishu display-name collision prevention — ID-only matching
+- Group policy `toolsBySender` requires explicit sender-key types
+- Discord allowlist canonicalization
+- Prototype pollution prevention in config merge
+
+### Channel Updates
+
+**Telegram:**
+- WSL2 `autoSelectFamily` disabled by default
+- Node 22+ `ipv4first` DNS default
+- Forward burst coalescing
+- Streaming preview preservation
+- Polling offset watermark and stuck-runner restart
+- Webhook keepalive and `webhookPort` config
+
+**Slack:**
+- Threading beyond first turn
+- `replyToMode` respect with auto-populated `thread_ts`
+- Extension thread forwarding
+- Upload user ID resolution for DM channels
+
+**Discord:**
+- Allowlist canonicalization to IDs
+- Security audit warnings for name/tag entries
+
+---
+
+## v2026.2.23 Changes (Unreleased)
+
+### New Providers
+
+- **Kilo Gateway** — `kilocode` provider with auth, onboarding, implicit detection; default model `kilocode/anthropic/claude-opus-4.6`
+- **Vercel AI Gateway Claude Shorthand** — `vercel-ai-gateway/claude-*` normalizes to canonical Anthropic IDs
+
+### Major Features
+
+- **Moonshot Video Provider** — Native video understanding with auto key detection
+- **Kimi Web Search** — `provider: "kimi"` with citation extraction
+- **Session Maintenance Hardening** — `openclaw sessions cleanup`, disk-budget controls, per-agent targeting
+- **HSTS Support** — Optional `gateway.http.securityHeaders.strictTransportSecurity`
+- **Per-Agent Params Overrides** — `params` merged on top of model defaults including `cacheRetention`
+- **Bootstrap File Caching** — Per-session snapshots reduce prompt-cache invalidations
+
+### Breaking Changes
+
+1. **Control UI Origin Requirements** — Non-loopback requires explicit `gateway.controlUi.allowedOrigins`; fails closed without opt-in
+2. **Channel `allowFrom` ID-Only Default** — Mutable name/tag/email matching disabled; use `dangerouslyAllowNameMatching=true` for compatibility
+
+### Security Fixes
+
+- **Exec Approvals:** Node-bound approvals, two-phase registration, canonical wrapper plans, busybox/toybox handling
+- **Safe-Bins:** Long-option validation, sort flags denied, shell env hardening
+- **WhatsApp:** JID allowlist on all sends enforced
+- **Reasoning:** Payload suppression in shared channel dispatch
+- **Config:** Prototype pollution prevention
+
+### Key Fixes
+
+- Telegram reactions soft-fail, polling offset scoping, reasoning suppression
+- WhatsApp group policy, DM routing, `selfChatMode`, logging redaction
+- Discord thread parent ID recovery
+- Web UI locale hydration
+- Browser control reliability, relay port derivation
+- Isolated cron full prompt mode
+- Plugin config schema fallback
 
 ---
 
