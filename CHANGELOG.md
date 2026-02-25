@@ -6,7 +6,7 @@ Consolidated changelog assembled from versioned changelog files in this reposito
 
 ## OpenClaw v2026.2.23 — Current Released Summary
 
-> **Released:** 2026-02-24 | **Policy note:** latest released section stays at top; no `Unreleased` section is used.
+> **Released:** 2026-02-24 | **Policy note:** latest released section stays at top.
 
 ## Highlights
 
