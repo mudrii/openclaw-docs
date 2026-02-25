@@ -2,7 +2,9 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Current stable: v2026.2.24 (released 2026-02-25, validated against `main` through 2026-02-25)**
+**Current stable: v2026.2.24 (released 2026-02-25, validated against tag `v2026.2.24`)**
+
+**Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
 ## What's Here
 

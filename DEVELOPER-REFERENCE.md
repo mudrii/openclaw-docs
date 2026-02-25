@@ -2,6 +2,7 @@
 
 > Practical reference for making code changes safely. Load before PRs, bug fixes, or refactoring.
 > Designed for both human contributors and AI agents/tools.
+> Release-only scope: guidance in this document maps to published OpenClaw releases, not unreleased branch state.
 
 ---
 
