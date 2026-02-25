@@ -308,6 +308,14 @@ Conditional checks:
 □ If `auto-reply/reply/get-reply.ts` changed: run reply pipeline checks across fallback paths
 ```
 
+### Release-window Workflow Additions (v2026.2.24)
+
+- **Heartbeat delivery is now explicit and non-DM by default:** verify `heartbeat.delivery.target` for every environment. Default `none` means no external delivery unless configured, and DM/direct targets are now blocked.
+- **Cross-channel shared-session routing is fail-closed:** when validating followup behavior, test explicit source-channel metadata paths and ensure no fallback to active dispatcher on route failure.
+- **Sandbox namespace-join behavior changed:** if any workflow depended on `network: "container:<id>"`, confirm whether `agents.defaults.sandbox.docker.dangerouslyAllowContainerNamespaceJoin` must be explicitly enabled.
+- **Security audit should be treated as a gate after upgrade:** this release introduced additional high-signal audit findings around trusted directories, trust model, and ingress hardening; resolve findings before shipping changes.
+- **Long-running reply UX paths need keepalive coverage:** for channel runtime changes, include typing/keepalive assertions in tests so indicators remain active across extended inference/tool phases.
+
 ### Release-window Workflow Additions (v2026.2.19)
 
 - **Gateway auth changes:** Before any gateway auth config edit, verify `gateway.auth.mode` explicitly. Default is now token mode. If touching `gateway.auth.token`, ensure `hooks.token` is set to a **different** value — identical values fail at startup.
@@ -696,6 +704,28 @@ src/<module>/
 **BREAKING CHANGES (v2026.2.23):**
 
 73. **Browser SSRF default flipped to trusted-network** — `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` now defaults to `true` (trusted-network mode) when unset, meaning browser navigation to private/LAN addresses is allowed by default. To enforce strict SSRF blocking, explicitly set `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork: false`. The legacy key `browser.ssrfPolicy.allowPrivateNetwork` is still accepted but deprecated — `openclaw doctor --fix` migrates it automatically.
+
+### v2026.2.24 Specific
+
+**BREAKING / OPERATIONAL SHIFTS (v2026.2.24):**
+
+74. **Heartbeat DM delivery now blocked** — direct/DM heartbeat targets are rejected. Heartbeat runs still execute, but only non-DM targets can receive external delivery.
+
+75. **Heartbeat default target changed to `none`** — if you previously relied on implicit `last` routing, heartbeat outputs will now stay internal unless you explicitly configure an external target.
+
+76. **Sandbox container namespace join is disabled by default** — Docker `network: "container:<id>"` in sandbox paths now requires explicit break-glass opt-in.
+
+77. **Cross-channel shared-session routing now fails closed** — explicit cross-channel followups no longer fall back to dispatcher context on route failure, reducing misrouted reply risk.
+
+78. **Stop/abort phrase matching expanded and stricter standalone semantics retained** — multilingual stop phrases with punctuation tolerance now trigger abort flows; regression tests should include both valid standalone triggers and false-positive guard cases.
+
+79. **Typing keepalive is now lifecycle-managed across longer runs** — long inference/tool replies should keep typing indicators active; test channel-specific keepalive teardown/cleanup paths.
+
+80. **OpenRouter auth profiles bypass cooldown persistence** — if you depended on cooldown behavior for OpenRouter profiles, selection/fallback behavior now differs from other providers by design.
+
+81. **Allowlisted model refs can be used even when bundled catalog is stale** — `models.list` and model selection now synthesize explicit allowlisted refs; stale catalog absence is no longer a blocker.
+
+82. **Exec safe-bin trust defaults tightened** — implicit trust in mutable PATH-derived directories is reduced; review `tools.exec.safeBinTrustedDirs` and audit findings before assuming previous behavior.
 
 ---
 

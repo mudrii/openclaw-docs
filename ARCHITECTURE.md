@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-02-24 (source package: 2026.2.23) | Comprehensive reference for contributors
+> Updated: 2026-02-25 (source package: 2026.2.24) | Comprehensive reference for contributors
 
 ---
 
@@ -1139,4 +1139,3 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - Plugin config schema fallback
 
 ---
-

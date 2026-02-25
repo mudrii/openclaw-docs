@@ -4,21 +4,68 @@ Consolidated changelog assembled from versioned changelog files in this reposito
 
 ---
 
-## OpenClaw v2026.2.23 — Current Released Summary
+## OpenClaw v2026.2.24 — Current Released Summary
 
-> **Released:** 2026-02-24 | **Policy note:** latest released section stays at top.
+> **Released:** 2026-02-25 | **Policy note:** latest released section stays at top.
 
 ## Highlights
 
-- Session-key canonicalization and migration for mixed-case session IDs.
-- Routing/model/provider hardening (Vercel AI Gateway Claude shorthand normalization, OpenRouter reasoning-effort conflict mitigation).
-- Telegram reliability fixes (polling fallback behavior, reaction handling, metadata delivery safety).
-- Security hardening across config writes, exec obfuscation checks, OTEL redaction, and stored-XSS defenses.
+- Auto-reply stop controls significantly expanded: multilingual standalone stop phrases, punctuation-tolerant matching, and exact `do not do that` stop trigger support.
+- Heartbeat safety hardened: default delivery target shifted to `none`, direct/DM heartbeat targets are now blocked, and blocked-delivery prompts are internalized.
+- Cross-channel shared-session routing now fails closed and preserves route metadata for followup/overflow delivery to prevent channel hijacking.
+- Security hardening wave across sandbox, exec, workspace FS, and ingress authorization boundaries (including container namespace-join default block for sandbox).
+- Broad reliability fixes landed across Discord voice/DAVE, typing keepalive, WhatsApp reconnect behavior, model fallback traversal, and allowlisted-model selection.
 
-For full detail, see the detailed v2026.2.23 synthesis sections later in this file:
+For full detail, see the v2026.2.24 synthesis section below.
 
-- `# OpenClaw v2026.2.23 — Synthesis Review (Released)`
-- `# Synthesis Review: v2026.2.22 → v2026.2.23 (Released)`
+---
+
+# Synthesis Review: v2026.2.23 → v2026.2.24 (Released)
+
+> **Window analyzed:** `v2026.2.23..v2026.2.24`
+> **Release date:** 2026-02-25
+> **Scan stats:** 228 commits, 458 files changed, +20,743 / -4,989 lines
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | 247 |
+| `apps/` | 86 |
+| `extensions/` | 66 |
+| `docs/` | 28 |
+| `ui/` | 12 |
+| `scripts/` | 5 |
+| `test/` | 4 |
+
+## Breaking / Behavior Shifts
+
+1. Heartbeat delivery now blocks direct/DM targets; heartbeat still runs but only non-DM destinations can receive outbound delivery.
+2. Sandbox Docker `network: "container:<id>"` namespace-join mode is blocked by default; break-glass enablement now requires explicit config (`dangerouslyAllowContainerNamespaceJoin: true`).
+3. Heartbeat default target changed from `last` to `none`, making external heartbeat delivery explicit opt-in.
+
+## High-Signal Runtime Fixes
+
+- Shared-session routing hardened to fail closed for cross-channel replies and preserve originating channel metadata through followup/queue paths.
+- Typing keepalive lifecycle improved across core and extension dispatch paths so indicators survive long inference runs.
+- Discord voice path reliability improved (DAVE dependency/runtime handling, decrypt-failure tolerance and recovery logic, stale listener cleanup).
+- Fallback traversal on model fallback chains fixed to continue through configured fallbacks when already on fallback models.
+- Gateway model allowlist behavior fixed so explicit allowlisted refs remain selectable even when bundled catalog metadata is stale.
+
+## Security Hardening Themes
+
+- Exec approval/display binding tightened so shell-wrapper payloads cannot drift from approved command text.
+- Workspace and sandbox path guards tightened (including `@` path normalization and tmp-media hardlink alias rejection).
+- Ingress authorization hardened across channel-specific paths (for example Telegram DM media write authorization and Synology Chat DM fail-closed allowlists).
+- Safe-bin trust defaults tightened to immutable system directories with stronger audit/doctor guidance for risky trusted-dir configurations.
+
+## Maintainer Upgrade Checklist (v2026.2.24)
+
+1. Verify heartbeat targets: if external delivery is expected, set explicit non-DM targets; default `none` and DM blocking are now enforced.
+2. Audit sandbox Docker settings for namespace-join assumptions; enable break-glass key only where intentionally required.
+3. Re-test shared-session multi-channel routes and followup behavior (especially Discord/Webchat mixed sessions).
+4. Re-run security audit and review safe-bin trusted-dir findings after upgrade.
+5. Validate channel-specific reliability paths you depend on (Discord voice, WhatsApp reconnect, typing keepalive).
 
 ---
 
