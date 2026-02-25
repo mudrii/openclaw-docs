@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 
-> Updated: 2026-02-24 | Version: v2026.2.23 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-02-25 | Version: v2026.2.24 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -406,6 +406,12 @@ Browser automation module providing a local HTTP control server for Playwright a
 
 #### v2026.2.23 Changes
 - **BREAKING: Browser SSRF default flipped to trusted-network** — `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` now defaults to `true` (trusted-network mode) when unset, allowing browser navigation to private/LAN addresses. Canonical config key is `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork` (was `browser.ssrfPolicy.allowPrivateNetwork`). `openclaw doctor --fix` migrates the legacy key automatically. To enforce strict SSRF blocking, explicitly set `browser.ssrfPolicy.dangerouslyAllowPrivateNetwork: false`.
+
+#### v2026.2.24 Changes
+
+- **Sandbox / Symlink-parent bypass** (security, @tdjackey): bind-mount source paths are now canonicalized via existing-ancestor `realpath`, so symlink-parent + non-existent-leaf paths can no longer bypass allowed-source-roots or blocked-path checks. Ships in next npm release.
+- **Native images / workspaceOnly enforcement** (security, @tdjackey): `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including history refs), preventing out-of-workspace sandbox mounts from being implicitly ingested as vision input. Ships in next npm release. Contributor: @tdjackey (reported).
+- **Control UI / Chat image URL safety** (#25444): image click URL opening now uses a centralized allowlist (`http/https/blob` + opt-in `data:image/*`) with opener isolation (`noopener,noreferrer` + `window.opener = null`) to prevent tabnabbing and unsafe schemes. Contributor: @shakkernerd.
 
 ### File Inventory (non-test, ~60 source files)
 

@@ -1,6 +1,6 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 
-> Updated: 2026-02-24 | Version: v2026.2.23 | Codebase: ~/src/openclaw
+> Updated: 2026-02-25 | Version: v2026.2.24 | Codebase: ~/src/openclaw
 > Modules: agents (530 files), gateway (228 files), sessions (9 files), routing (5 files), providers (9 files), hooks (32 files)
 
 ---
@@ -1171,6 +1171,22 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **WS flood protection** — Repeated unauthorized request floods closed per-connection with sampled rejection logging.
 - **Config write unsetPaths** — `unsetPaths` applied with immutable path-copy updates.
 - **Prototype-key traversal** — Rejected in `config get/set/unset`.
+
+---
+
+## v2026.2.24 Changes (2026-02-25)
+
+### Sessions
+- **Tool-result guard** (#25429): synthetic `toolResult` entries are no longer generated for assistant turns that ended with `stopReason: "aborted"` or `"error"`, preventing orphaned tool-use IDs from triggering downstream API validation errors. Contributor: @mikaeldiakhate-cell.
+
+### Providers
+- **Reasoning override preservation** (#25314): explicit user `reasoning` overrides in config are preserved when merging provider model config with built-in catalog metadata, so `reasoning: false` is no longer silently overwritten by catalog defaults. Contributor: @lbo728.
+
+### Agents
+- **Tool dispatch** (#25427): block-reply flush is awaited before tool execution starts, preserving message ordering around tool calls. Contributor: @SidQin-cyber.
+
+### Usage Accounting
+- **Moonshot/Kimi cache metrics** (#25436): `cached_tokens` and `prompt_tokens_details.cached_tokens` fields from Moonshot/Kimi responses are now parsed into normalized cache-read usage metrics. Contributor: @Elarwei001.
 
 ---
 

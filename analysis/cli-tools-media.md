@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 
-> Updated: 2026-02-24 | Version: v2026.2.23
+> Updated: 2026-02-25 | Version: v2026.2.24
 
 ## Overview
 
@@ -824,4 +824,14 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Media <!-- v2026.2.23 -->
 
 - **Video/Moonshot provider** — Native Moonshot video provider added to `src/media-understanding/providers/`. Refactors video execution to honor `entry/config/provider` `baseUrl` + header precedence so per-entry overrides are applied correctly throughout the video processing pipeline (#12063). <!-- v2026.2.23 -->
+
+## v2026.2.24 Changes <!-- v2026.2.24 -->
+
+### Security <!-- v2026.2.24 -->
+
+- **Native images workspaceOnly** (@tdjackey): `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including history refs), preventing out-of-workspace sandbox mounts from being implicitly ingested as vision input. Ships in next npm release. <!-- v2026.2.24 -->
+
+### Usage accounting <!-- v2026.2.24 -->
+
+- **Moonshot-Kimi cache metrics** (#25436): `cached_tokens` and `prompt_tokens_details.cached_tokens` fields from Moonshot/Kimi API responses are parsed into normalized cache-read usage metrics. Contributor: @Elarwei001. <!-- v2026.2.24 -->
 

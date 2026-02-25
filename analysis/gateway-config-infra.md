@@ -1,6 +1,6 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 
-**Updated:** 2026-02-24 | **Version:** v2026.2.23
+**Updated:** 2026-02-25 | **Version:** v2026.2.24
 **Codebase:** ~/src/openclaw
 **Total lines (6 modules):** ~94,080
 
@@ -56,6 +56,17 @@
 **Config Write:**
 - **`unsetPaths` immutable updates** — Config write operations apply `unsetPaths` with immutable path-copy updates.
 - **Prototype-key traversal hardening** — `config get/set/unset` rejects prototype-key path segments.
+
+#### v2026.2.24 Changes <!-- v2026.2.24 -->
+
+**Security / Audit:**
+- **Multi-user heuristic** — `security.trust_model.multi_user_heuristic` config key added; flags likely shared-user ingress patterns and documents hardening guidance (`sandbox.mode="all"`, workspace-scoped FS, reduced tool surface, no personal/private identities on shared runtimes). <!-- v2026.2.24 -->
+
+**Gateway / Auth:**
+- **Trusted-proxy WS sessions** (#25428): trusted-proxy authenticated Control UI WebSocket sessions can now skip device pairing when device identity is absent, preventing false "pairing required" failures behind trusted reverse proxies. Contributor: @SidQin-cyber. <!-- v2026.2.24 -->
+
+**Control UI:**
+- **Chat image URL safety** (#25444): image click URL opening now uses a centralized allowlist (`http/https/blob` + opt-in `data:image/*`) with opener isolation (`noopener,noreferrer` + `window.opener = null`) to prevent tabnabbing. Contributor: @shakkernerd. <!-- v2026.2.24 -->
 
 ### Key Files & Roles
 

@@ -1100,6 +1100,21 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ---
 
+## v2026.2.24 Changes (2026-02-25)
+
+### Security Model
+
+- **Multi-user heuristic** — New `security.trust_model.multi_user_heuristic` config key flags likely shared-user ingress patterns and clarifies the personal-assistant trust model. Hardening guidance for intentional multi-user deployments: `sandbox.mode="all"`, workspace-scoped filesystem, reduced tool surface, no personal/private identities on shared runtimes.
+- **Native image ingestion boundary** — `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including message history refs), closing an implicit out-of-workspace mount vector in the vision pipeline.
+- **Exec approval argv contract** — `system.run` approval text is bound to the full argv for shell-wrapper payloads; rawCommand mismatches are rejected, strengthening the approval integrity model.
+- **Bind-mount canonicalization** — Bind-mount source paths are canonicalized via `realpath` before allowed-source-root and blocked-path checks, closing the symlink-parent bypass.
+
+### Gateway
+
+- **Trusted-proxy Control UI auth** — Trusted-proxy authenticated WebSocket sessions can skip device pairing when device identity is absent, enabling use behind reverse proxies without false pairing failures.
+
+---
+
 ## v2026.2.23 Changes
 
 ### New Providers

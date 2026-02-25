@@ -1,6 +1,6 @@
 # Utilities & Support Modules — Comprehensive Analysis
 
-**Updated:** 2026-02-24 | **Version:** v2026.2.23
+**Updated:** 2026-02-25 | **Version:** v2026.2.24
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~330 TypeScript files + 313 Swift files across 14 modules
 
@@ -893,6 +893,14 @@ Shared test utilities and mock factories.
 ### TUI <!-- v2026.2.22 -->
 
 - **Multiline-paste burst coalescing** — Multiline-paste burst coalescing on macOS Terminal.app and iTerm. RTL script lines (Arabic/Hebrew) isolated with Unicode bidi marks. Immediate renders after `sending`/`waiting` activity states. Ctrl+C exit timing fixed; SIGINT fallback path for active runs. <!-- v2026.2.22 -->
+
+## v2026.2.24 Changes <!-- v2026.2.24 -->
+
+### Auto-Reply <!-- v2026.2.24 -->
+
+- **Multilingual stop phrases** (#25103) — Stop phrase list broadened (`stop openclaw`, `stop action`, `stop run`, `stop agent`, `please stop` + variants); trailing punctuation accepted (e.g. `STOP OPENCLAW!!!`); multilingual stop keywords added (ES/FR/ZH/HI/AR/JP/DE/PT/RU forms) for reliable emergency stops. Contributors: @steipete, @vincentkoc.
+- **Reset hooks** (#25459) — `/new` and `/reset` hook emission guaranteed on early-return paths; dedupe guard prevents double emission. Contributor: @chilu18.
+- **Typing keepalive** — Typing keepalive indicator is now lifecycle-managed across longer runs to avoid stale "typing…" states. (See DEVELOPER-REFERENCE.md §9 gotcha #79.)
 
 ## v2026.2.23 Changes <!-- v2026.2.23 -->
 

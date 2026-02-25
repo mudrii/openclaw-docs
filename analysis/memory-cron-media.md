@@ -1,6 +1,6 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 
-> Updated: 2026-02-24 | Codebase: ~/src/openclaw | Version: v2026.2.23
+> Updated: 2026-02-25 | Codebase: ~/src/openclaw | Version: v2026.2.24
 
 ---
 
@@ -67,6 +67,10 @@ The memory module provides **semantic search over markdown files and session tra
 ### v2026.2.23 Changes <!-- v2026.2.23 -->
 
 - **Bootstrap file caching** — Bootstrap file snapshots (`AGENTS.md`/`MEMORY.md`) are now cached per session key and cleared on session reset/delete. Reduces prompt-cache invalidations caused by in-session writes to these files. (#22220)
+
+### v2026.2.24 Changes <!-- v2026.2.24 -->
+
+- **Config / Meta timestamp coercion** (#25491): numeric `meta.lastTouchedAt` timestamps (written by agent edits using `Date.now()`) are now accepted and coerced to ISO strings. Contributor: @mcaxtr. <!-- v2026.2.24 -->
 
 ### File Inventory (63 files)
 

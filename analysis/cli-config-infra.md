@@ -1,6 +1,6 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 
-> Updated: 2026-02-24 | Version: v2026.2.23 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-02-25 | Version: v2026.2.24 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1625,3 +1625,17 @@ User types: openclaw <command> [args]
 ### Config <!-- v2026.2.23 -->
 
 - **`unsetPaths` immutable path-copy updates** — `unsetPaths` applied with immutable path-copy updates during config writes. Prototype-key segments are rejected in `config get/set/unset` path traversal to prevent prototype-pollution attacks. <!-- v2026.2.23 -->
+
+## v2026.2.24 Changes <!-- v2026.2.24 -->
+
+### Doctor <!-- v2026.2.24 -->
+
+- **Sandbox Docker warning** (#25438): when sandbox mode is enabled but Docker is unavailable, a clear actionable warning is now surfaced (including failure impact and remediation steps) instead of a mild "skip checks" note. Contributor: @mcaxtr. <!-- v2026.2.24 -->
+
+- **Doctor recovery hints** (#24485): stale recovery hints corrected to use valid current commands: `openclaw gateway status --deep` and `openclaw configure --section model`. Contributor: @chilu18. <!-- v2026.2.24 -->
+
+- **Plugins auto-enable** (#25275): auto-enable resolves third-party channel plugins by manifest plugin id (not channel id), preventing invalid config writes when ids differ. Contributor: @zerone0x. <!-- v2026.2.24 -->
+
+### Config <!-- v2026.2.24 -->
+
+- **Meta timestamp coercion** (#25491): numeric `meta.lastTouchedAt` timestamps (e.g. `Date.now()` values) are now accepted and coerced to ISO strings, preserving compatibility with agent edits. Contributor: @mcaxtr. <!-- v2026.2.24 -->

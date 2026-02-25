@@ -1,6 +1,6 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 
-> Updated: 2026-02-24 | Version: v2026.2.23 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-02-25 | Version: v2026.2.24 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (100 files), `src/discord` (77 files), `src/signal` (32 files), `src/slack` (67 files), `src/whatsapp` (3 files), `src/imessage` (20 files), `src/line` (46 files), `src/channels` (106 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — `channels.<channel>.streaming` now uses enum `off | partial | block | progress`. Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
@@ -1101,6 +1101,18 @@ Agent tool call: message(action="send", target="...", message="...")
 ### Slack
 
 - **Group policy: `groupPolicy` defaulting moved to provider-level schema defaults** — `groupPolicy` is now defaulted at the provider config schema level, enabling correct multi-account inheritance without requiring explicit per-account declarations.
+
+---
+
+## v2026.2.24 Changes (2026-02-25)
+
+### Telegram
+
+- **Media fetch IPv4 priority** (#24295, #23975): SSRF-pinned DNS address ordering now prefers IPv4 before IPv6, fixing media downloads on hosts with broken IPv6 routing. Contributor: @Glucksberg.
+
+### Slack
+
+- **DM routing** (#25479): `D*` channel IDs are now always treated as direct messages even when Slack sends an incorrect `channel_type` value, preventing DM traffic from being misclassified as channel/group chats. Contributor: @mcaxtr.
 
 ---
 

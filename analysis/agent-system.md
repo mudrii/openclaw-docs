@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 
-> Updated: 2026-02-24 | Version: v2026.2.23
+> Updated: 2026-02-25 | Version: v2026.2.24
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -948,6 +948,25 @@ When event fires:
 ### Auto-reply
 
 - **Default completion acknowledgement scoped to direct/private tool-only runs** — The default `✅ Done.` completion acknowledgement is now emitted only for direct/private tool-only completions. It is suppressed for channel/group sessions and for runs that delivered output via messaging tools.
+
+---
+
+## v2026.2.24 Changes
+
+<!-- v2026.2.24 -->
+
+### Auto-reply
+
+- **Multilingual stop phrases** (#25103) — Standalone stop phrases expanded (`stop openclaw`, `stop action`, `stop run`, `stop agent`, `please stop` + variants); trailing punctuation accepted (e.g. `STOP OPENCLAW!!!`); multilingual stop keywords added (ES/FR/ZH/HI/AR/JP/DE/PT/RU forms) for reliable emergency stops. Contributors: @steipete, @vincentkoc.
+- **Reset hooks** (#25459) — Native `/new` and `/reset` flows now emit command/reset hooks even on early-return command paths, with dedupe protection against double emission. Contributor: @chilu18.
+
+### Hooks
+
+- **Slug generator** (#25485) — Session slug resolved from agent's *effective* model (including defaults/fallback chain) instead of raw agent-primary config only. Contributor: @SudeepMalipeddi.
+
+### Agents
+
+- **Tool dispatch** (#25427) — Block-reply flush is awaited before tool execution starts, so buffered block replies preserve message ordering around tool calls. Contributor: @SidQin-cyber.
 
 ---
 
