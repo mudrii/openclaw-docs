@@ -297,6 +297,8 @@ pnpm vitest run --coverage
 □ pnpm check                        # Format + type check + lint (always)
 □ pnpm test                         # Required by policy unless docs-only criteria pass
 □ pnpm check:docs                   # Required when docs files changed
+□ CI checks green                   # Required before merge
+□ Branch up-to-date with main       # Required before merge
 □ CHANGELOG.md update               # Required for maintainer workflow PRs (including internal/test-only)
 □ git diff --stat                   # Review staged scope
 □ grep all callers                  # If changing exported signatures
@@ -351,7 +353,7 @@ Conditional checks:
 5. **Guard numeric comparisons against NaN** - use `Number.isFinite()` before `>` / `<`.
 6. **Normalize paths before string comparison** - `path.resolve()` before `===`.
 7. **Derive context from parameters, not global state** - use explicit paths, not env var fallbacks.
-8. **Run FULL `pnpm lint` before every push** - not just changed files. Type-aware linting catches cross-file issues.
+8. **Run FULL `pnpm check` before every push** - not just changed files. This is the canonical type+lint+format gate used in contributor and maintainer policy.
 
 ### Safety Invariants (Never Violate)
 
@@ -770,8 +772,11 @@ src/<module>/
 - **Scope PRs to one logical change when possible.** If root causes are independent, separate PRs are easier to review, revert, and bisect.
 - **Call out behavior-default shifts explicitly in PR descriptions.** If a release changes defaults (for example cron stagger, include confinement, tool streaming), include a short "old assumption vs new behavior" note so reviewers can validate migration risk quickly.
 - **Maintainer flow is ordered and explicit.** Use `review-pr` -> `prepare-pr` -> `merge-pr`, and do not skip stages.
+- **Use script-first wrappers in maintainer flow.** Prefer `scripts/pr-review`, `scripts/pr-prepare`, and `scripts/pr-merge`; treat manual low-level runs as debugging-only.
 - **Rebase is mandatory before substantive review/prep.** Rebase PR branch onto current `main` first, resolve conflicts, then evaluate correctness.
 - **Resolve all BLOCKER/IMPORTANT findings before merge.** Treat review artifacts as requirements, not suggestions.
+- **Required maintainer artifacts must exist.** Ensure `.local/review.json`, `.local/review.md`, `.local/prep.md`, and `.local/prep.env` are present before merge.
+- **Stop if you cannot verify the fix.** If the problem cannot be reproduced or there is no meaningful verification path, escalate instead of merging.
 - **For AI-assisted PRs, require transparency.** Mark AI assistance and state testing depth in PR description.
 
 ### Documentation Update Guardrails (from recent failures)

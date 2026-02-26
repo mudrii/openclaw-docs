@@ -105,11 +105,16 @@
 
 **Maintainer PR workflow (required):** Use `.agents/skills/PR_WORKFLOW.md` as the source of truth. Execute `review-pr` -> `prepare-pr` -> `merge-pr` in order, with a maintainer checkpoint between stages.
 
+- Script-first contract: use wrapper scripts (`scripts/pr-review`, `scripts/pr-prepare`, `scripts/pr-merge`) in normal maintainer flow; manual low-level commands are for debugging only.
+- Required maintainer artifacts: `.local/review.md`, `.local/review.json`, `.local/prep.md`, and `.local/prep.env`.
 - Create commits with `scripts/committer "<msg>" <file...>`; avoid manual `git add`/`git commit` so staging stays scoped.
 - Follow concise, action-oriented commit messages (e.g., `CLI: add verbose flag to send`).
 - Group related changes; avoid bundling unrelated refactors.
 - Before substantive review or prep, rebase the PR branch onto current `main` and resolve conflicts.
 - Run gates before merge: `pnpm build`, `pnpm check`, and `pnpm test` unless docs-only criteria explicitly allow skipping heavy lanes.
+- Resolve all `BLOCKER` and `IMPORTANT` review findings before merge.
+- Merge only when required checks are green and the branch is up to date with `main`.
+- Do not continue workflow if the problem cannot be validated or no meaningful verification path exists.
 - Keep PRs focused, describe what/why, and mark AI-assisted PRs with testing depth.
 - For new feature/architecture work, start with GitHub Discussion before implementation.
 - PR submission template (canonical): `.github/pull_request_template.md`

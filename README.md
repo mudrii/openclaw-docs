@@ -79,17 +79,20 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 Found an inaccuracy? File paths changed? Module structure updated? PRs welcome.
 
 This docs repo follows OpenClaw contributor policy from:
-- `openclaw/openclaw/CONTRIBUTING.md`
-- `openclaw/maintainers/.agents/skills/PR_WORKFLOW.md`
+- https://github.com/openclaw/openclaw/blob/main/CONTRIBUTING.md
+- https://github.com/openclaw/maintainers/blob/main/.agents/skills/PR_WORKFLOW.md
 
 When updating, please:
 1. Verify all file paths against the current OpenClaw source
 2. Cross-reference with at least one other analysis file
 3. Note which OpenClaw version you verified against
 4. Keep PR scope focused to one logical change
-5. Run `pnpm build && pnpm check && pnpm test` before PR (docs-only PRs may use docs-only CI criteria)
-6. Include a changelog update for maintainer workflow PRs (including internal/test-only changes)
-7. Mark AI-assisted PRs clearly and describe testing coverage
+5. For maintainer-driven PRs, follow `review-pr` -> `prepare-pr` -> `merge-pr` in order; do not skip stages
+6. Rebase the PR branch onto current `main` before substantive review/prep work
+7. Run `pnpm build && pnpm check && pnpm test` before PR (docs-only PRs may use docs-only CI criteria)
+8. Ensure CI checks are green before merge
+9. Include a changelog update for maintainer workflow PRs (including internal/test-only changes), with `(#<PR>)` and `thanks @<author>` when available
+10. Mark AI-assisted PRs clearly and describe testing coverage
 
 For new features/architecture proposals in OpenClaw itself, start with a GitHub Discussion before implementation.
 
