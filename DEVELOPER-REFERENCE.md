@@ -775,9 +775,9 @@ src/<module>/
 - **Use script-first wrappers in maintainer flow.** Prefer `scripts/pr-review`, `scripts/pr-prepare`, and `scripts/pr-merge`; treat manual low-level runs as debugging-only.
 - **Rebase is mandatory before substantive review/prep.** Rebase PR branch onto current `main` first, resolve conflicts, then evaluate correctness.
 - **Resolve all BLOCKER/IMPORTANT findings before merge.** Treat review artifacts as requirements, not suggestions.
-- **Required maintainer artifacts must exist.** Ensure `.local/review.json`, `.local/review.md`, `.local/prep.md`, and `.local/prep.env` are present before merge.
+- **Required maintainer artifacts must exist.** Ensure `.local/pr-meta.json`, `.local/pr-meta.env` (from review init), `.local/review.json`, `.local/review.md` (from review output), `.local/prep-context.env`, `.local/prep.md`, and `.local/prep.env` (from prepare) are present before merge.
 - **Stop if you cannot verify the fix.** If the problem cannot be reproduced or there is no meaningful verification path, escalate instead of merging.
-- **For AI-assisted PRs, require transparency.** Mark AI assistance and state testing depth in PR description.
+- **For AI-assisted PRs, require transparency.** Mark AI assistance in the PR title or description, state testing depth (untested / lightly tested / fully tested), include prompts or session logs when possible, and confirm you understand what the code does.
 
 ### Documentation Update Guardrails (from recent failures)
 
@@ -842,6 +842,15 @@ src/<module>/
   strips proxy env vars (`HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY`, `ALL_PROXY` and lowercase
   variants) from LaunchAgent environments — forward them explicitly in the plist
   `EnvironmentVariables` block. (ref: #27276)
+
+### Control UI Development
+
+- **Use legacy decorators only.** The Control UI uses Lit with legacy decorators — the
+  current Rollup build does not support `accessor` fields required by standard decorators.
+  Use `@state() foo = "bar"` and `@property({ type: Number }) count = 0` syntax. The root
+  `tsconfig.json` sets `experimentalDecorators: true` with `useDefineForClassFields: false`.
+  Do not flip these settings unless you are also updating the UI build tooling to support
+  standard decorators.
 
 ---
 

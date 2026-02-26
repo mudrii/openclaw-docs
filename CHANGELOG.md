@@ -32,9 +32,9 @@ For full detail, see the v2026.2.25 notes in the upstream release changelog (`op
 
 | Area | Files changed |
 | --- | ---: |
-| `src/` | 247 |
-| `apps/` | 86 |
-| `extensions/` | 66 |
+| `src/` | 224 |
+| `apps/` | 34 |
+| `extensions/` | 63 |
 | `docs/` | 28 |
 | `ui/` | 12 |
 | `scripts/` | 5 |
