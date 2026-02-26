@@ -1,6 +1,6 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 
-**Updated:** 2026-02-25 | **Version:** v2026.2.24
+**Updated:** 2026-02-26 | **Version:** v2026.2.25
 **Codebase:** ~/src/openclaw
 **Total lines (6 modules):** ~94,080
 
@@ -8,7 +8,7 @@
 
 ## 1. `src/gateway/` — HTTP/WebSocket Server & API Endpoints
 
-**Lines:** ~83,178 | **Files:** ~120+ .ts files  
+**Lines:** ~83,178 | **Files:** 285 .ts files  
 **Purpose:** The heart of OpenClaw — runs the gateway server that accepts WebSocket connections from CLI/plugins, exposes HTTP endpoints (OpenAI-compatible API, control UI), manages agent sessions, chat routing, cron, browser control, node subscriptions, and plugin lifecycle.
 
 #### v2026.2.19 Changes
@@ -435,7 +435,7 @@ Incoming message (channel, sender, group) → resolveAgentRoute() → { agentId,
 | `provider-usage.load.ts` | Load usage data |
 | `provider-usage.format.ts` | Format usage for display |
 | `provider-usage.fetch.ts` | Fetch usage from providers |
-| `provider-usage.fetch.claude.ts` / `.gemini.ts` / `.codex.ts` / `.copilot.ts` / `.minimax.ts` / `.zai.ts` / `.antigravity.ts` / `.shared.ts` | Provider-specific fetchers |
+| `provider-usage.fetch.claude.ts` / `.gemini.ts` / `.codex.ts` / `.copilot.ts` / `.minimax.ts` / `.zai.ts` / `.shared.ts` | Provider-specific fetchers |
 | `provider-usage.auth.ts` | Usage auth |
 | `provider-usage.types.ts` / `.shared.ts` | Types |
 

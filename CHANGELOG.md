@@ -6,19 +6,19 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.2.24 — Current Released Summary
+## OpenClaw v2026.2.25 — Current Released Summary
 
-> **Released:** 2026-02-25 | **Policy note:** latest released section stays at top.
+> **Released:** 2026-02-26 | **Policy note:** latest released section stays at top.
 
 ## Highlights
 
-- Auto-reply stop controls significantly expanded: multilingual standalone stop phrases, punctuation-tolerant matching, and exact `do not do that` stop trigger support.
-- Heartbeat safety hardened: default delivery target shifted to `none`, direct/DM heartbeat targets are now blocked, and blocked-delivery prompts are internalized.
-- Cross-channel shared-session routing now fails closed and preserves route metadata for followup/overflow delivery to prevent channel hijacking.
-- Security hardening wave across sandbox, exec, workspace FS, and ingress authorization boundaries (including container namespace-join default block for sandbox).
-- Broad reliability fixes landed across Discord voice/DAVE, typing keepalive, WhatsApp reconnect behavior, model fallback traversal, and allowlisted-model selection.
+- **Breaking behavior shift:** heartbeat direct/DM delivery default changed back to `allow`; use `agents.defaults.heartbeat.directPolicy: "block"` to preserve v2026.2.24 behavior.
+- **Security hardening wave:** broad ingress authorization enforcement for reaction/pin/interaction system events across channels, plus gateway/browser auth and workspace FS protections.
+- **Delivery reliability upgrades:** subagent announce/delivery pipeline hardened with clearer queue/direct/fallback behavior and stricter Telegram delivery success criteria.
+- **Webhook/session stability:** Telegram webhook and polling handling hardened; Slack parent-thread forking gained guardrails (`session.parentForkMaxTokens`).
+- **Model/fallback resilience:** multiple fallback traversal and cooldown classification fixes keep failover moving under more error and profile-state combinations.
 
-For full detail, see the v2026.2.24 synthesis section below.
+For full detail, see the v2026.2.25 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.2.25`).
 
 ---
 
@@ -261,7 +261,7 @@ Agent/tool orchestration prompts and automation scripts need explicit progress c
 
 # Synthesis Review: v2026.2.17 → v2026.2.19
 
-> **Window analyzed:** `v2026.2.17..v2026.2.19` (~900+ commits)
+> **Window analyzed:** `v2026.2.17..v2026.2.19` (572 commits)
 > **Method:** behavior and operator/developer impact focus; ignore low-signal test/style churn
 > **Package version confirmed:** `2026.2.19-2` (npm)
 

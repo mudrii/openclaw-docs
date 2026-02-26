@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-02-25 (source package: 2026.2.24) | Release-only architecture snapshot for contributors
+> Updated: 2026-02-26 (source package: 2026.2.25) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -95,7 +95,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                      AGENTS MODULE (src/agents/)  ~530 files                    │
+│                      AGENTS MODULE (src/agents/)  ~660 files                    │
 │                                                                                 │
 │  ┌─────────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
 │  │ PI Embedded      │  │ System Prompt│  │Model Selection│  │  Auth Profiles  │ │
@@ -104,7 +104,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 │           │                                                                     │
 │  ┌────────▼────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
 │  │ Tool Registry    │  │  Sandbox     │  │  Skills      │  │  Subagent       │ │
-│  │ 40+ tools:       │  │  (Docker)    │  │  System      │  │  Registry       │ │
+│  │ 75 tools:        │  │  (Docker)    │  │  System      │  │  Registry       │ │
 │  │ exec, browser,   │  └──────────────┘  └──────────────┘  └──────────────────┘ │
 │  │ web, memory,     │                                                           │
 │  │ message, cron,   │                                                           │
@@ -670,7 +670,7 @@ Parsed by `plugins/manifest.ts`.
 | Type | Count | Examples |
 |------|-------|---------|
 | **Channel plugins** | 21 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams, nostr, twitch, zalo |
-| **Provider plugins** | 5 | copilot-proxy, google-antigravity-auth, gemini-cli-auth, minimax-portal-auth, qwen-portal-auth |
+| **Provider plugins** | 4 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, qwen-portal-auth |
 | **Tool/Feature plugins** | 10 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership |
 
 ---
@@ -729,7 +729,6 @@ Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. 
 |----------|-------------|--------|
 | GitHub Copilot | Device code OAuth → token exchange | `providers/github-copilot-auth.ts` |
 | Qwen Portal | OAuth2 refresh token | `providers/qwen-portal-oauth.ts` |
-| Google Antigravity | OAuth (plugin) | `extensions/google-antigravity-auth/` |
 | Gemini CLI | OAuth (plugin) | `extensions/google-gemini-cli-auth/` |
 | MiniMax Portal | OAuth (plugin) | `extensions/minimax-portal-auth/` |
 | Mistral | API key | auth profiles |
@@ -904,11 +903,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 40 |
+| Extension directories (`extensions/*`) | 38 |
 | Extension packages (`extensions/*/package.json`) | 31 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current source package: `2026.2.23` (git `097a6a83a`, post-release fixes included). Counts measured from the current `/Users/mudrii/src/openclaw` checkout.
+> Current source package: `2026.2.25` (tag `v2026.2.25`). Counts measured from the released tag snapshot.
 
 ### Key External Dependencies
 
@@ -980,7 +979,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 ---
 
-## v2026.2.21 Changes (2026-02-23)
+## v2026.2.21 Changes (2026-02-21)
 
 ### New Modules
 
@@ -1018,7 +1017,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ---
 
-## v2026.2.22 Changes (2026-02-24)
+## v2026.2.22 Changes (2026-02-23)
 
 ### New Channel
 

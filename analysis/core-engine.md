@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 
-> Updated: 2026-02-25 | Version: v2026.2.24 | Codebase: ~/src/openclaw
-> Modules: agents (530 files), gateway (228 files), sessions (9 files), routing (5 files), providers (9 files), hooks (32 files)
+> Updated: 2026-02-26 | Version: v2026.2.25 | Codebase: ~/src/openclaw
+> Modules: agents (660 files), gateway (285 files), sessions (8 files), routing (10 files), providers (11 files), hooks (38 files)
 
 ---
 
@@ -996,7 +996,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ## v2026.2.15 Changes (2026-02-16)
 
-~816 commits across core engine modules since v2026.1.27. Key changes by sub-module:
+~816 commits across core engine modules in the v2026.2.15 release window. Key changes by sub-module:
 
 ### Agents
 - **Nested subagent orchestration** — depth-2 nesting with max 5 children per agent; deterministic idempotency keys to prevent duplicate announces; announce queue retry on send failure (`b8f66c260`, `ade11ec89`, `bbbec7a5c`, `2a8360928`)
@@ -1041,7 +1041,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **Memory** — harden context window cache collisions (`cbf58d993`)
 - **Test infrastructure** — massive test consolidation and deduplication (~100+ commits); shared env snapshot helpers; folded mini-suites into larger test files for faster CI
 
-## v2026.2.19 Changes (2026-02-20)
+## v2026.2.19 Changes (2026-02-19)
 
 ### Agents
 - **Read tool auto-paging** — `read` tool auto-pages based on model `contextWindow`; larger-context models read more before context guards kick in
@@ -1066,7 +1066,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ---
 
-## v2026.2.21 Changes (2026-02-23)
+## v2026.2.21 Changes (2026-02-21)
 
 <!-- v2026.2.21 -->
 
@@ -1189,4 +1189,3 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **Moonshot/Kimi cache metrics** (#25436): `cached_tokens` and `prompt_tokens_details.cached_tokens` fields from Moonshot/Kimi responses are now parsed into normalized cache-read usage metrics. Contributor: @Elarwei001.
 
 ---
-

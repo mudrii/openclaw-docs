@@ -588,7 +588,7 @@ src/<module>/
 
 22. **Anthropic 1M context is explicit opt-in** — `params.context1m: true` controls the beta header (`anthropic-beta: context-1m-2025-08-07`). Don't assume larger windows without this flag and provider support.
 
-### v2026.2.18 New Gotchas
+### Additional Release-window Gotchas (between v2026.2.17 and v2026.2.19)
 
 23. **Pass API tokens explicitly in every call** — When one call in a flow passes a token explicitly, all calls must. Missing token causes silent auth failure; SDK defaults aren't guaranteed to carry the right credentials.
 

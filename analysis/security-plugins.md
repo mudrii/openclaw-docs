@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 
-> Updated: 2026-02-25 | Version: v2026.2.24
+> Updated: 2026-02-26 | Version: v2026.2.25
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -675,7 +675,6 @@ Documentation generation (only test files found).
 | Extension | Description |
 |-----------|-------------|
 | `copilot-proxy/` | Copilot Proxy provider |
-| `google-antigravity-auth/` | Google Antigravity OAuth provider |
 | `google-gemini-cli-auth/` | Gemini CLI OAuth provider |
 | `minimax-portal-auth/` | MiniMax Portal OAuth provider |
 | `qwen-portal-auth/` | Qwen Portal OAuth provider |

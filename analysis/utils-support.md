@@ -1,20 +1,20 @@
 # Utilities & Support Modules — Comprehensive Analysis
 
-**Updated:** 2026-02-25 | **Version:** v2026.2.24
+**Updated:** 2026-02-26 | **Version:** v2026.2.25
 **Cluster:** Utilities & Support Modules  
-**Total files analyzed:** ~330 TypeScript files + 313 Swift files across 14 modules
+**Total files analyzed:** ~380 TypeScript files + 312 Swift files across 14 modules
 
 ---
 
 ## Table of Contents
 
-1. [src/auto-reply (223 files)](#srcauto-reply)
+1. [src/auto-reply (228 files)](#srcauto-reply)
 2. [src/utils (22 files)](#srcutils)
 3. [src/shared (16 files)](#srcshared)
 4. [src/types (9 files)](#srctypes)
-5. [src/logging (20 files)](#srclogging)
+5. [src/logging (24 files)](#srclogging)
 6. [src/process (11 files)](#srcprocess)
-7. [src/pairing (5 files)](#srcpairing)
+7. [src/pairing (7 files)](#srcpairing)
 8. [src/node-host (7 files)](#srcnode-host)
 9. [apps/macos (313 Swift files)](#appsmacos)
 10. [src/compat (1 file)](#srccompat)

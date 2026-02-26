@@ -1,16 +1,16 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 
-> Updated: 2026-02-25 | Version: v2026.2.24
+> Updated: 2026-02-26 | Version: v2026.2.25
 
 ## Overview
 
 | Module | Files | Lines | Purpose |
 |--------|-------|-------|---------|
-| src/cli/ | ~130 | 21,883 | CLI commands, argument parsing, program construction |
-| src/commands/ | ~160 | 32,058 | Command implementations (agent, doctor, onboard, etc.) |
+| src/cli/ | 254 | 21,883 | CLI commands, argument parsing, program construction |
+| src/commands/ | 307 | 32,058 | Command implementations (agent, doctor, onboard, etc.) |
 | src/tui/ | ~22 | 4,591 | Terminal UI, interactive chat mode |
-| src/browser/ | ~55 | 11,940 | Browser control, CDP, Playwright automation |
-| src/media/ | ~15 | 2,249 | Media handling, MIME detection, storage |
+| src/browser/ | 121 | 11,940 | Browser control, CDP, Playwright automation |
+| src/media/ | 30 | 2,249 | Media handling, MIME detection, storage |
 | src/media-understanding/ | ~25 | 3,603 | Attachment processing (image/audio/video understanding) |
 | src/link-understanding/ | 6 | 279 | URL/link extraction and processing |
 | src/tts/ | 2 | 1,614 | Text-to-speech (Edge, OpenAI, ElevenLabs) |

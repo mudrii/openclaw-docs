@@ -1,6 +1,6 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 
-> Updated: 2026-02-25 | Version: v2026.2.24 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-02-26 | Version: v2026.2.25 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -411,7 +411,6 @@ The commands module contains **business logic implementations** for all CLI comm
 | `auth-choice.apply.api-providers.ts` | Generic API provider auth |
 | `auth-choice.apply.copilot-proxy.ts` | GitHub Copilot proxy auth |
 | `auth-choice.apply.github-copilot.ts` | GitHub Copilot auth |
-| `auth-choice.apply.google-antigravity.ts` | Google Antigravity auth |
 | `auth-choice.apply.google-gemini-cli.ts` | Gemini CLI auth |
 | `auth-choice.apply.huggingface.ts` | HuggingFace auth |
 | `auth-choice.apply.minimax.ts` | MiniMax auth |
@@ -1080,7 +1079,6 @@ The infra module provides **cross-cutting infrastructure utilities** used throug
 | `provider-usage.fetch.copilot.ts` | GitHub Copilot usage |
 | `provider-usage.fetch.minimax.ts` | MiniMax usage |
 | `provider-usage.fetch.zai.ts` | xAI usage |
-| `provider-usage.fetch.antigravity.ts` | Google Antigravity usage |
 | `provider-usage.fetch.shared.ts` | Shared usage fetch |
 | `provider-usage.format.ts` | Usage formatting |
 | `provider-usage.load.ts` | Usage data loading |

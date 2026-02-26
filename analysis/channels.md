@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 
-> Updated: 2026-02-25 | Version: v2026.2.24 | Cluster: CHANNELS & MESSAGING
-> Modules analyzed: `src/telegram` (100 files), `src/discord` (77 files), `src/signal` (32 files), `src/slack` (67 files), `src/whatsapp` (3 files), `src/imessage` (20 files), `src/line` (46 files), `src/channels` (106 files)
+> Updated: 2026-02-26 | Version: v2026.2.25 | Cluster: CHANNELS & MESSAGING
+> Modules analyzed: `src/telegram` (100 files), `src/discord` (124 files), `src/signal` (31 files), `src/slack` (88 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (141 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — `channels.<channel>.streaming` now uses enum `off | partial | block | progress`. Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 
@@ -954,7 +954,7 @@ Agent tool call: message(action="send", target="...", message="...")
 - **Consolidated test suites** — channel action, plugin, and misc test suites consolidated for performance
 - **Onboarding config patching** — shared across Discord and Slack
 
-## v2026.2.19 Changes (2026-02-20)
+## v2026.2.19 Changes (2026-02-19)
 
 ### Telegram
 - **Cron/heartbeat topic delivery** — Explicit `<chatId>:topic:<threadId>` targets now correctly route scheduled sends into the configured topic instead of defaulting to last active thread. See DEVELOPER-REFERENCE.md §9 (gotcha 43)
@@ -968,7 +968,7 @@ Agent tool call: message(action="send", target="...", message="...")
 ---
 
 <!-- v2026.2.21 -->
-## v2026.2.21 Changes (2026-02-23)
+## v2026.2.21 Changes (2026-02-21)
 
 ### Telegram
 
@@ -1042,7 +1042,7 @@ Agent tool call: message(action="send", target="...", message="...")
 
 ---
 
-## v2026.2.22 Changes (2026-02-24)
+## v2026.2.22 Changes (2026-02-23)
 
 ### Telegram
 
