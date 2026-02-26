@@ -728,6 +728,28 @@ src/<module>/
 
 82. **Exec safe-bin trust defaults tightened** — implicit trust in mutable PATH-derived directories is reduced; review `tools.exec.safeBinTrustedDirs` and audit findings before assuming previous behavior.
 
+### v2026.2.25 Specific
+
+**BREAKING / OPERATIONAL SHIFTS (v2026.2.25):**
+
+83. **Heartbeat `directPolicy` opt-in to block DMs** — v2026.2.25 reverts the heartbeat DM default back to `allow`. If you were relying on v2026.2.24's blocked-DM behavior, you **must** set `agents.defaults.heartbeat.directPolicy: "block"` (or per-agent `agents.list[].heartbeat.directPolicy: "block"`) explicitly. Silent regression: heartbeat runs may now deliver to DM targets that were previously blocked.
+
+84. **Gateway WebSocket origin enforcement is stricter** — origin checks now apply to all direct browser WebSocket clients beyond just Control UI/Webchat. Password-auth failure throttling applies to browser-origin loopback attempts including `localhost`. Cross-origin WebSocket handshakes that previously succeeded may now be rejected. Affects custom browser integrations connecting to the gateway directly.
+
+85. **macOS beta OAuth path removed** — the Anthropic OAuth sign-in and legacy `oauth.json` onboarding path (which exposed the PKCE verifier via OAuth `state`) have been removed. The macOS beta onboarding path is now setup-token-only. Any automation or tooling relying on `oauth.json` or the OAuth-state onboarding flow will break silently.
+
+86. **Exec approval matching now bound to exact argv identity** — `system.run` approval matching is bound to exact argv and whitespace in rendered command text. Trailing-space executable path swaps and payload-only `rawCommand` mismatches for wrapper-carrier forms are now rejected. Exec workflows that relied on flexible approval matching (e.g., shell wrapper payloads without positional argv) need updating; symlink `cwd` paths and non-canonical executable argv are also rejected at spawn time.
+
+87. **Workspace FS hardlink rejection** — `tools.fs.workspaceOnly` and `tools.exec.applyPatch.workspaceOnly` boundary checks (including sandbox mount-root guards) now reject in-workspace hardlinked file aliases pointing outside the workspace. Scripts or sandboxes that use hardlinks to alias workspace paths for cross-boundary access will fail closed.
+
+88. **Reaction events require channel authorization** — Signal, Discord, Slack, and Telegram reaction events are now gated through full sender authorization (DM `dmPolicy`/`allowFrom`, channel `users` allowlists, group `groupPolicy`) before system-event enqueue. Previously, reaction events bypassed the authorization preflight that normal messages required. Any reaction-triggered workflows that depended on unauthorized senders delivering reactions will silently stop working.
+
+89. **MS Teams file consent bound to originating conversation** — `fileConsent/invoke` upload acceptance and decline are now bound to the originating conversation before consuming pending uploads. Cross-conversation pending-file upload or cancellation via a leaked `uploadId` is blocked. Integrations that manually route Teams file consent invocations across conversations will break.
+
+90. **Slack channel allowlist matching is now case-insensitive** — channel IDs in `groupPolicy: "allowlist"` config are matched case-insensitively. If you used uppercase channel IDs (e.g., `C0ABC12345`) in config expecting case-sensitive matching to intentionally exclude channels, that behavior is now gone. Verify your allowlist entries still produce the intended filtering.
+
+91. **Slack `session.parentForkMaxTokens` guard added** — oversized parent-session inheritance is now capped by `session.parentForkMaxTokens` (default `100000`; `0` disables). Thread sessions forked from very large parent sessions will no longer silently inherit unbounded context. Workflows that relied on inheriting large parent contexts into thread sessions will be cut off at the cap unless the value is increased.
+
 ---
 
 ## 10. PR & Bug Filing Best Practices

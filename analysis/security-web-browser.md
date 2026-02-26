@@ -39,6 +39,15 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **safeBins trusted dirs** — Binaries must resolve from trusted bin directories; untrusted PATH entries rejected
 - **Cron webhook SSRF guard** — Webhook delivery URLs validated through SSRF guard before dispatch
 
+#### v2026.2.25 Security Hardening
+
+- **Exec approval argv binding and spawn hardening** (@tdjackey): `system.run` approval matching is now bound to exact argv identity and preserves argv whitespace in rendered command text, preventing trailing-space executable path swaps from reusing mismatched approvals. Approval-bound execution on node hosts additionally rejects symlink `cwd` paths and canonicalizes path-like executable argv before spawn, blocking mutable-cwd symlink retarget chains.
+- **Browser uploads revalidation** (security): upload paths are revalidated at use-time in Playwright file-chooser and direct-input flows so missing or rebound paths are rejected before `setFiles`; strict missing-path handling is enforced with regression coverage.
+- **Browser temp path symlink hardening** (@tdjackey): trace/download output-path handling is hardened against symlink-root and symlink-parent escapes via realpath-based write-path checks plus secure fallback tmp-dir validation that fails closed on unsafe fallback symlinks.
+- **Workspace FS hardlink rejection** (@tdjackey): `tools.fs.workspaceOnly` and `tools.exec.applyPatch.workspaceOnly` boundary checks (including sandbox mount-root guards) now reject in-workspace hardlinked file aliases pointing outside the workspace, closing a hardlink-based boundary bypass that realpath alone could not detect.
+- **`agents.files` path hardening** (@tdjackey): `agents.files.get`/`agents.files.set` now blocks out-of-workspace symlink targets while keeping in-workspace symlink targets supported; gateway regression coverage added for both blocked escapes and allowed in-workspace symlinks.
+- **SSRF / IPv6 multicast** (@zpbrent): IPv6 multicast literals (`ff00::/8`) are now classified as blocked/private-internal targets in shared SSRF IP checks, preventing multicast literals from bypassing URL-host preflight and DNS answer validation.
+
 #### v2026.2.22 SSRF Hardening
 
 **RFC range expansion:**

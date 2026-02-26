@@ -68,6 +68,18 @@
 **Control UI:**
 - **Chat image URL safety** (#25444): image click URL opening now uses a centralized allowlist (`http/https/blob` + opt-in `data:image/*`) with opener isolation (`noopener,noreferrer` + `window.opener = null`) to prevent tabnabbing. Contributor: @shakkernerd. <!-- v2026.2.24 -->
 
+#### v2026.2.25 Changes <!-- v2026.2.25 -->
+
+**Security / Gateway WebSocket auth** (@luz-oasis): origin checks are now enforced for all direct browser WebSocket clients beyond Control UI/Webchat. Password-auth failure throttling applies to browser-origin loopback attempts (including `localhost`). Silent auto-pairing is blocked for non-Control-UI browser clients, preventing cross-origin brute-force and session takeover chains.
+
+**Security / Gateway trusted proxy operator role** (@tdjackey): the Control UI trusted-proxy pairing bypass now requires `operator` role; unpaired `node` sessions can no longer connect via `client.id=control-ui` and invoke node event methods.
+
+**Security / Gateway operator pairing** (@tdjackey): pairing is required for operator device-identity sessions authenticated with shared token auth; unpaired devices can no longer self-assign operator scopes.
+
+**Security / macOS beta OAuth path removed** (@zdi-disclosures): the Anthropic OAuth sign-in path and legacy `oauth.json` onboarding that exposed the PKCE verifier via OAuth `state` have been removed from the macOS beta onboarding path. Subscription auth is now setup-token-only.
+
+**Gateway / `/api/channels` auth enforcement** (#25753, @bmendonca3): gateway auth is enforced for the exact `/api/channels` plugin root path (plus `/api/channels/` descendants), with regression coverage for query/trailing-slash variants and near-miss paths that must remain plugin-owned.
+
 ### Key Files & Roles
 
 | File | Role |

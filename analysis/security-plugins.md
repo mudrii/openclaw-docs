@@ -108,6 +108,19 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Doctor / Plugins auto-enable** (#25275): auto-enable now resolves third-party channel plugins by manifest plugin id (not channel id), preventing invalid `plugins.entries.<channelId>` writes when the ids differ. Contributor: @zerone0x.
 - **Security / Audit — multi-user heuristic**: `security.trust_model.multi_user_heuristic` config key added to flag likely shared-user ingress patterns and clarify the personal-assistant trust model; hardening guidance provided for intentional multi-user setups (`sandbox.mode="all"`, workspace-scoped FS, reduced tool surface).
 
+#### v2026.2.25 Changes
+
+- **Security / Signal reaction authorization** (@tdjackey): `dmPolicy`/`groupPolicy` authorization is now enforced before Signal reaction-only notification enqueue. Previously, unauthorized senders could inject reaction system events; reactions now require the same channel access checks as normal messages.
+- **Security / Discord reaction authorization** (@tdjackey): DM policy/allowlist authorization is enforced before Discord reaction-event system enqueue in direct messages and guilds. `groupPolicy` channel gating also applies to reaction ingress, aligning it with normal message preflight.
+- **Security / Slack reactions + pins authorization** (@tdjackey): `reaction_*` and `pin_*` system-event enqueue is gated through shared sender authorization: DM `dmPolicy`/`allowFrom` and channel `users` allowlists are enforced for non-message ingress.
+- **Security / Telegram reaction authorization** (@tdjackey): `dmPolicy`/`allowFrom` and group allowlist authorization is enforced on `message_reaction` events before enqueueing reaction system events, preventing unauthorized reaction-triggered input in DMs and groups.
+- **Security / Slack interactions** (@tdjackey): channel/DM authorization and modal actor binding (`private_metadata.userId`) are enforced before enqueueing `block_action`/`view_submission`/`view_closed` system events.
+- **Security / MS Teams file consent** (@tdjackey): `fileConsent/invoke` upload acceptance/decline is bound to the originating conversation before consuming pending uploads, preventing cross-conversation pending-file upload or cancellation via leaked `uploadId` values.
+- **Security / Gateway pairing for operator sessions** (@tdjackey): pairing is now required for operator device-identity sessions authenticated with shared token auth; unpaired devices can no longer self-assign operator scopes.
+- **Security / Exec approvals — argv binding and spawn hardening** (@tdjackey): approval matching is bound to exact argv identity and whitespace; symlink `cwd` paths and non-canonical executable argv are rejected at spawn time, blocking mutable-cwd symlink retarget chains between approval and execution.
+- **Security / Slack group + Telegram group fail-closed** (#25988, #26111, @bmendonca3): DM pairing-store fallback removed from group allowlist evaluation for both Telegram and MS Teams; group sender access now requires explicit `groupAllowFrom` or per-group `allowFrom`.
+- **Security / Nextcloud Talk replay dedupe + unsigned webhook rejection** (@aristorechina, @bmendonca3): replayed signed webhook events are dropped with persistent per-account dedupe; unsigned traffic rejected before full body reads; unexpected webhook backend origins rejected when account base URL is configured.
+
 ---
 
 ### Key Files

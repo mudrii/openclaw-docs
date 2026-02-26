@@ -721,7 +721,7 @@ OpenClaw delegates LLM API calls to `@mariozechner/pi-ai` — the external AI ag
 
 ### Supported Providers
 
-Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax**, **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, **Mistral**, and any OpenAI-compatible API.
+Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax**, **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, **Mistral**, **SiliconFlow**, and any OpenAI-compatible API.
 
 ### Provider-Specific Auth
 
