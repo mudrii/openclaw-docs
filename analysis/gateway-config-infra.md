@@ -1,4 +1,5 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
+<!-- markdownlint-disable MD024 -->
 
 **Updated:** 2026-02-27 | **Version:** v2026.2.26
 **Codebase:** ~/src/openclaw
@@ -11,7 +12,7 @@
 **Lines:** ~66,951 | **Files:** 294 .ts files  
 **Purpose:** The heart of OpenClaw — runs the gateway server that accepts WebSocket connections from CLI/plugins, exposes HTTP endpoints (OpenAI-compatible API, control UI), manages agent sessions, chat routing, cron, browser control, node subscriptions, and plugin lifecycle.
 
-#### v2026.2.19 Changes
+### v2026.2.19 Changes
 - **Gateway auth defaults** — Unresolved auth defaults to token mode with auto-generated token; explicit `mode: "none"` required for open loopback. See DEVELOPER-REFERENCE.md §6 for config reference
 - **hooks.token ≠ gateway.auth.token** — Startup validation rejects matching tokens
 - **Rate-limited control-plane RPCs** — `config.apply`, `config.patch`, `update.run` limited to 3/min per device+IP with 30s restart coalesce
@@ -20,7 +21,7 @@
 - **Config change audit logging** — Actor, device, IP, and changed paths now logged on config mutations
 - **Drain-before-restart** — Gateway restart coalesced with cooldown to allow in-flight requests to complete
 
-#### v2026.2.21 Changes <!-- v2026.2.21 -->
+### v2026.2.21 Changes <!-- v2026.2.21 -->
 
 - **Tailscale tokenless auth scoped to WebSocket** (`fix(gateway)`) — Tailscale-based tokenless authentication is now only permitted for WebSocket connections. HTTP API calls always require explicit auth; the tokenless path is no longer reachable from HTTP entrypoints.
 
@@ -36,7 +37,7 @@
 
 - **`customBindHost` config key** — Gateway binding now supports an explicit `customBindHost` config key to override the bind address independent of the `host` setting.
 
-#### v2026.2.22 Changes <!-- v2026.2.22 -->
+### v2026.2.22 Changes <!-- v2026.2.22 -->
 
 **Gateway Auth:**
 - **Unified credential-source precedence** — Call/probe/status/auth entrypoints use shared resolver helpers with table-driven parity. WebSocket auth handshake uses shared typed auth contexts. Explicit `auth.deviceToken` support in connect frames.
@@ -48,7 +49,7 @@
 - **`bindings[].comment` optional** — Field now optional in strict validation.
 - **Array-valued config paths** — Compared structurally during diffing (fixes false restart-required reloads for QMD paths).
 
-#### v2026.2.23 Changes <!-- v2026.2.23 -->
+### v2026.2.23 Changes <!-- v2026.2.23 -->
 
 **Gateway Auth:**
 - **WS flood protection** — Repeated unauthorized request floods closed per-connection with sampled rejection logging.
@@ -57,7 +58,7 @@
 - **`unsetPaths` immutable updates** — Config write operations apply `unsetPaths` with immutable path-copy updates.
 - **Prototype-key traversal hardening** — `config get/set/unset` rejects prototype-key path segments.
 
-#### v2026.2.24 Changes <!-- v2026.2.24 -->
+### v2026.2.24 Changes <!-- v2026.2.24 -->
 
 **Security / Audit:**
 - **Multi-user heuristic** — `security.trust_model.multi_user_heuristic` config key added; flags likely shared-user ingress patterns and documents hardening guidance (`sandbox.mode="all"`, workspace-scoped FS, reduced tool surface, no personal/private identities on shared runtimes). <!-- v2026.2.24 -->
@@ -68,7 +69,7 @@
 **Control UI:**
 - **Chat image URL safety** (#25444): image click URL opening now uses a centralized allowlist (`http/https/blob` + opt-in `data:image/*`) with opener isolation (`noopener,noreferrer` + `window.opener = null`) to prevent tabnabbing. Contributor: @shakkernerd. <!-- v2026.2.24 -->
 
-#### v2026.2.25 Changes <!-- v2026.2.25 -->
+### v2026.2.25 Changes <!-- v2026.2.25 -->
 
 **Security / Gateway WebSocket auth** (@luz-oasis): origin checks are now enforced for all direct browser WebSocket clients beyond Control UI/Webchat. Password-auth failure throttling applies to browser-origin loopback attempts (including `localhost`). Silent auto-pairing is blocked for non-Control-UI browser clients, preventing cross-origin brute-force and session takeover chains.
 

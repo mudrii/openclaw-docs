@@ -1,4 +1,5 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
+<!-- markdownlint-disable MD024 -->
 
 > Updated: 2026-02-27 | Version: v2026.2.26
 

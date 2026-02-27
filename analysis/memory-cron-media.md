@@ -1,4 +1,5 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
+<!-- markdownlint-disable MD024 -->
 
 > Updated: 2026-02-27 | Codebase: ~/src/openclaw | Version: v2026.2.26
 

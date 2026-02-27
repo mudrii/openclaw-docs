@@ -1,4 +1,5 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
+<!-- markdownlint-disable MD024 -->
 
 > Updated: 2026-02-27 | Version: v2026.2.26 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 

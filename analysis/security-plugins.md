@@ -1,4 +1,5 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
+<!-- markdownlint-disable MD024 -->
 
 > Updated: 2026-02-27 | Version: v2026.2.26
 

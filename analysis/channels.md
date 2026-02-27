@@ -1,4 +1,5 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
+<!-- markdownlint-disable MD024 MD028 -->
 
 > Updated: 2026-02-27 | Version: v2026.2.26 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (102 files), `src/discord` (128 files), `src/signal` (32 files), `src/slack` (92 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (145 files)
