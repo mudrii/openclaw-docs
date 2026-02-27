@@ -104,7 +104,7 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 
 #### v2026.2.24 Changes
 
-- **Exec approvals / argv binding** (security, @tdjackey): `system.run` command display/approval text is now bound to the full argv when shell-wrapper inline payloads carry positional argv values; payload-only `rawCommand` mismatches for wrapper-carrier forms are now rejected, preventing hidden command execution under misleading approval text. Ships in next npm release.
+- **Exec approvals / argv binding** (security, @tdjackey): `system.run` command display/approval text is now bound to the full argv when shell-wrapper inline payloads carry positional argv values; payload-only `rawCommand` mismatches for wrapper-carrier forms are now rejected, preventing hidden command execution under misleading approval text. Released in `v2026.2.24`.
 - **Exec approvals / wildcard allowlist** (#25250): bare `*` in exec allowlist is now treated as a true wildcard for parsed executables including unresolved PATH lookups, so global opt-in allowlists work as configured. Contributor: @widingmarcus-cyber.
 - **Doctor / Plugins auto-enable** (#25275): auto-enable now resolves third-party channel plugins by manifest plugin id (not channel id), preventing invalid `plugins.entries.<channelId>` writes when the ids differ. Contributor: @zerone0x.
 - **Security / Audit — multi-user heuristic**: `security.trust_model.multi_user_heuristic` config key added to flag likely shared-user ingress patterns and clarify the personal-assistant trust model; hardening guidance provided for intentional multi-user setups (`sandbox.mode="all"`, workspace-scoped FS, reduced tool surface).

@@ -860,10 +860,10 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Value |
 |--------|-------|
-| **Total src/ modules** | 49 directories |
-| **Total source files** | 3,706 `.ts` files |
-| **Total test files** | 1,383 `.test.ts` files |
-| **Total src lines** | 665,094 (`src/**/*.ts`) |
+| **Total src/ modules** | 68 directories |
+| **Total source files** | 2,432 `.ts` files (non-test) |
+| **Total test files** | 1,501 `.test.ts` files |
+| **Total src lines** | 722,790 (`src/**/*.ts`) |
 | **External framework** | @mariozechner/pi-ai, pi-agent-core, pi-coding-agent |
 | **Language** | TypeScript (Node.js) |
 | **Test framework** | Vitest |
@@ -873,16 +873,16 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Rank | Module | Source Files | Test Files |
 |------|--------|-------------|------------|
-| 1 | `agents/` | 337 | 312 |
-| 2 | `commands/` | 213 | 91 |
-| 3 | `infra/` | 184 | 113 |
-| 4 | `gateway/` | 183 | 99 |
-| 5 | `cli/` | 173 | 81 |
-| 6 | `auto-reply/` | 164 | 59 |
-| 7 | `config/` | 118 | 73 |
-| 8 | `channels/` | 94 | 43 |
-| 9 | `discord/` | 75 | 45 |
-| 10 | `browser/` | 73 | 44 |
+| 1 | `agents/` | 348 | 335 |
+| 2 | `commands/` | 214 | 105 |
+| 3 | `infra/` | 199 | 126 |
+| 4 | `gateway/` | 187 | 107 |
+| 5 | `auto-reply/` | 179 | 69 |
+| 6 | `cli/` | 174 | 84 |
+| 7 | `config/` | 120 | 78 |
+| 8 | `channels/` | 98 | 47 |
+| 9 | `discord/` | 78 | 50 |
+| 10 | `browser/` | 77 | 45 |
 
 ### Most-Imported Modules
 

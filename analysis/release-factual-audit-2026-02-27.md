@@ -1,5 +1,7 @@
 # Release Factual Integrity Audit and Execution Plan (2026-02-27)
 
+> Historical snapshot: this report captured pre-`v2026.2.26` synthesis state and is superseded by `analysis/release-factual-audit-2026-02-27-v2026.2.26.md` and `analysis/release-factual-audit-2026-02-27-v2026.2.26-3.md`.
+
 ## Objective
 
 Validate that `openclaw-docs` release-facing documentation remains factually correct against released OpenClaw source tags, with explicit online verification of latest published releases.

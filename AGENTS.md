@@ -65,7 +65,7 @@
 - Type-check/build: `pnpm build`
 - TypeScript checks: `pnpm tsgo` (workspace binary command; run after `pnpm install`)
 - Lint/format: `pnpm check`
-- Format check: `pnpm format` (oxfmt --check)
+- Format check: `pnpm format:check` (oxfmt --check)
 - Format fix: `pnpm format:fix` (oxfmt --write)
 - Tests: `pnpm test` (vitest); coverage: `pnpm test:coverage`
 
@@ -103,7 +103,7 @@
 
 ## Commit & Pull Request Guidelines
 
-**Maintainer PR workflow (required):** Use `.agents/skills/PR_WORKFLOW.md` as the source of truth. Execute `review-pr` -> `prepare-pr` -> `merge-pr` in order, with a maintainer checkpoint between stages.
+**Maintainer PR workflow (required):** Use `https://github.com/openclaw/maintainers/blob/main/.agents/skills/PR_WORKFLOW.md` as the source of truth. Execute `review-pr` -> `prepare-pr` -> `merge-pr` in order, with a maintainer checkpoint between stages.
 
 - Script-first contract: use wrapper scripts (`scripts/pr-review`, `scripts/pr-prepare`, `scripts/pr-merge`) in normal maintainer flow; manual low-level commands are for debugging only.
 - Required maintainer artifacts: `.local/pr-meta.json`, `.local/pr-meta.env`, `.local/review.md`, `.local/review.json`, `.local/prep-context.env`, `.local/prep.md`, and `.local/prep.env`.

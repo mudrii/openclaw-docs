@@ -830,7 +830,7 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 ### Security <!-- v2026.2.24 -->
 
-- **Native images workspaceOnly** (@tdjackey): `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including history refs), preventing out-of-workspace sandbox mounts from being implicitly ingested as vision input. Ships in next npm release. <!-- v2026.2.24 -->
+- **Native images workspaceOnly** (@tdjackey): `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including history refs), preventing out-of-workspace sandbox mounts from being implicitly ingested as vision input. Released in `v2026.2.24`. <!-- v2026.2.24 -->
 
 ### Usage accounting <!-- v2026.2.24 -->
 

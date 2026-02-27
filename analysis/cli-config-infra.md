@@ -272,13 +272,13 @@ type RouteSpec = {
 | `openclaw health` | Gateway health check |
 | `openclaw sessions` | Session management |
 | `openclaw browser` | Browser automation tools |
-| `openclaw gateway` | Gateway control (start/stop/restart/status/call/dev/discover) |
+| `openclaw gateway` | Gateway control (`run`/`stop`/`restart`/`status`/`call`/`discover`; supports `--dev`) |
 | `openclaw daemon` | Legacy service management alias |
 | `openclaw logs` | View gateway logs |
 | `openclaw system` | System events, heartbeat, presence |
 | `openclaw models` | Model configuration (list/set/status/scan/auth) |
 | `openclaw approvals` | Exec approval management |
-| `openclaw nodes` | Node management (status/pair/camera/screen/canvas/invoke/notify/location) |
+| `openclaw nodes` | Node management (status/pending/approve/reject/camera/screen/canvas/invoke/notify/location) |
 | `openclaw devices` | Device pairing + token management |
 | `openclaw node` | Single node control |
 | `openclaw sandbox` | Sandbox tools |
@@ -1511,7 +1511,7 @@ User types: openclaw <command> [args]
 
 ---
 
-*Analysis complete. 952 TypeScript files across 8 modules analyzed.*
+*Analysis complete. 1,216 TypeScript files across 8 modules analyzed.*
 
 ---
 

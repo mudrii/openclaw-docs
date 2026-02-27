@@ -419,8 +419,8 @@ Browser automation module providing a local HTTP control server for Playwright a
 
 #### v2026.2.24 Changes
 
-- **Sandbox / Symlink-parent bypass** (security, @tdjackey): bind-mount source paths are now canonicalized via existing-ancestor `realpath`, so symlink-parent + non-existent-leaf paths can no longer bypass allowed-source-roots or blocked-path checks. Ships in next npm release.
-- **Native images / workspaceOnly enforcement** (security, @tdjackey): `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including history refs), preventing out-of-workspace sandbox mounts from being implicitly ingested as vision input. Ships in next npm release. Contributor: @tdjackey (reported).
+- **Sandbox / Symlink-parent bypass** (security, @tdjackey): bind-mount source paths are now canonicalized via existing-ancestor `realpath`, so symlink-parent + non-existent-leaf paths can no longer bypass allowed-source-roots or blocked-path checks. Released in `v2026.2.24`.
+- **Native images / workspaceOnly enforcement** (security, @tdjackey): `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including history refs), preventing out-of-workspace sandbox mounts from being implicitly ingested as vision input. Released in `v2026.2.24`. Contributor: @tdjackey (reported).
 - **Control UI / Chat image URL safety** (#25444): image click URL opening now uses a centralized allowlist (`http/https/blob` + opt-in `data:image/*`) with opener isolation (`noopener,noreferrer` + `window.opener = null`) to prevent tabnabbing and unsafe schemes. Contributor: @shakkernerd.
 
 ### File Inventory (non-test, ~60 source files)
