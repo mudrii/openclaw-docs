@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 
-> Updated: 2026-02-26 | Version: v2026.2.25 | Cluster: CHANNELS & MESSAGING
-> Modules analyzed: `src/telegram` (100 files), `src/discord` (124 files), `src/signal` (31 files), `src/slack` (88 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (141 files)
+> Updated: 2026-02-27 | Version: v2026.2.26 | Cluster: CHANNELS & MESSAGING
+> Modules analyzed: `src/telegram` (102 files), `src/discord` (128 files), `src/signal` (32 files), `src/slack` (92 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (145 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — `channels.<channel>.streaming` now uses enum `off | partial | block | progress`. Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 

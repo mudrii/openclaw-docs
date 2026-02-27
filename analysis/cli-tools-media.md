@@ -1,21 +1,21 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 
-> Updated: 2026-02-26 | Version: v2026.2.25
+> Updated: 2026-02-27 | Version: v2026.2.26
 
 ## Overview
 
 | Module | Files | Lines | Purpose |
 |--------|-------|-------|---------|
-| src/cli/ | 254 | 21,883 | CLI commands, argument parsing, program construction |
-| src/commands/ | 307 | 32,058 | Command implementations (agent, doctor, onboard, etc.) |
-| src/tui/ | ~22 | 4,591 | Terminal UI, interactive chat mode |
-| src/browser/ | 121 | 11,940 | Browser control, CDP, Playwright automation |
-| src/media/ | 30 | 2,249 | Media handling, MIME detection, storage |
-| src/media-understanding/ | ~25 | 3,603 | Attachment processing (image/audio/video understanding) |
-| src/link-understanding/ | 6 | 279 | URL/link extraction and processing |
-| src/tts/ | 2 | 1,614 | Text-to-speech (Edge, OpenAI, ElevenLabs) |
-| src/markdown/ | 7 | 1,580 | Markdown → IR → platform-specific rendering |
-| src/canvas-host/ | 3 | 714 | Canvas/A2UI system for node displays |
+| src/cli/ | 258 | 37,349 | CLI commands, argument parsing, program construction |
+| src/commands/ | 319 | 57,709 | Command implementations (agent, doctor, onboard, etc.) |
+| src/tui/ | 45 | 7,476 | Terminal UI, interactive chat mode |
+| src/browser/ | 122 | 20,066 | Browser control, CDP, Playwright automation |
+| src/media/ | 30 | 3,786 | Media handling, MIME detection, storage |
+| src/media-understanding/ | 51 | 6,336 | Attachment processing (image/audio/video understanding) |
+| src/link-understanding/ | 6 | 333 | URL/link extraction and processing |
+| src/tts/ | 4 | 2,218 | Text-to-speech (Edge, OpenAI, ElevenLabs) |
+| src/markdown/ | 14 | 2,627 | Markdown → IR → platform-specific rendering |
+| src/canvas-host/ | 5 | 1,088 | Canvas/A2UI system for node displays |
 
 ---
 
@@ -834,4 +834,3 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Usage accounting <!-- v2026.2.24 -->
 
 - **Moonshot-Kimi cache metrics** (#25436): `cached_tokens` and `prompt_tokens_details.cached_tokens` fields from Moonshot/Kimi API responses are parsed into normalized cache-read usage metrics. Contributor: @Elarwei001. <!-- v2026.2.24 -->
-

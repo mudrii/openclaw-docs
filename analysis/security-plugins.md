@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 
-> Updated: 2026-02-26 | Version: v2026.2.25
+> Updated: 2026-02-27 | Version: v2026.2.26
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -120,6 +120,14 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Security / Exec approvals — argv binding and spawn hardening** (@tdjackey): approval matching is bound to exact argv identity and whitespace; symlink `cwd` paths and non-canonical executable argv are rejected at spawn time, blocking mutable-cwd symlink retarget chains between approval and execution.
 - **Security / Telegram + MS Teams group fail-closed** (#25988, #26111, @bmendonca3): DM pairing-store fallback removed from group allowlist evaluation for both Telegram and MS Teams; group sender access now requires explicit `groupAllowFrom` or per-group `allowFrom`.
 - **Security / Nextcloud Talk replay dedupe + unsigned webhook rejection** (@aristorechina, @bmendonca3): replayed signed webhook events are dropped with persistent per-account dedupe; unsigned traffic rejected before full body reads; unexpected webhook backend origins rejected when account base URL is configured.
+
+#### v2026.2.26 Changes
+
+- **External secrets workflow** — introduces `openclaw secrets` (`audit`, `configure`, `apply`, `reload`) with stricter `secrets apply` target-path validation, safer migration scrubbing, and ref-only auth-profile support (security hardening for secret handling).
+- **DM allowlist inheritance enforcement** — `dmPolicy: "allowlist"` now applies effective account-plus-parent config across account-capable channels, with `openclaw doctor` validation aligned so DM traffic does not silently drop after upgrades.
+- **Allowlist safety checks** — `dmPolicy: "allowlist"` with empty `allowFrom` is rejected; `openclaw doctor --fix` can restore missing `allowFrom` entries from pairing-store data.
+- **Gemini CLI OAuth warning gate** — explicit account-risk warning and confirmation before starting Gemini CLI OAuth flow; docs updated accordingly.
+- **Temp-dir permission hardening** — Linux temp dirs forced to `0700` with self-healing before trust checks to avoid insecure writable temp paths.
 
 ---
 

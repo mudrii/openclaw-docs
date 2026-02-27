@@ -1,6 +1,6 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 
-> Updated: 2026-02-26 | Version: v2026.2.25 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-02-27 | Version: v2026.2.26 | Codebase: ~/src/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -30,7 +30,7 @@ The CLI module is the **entry point and command registration layer** for the `op
 - `program.ts` → re-exports `buildProgram()` from `program/build-program.ts`
 - `route.ts` → `tryRouteCli()` — fast-path routing before Commander
 
-### File Inventory (202 files)
+### File Inventory (258 files)
 
 #### Core CLI Bootstrap
 | File | Description |
@@ -376,7 +376,7 @@ The commands module contains **business logic implementations** for all CLI comm
 
 **Entry Points:** Each file exports one or more command functions invoked by `src/cli` registrars.
 
-### File Inventory (261 files)
+### File Inventory (319 files)
 
 #### Agent Commands
 | File | Description |
@@ -617,7 +617,7 @@ The config module is the **central configuration system** for OpenClaw. It defin
 - `schema.ts` — JSON Schema generation from Zod
 - `zod-schema.ts` — Zod schema definition
 
-### File Inventory (165 files)
+### File Inventory (198 files)
 
 #### Core
 | File | Description |
@@ -933,7 +933,7 @@ The infra module provides **cross-cutting infrastructure utilities** used throug
 
 **Architecture Pattern:** Utility library with functional modules. No central entry point — each file is imported independently.
 
-### File Inventory (223 files, grouped by domain)
+### File Inventory (326 files, grouped by domain)
 
 #### Environment & Runtime
 | File | Description |
@@ -1158,7 +1158,7 @@ The daemon module manages **system service installation** for the OpenClaw gatew
 
 **Architecture Pattern:** Platform abstraction via `GatewayService` interface with platform-specific implementations.
 
-### File Inventory (36 files)
+### File Inventory (42 files)
 
 | File | Description |
 |------|-------------|
@@ -1256,7 +1256,7 @@ The wizard module implements the **interactive onboarding wizard** flow that gui
 
 **Architecture Pattern:** Step-based wizard flow with a `WizardPrompter` abstraction for testability.
 
-### File Inventory (12 files)
+### File Inventory (13 files)
 
 | File | Description |
 |------|-------------|
@@ -1320,7 +1320,7 @@ The TUI module implements a **terminal-based chat interface** for interacting wi
 
 **Architecture Pattern:** Component-based TUI with event handlers, a gateway WebSocket chat client, and reactive state.
 
-### File Inventory (39 files)
+### File Inventory (45 files)
 
 | File | Description |
 |------|-------------|
@@ -1407,7 +1407,7 @@ The terminal module provides **low-level terminal rendering primitives**: ANSI h
 
 **Architecture Pattern:** Pure utility functions for terminal output.
 
-### File Inventory (14 files)
+### File Inventory (16 files)
 
 | File | Description |
 |------|-------------|

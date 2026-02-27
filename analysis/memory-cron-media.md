@@ -1,6 +1,6 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 
-> Updated: 2026-02-26 | Codebase: ~/src/openclaw | Version: v2026.2.25
+> Updated: 2026-02-27 | Codebase: ~/src/openclaw | Version: v2026.2.26
 
 ---
 
@@ -72,7 +72,7 @@ The memory module provides **semantic search over markdown files and session tra
 
 - **Config / Meta timestamp coercion** (#25491): numeric `meta.lastTouchedAt` timestamps (written by agent edits using `Date.now()`) are now accepted and coerced to ISO strings. Contributor: @mcaxtr. <!-- v2026.2.24 -->
 
-### File Inventory (63 files)
+### File Inventory (84 files)
 
 | File | Description |
 |------|-------------|
@@ -298,7 +298,7 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - **Sessions maintenance hardening** — `openclaw sessions cleanup` CLI command added with per-agent store targeting and disk-budget controls (`session.maintenance.maxDiskBytes` / `session.maintenance.highWaterBytes`). Provides safer transcript/archive cleanup with run-log retention behavior. (#24753)
 - **Isolated cron full prompt mode** — Isolated cron sessions now use full prompt mode so skills/extensions are available during cron execution. (#24944)
 
-### File Inventory (57 files)
+### File Inventory (75 files)
 
 | File | Description |
 |------|-------------|
@@ -441,7 +441,7 @@ Low-level **media file handling**: MIME detection, file fetching with size limit
 - **Share response size limiter** — `read-response-with-limit.ts` shared for consistent enforcement
 - **New `local-roots.ts`** — resolve local media root directories (workspace, state, home)
 
-### File Inventory (26 files)
+### File Inventory (30 files)
 
 | File | Description |
 |------|-------------|
@@ -560,7 +560,7 @@ const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 - `apply.ts` — `applyMediaUnderstanding()` — main orchestrator
 - `runner.ts` — `runCapability()` — runs a specific media capability
 
-### File Inventory (43 files)
+### File Inventory (51 files)
 
 | File | Description |
 |------|-------------|
@@ -688,7 +688,7 @@ type MediaUnderstandingDecision = { capability; outcome; attachments: MediaUnder
 - `index.ts` — re-exports all public functions
 - `apply.ts` — `applyLinkUnderstanding()` — main orchestrator
 
-### File Inventory (7 files)
+### File Inventory (6 files)
 
 | File | Description |
 |------|-------------|
@@ -844,7 +844,7 @@ type TtsDirectiveParseResult = { cleanedText; ttsText?; hasDirective; overrides;
 - `whatsapp.ts` — `markdownToWhatsApp()` — convert to WhatsApp formatting
 - `frontmatter.ts` — `parseFrontmatter()` — extract YAML frontmatter
 
-### File Inventory (15 files)
+### File Inventory (14 files)
 
 | File | Description |
 |------|-------------|

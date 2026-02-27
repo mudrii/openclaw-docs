@@ -1,14 +1,14 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 
-**Updated:** 2026-02-26 | **Version:** v2026.2.25
+**Updated:** 2026-02-27 | **Version:** v2026.2.26
 **Codebase:** ~/src/openclaw
-**Total lines (6 modules):** ~94,080
+**Total lines (6 modules):** ~169,861
 
 ---
 
 ## 1. `src/gateway/` — HTTP/WebSocket Server & API Endpoints
 
-**Lines:** ~83,178 | **Files:** 285 .ts files  
+**Lines:** ~66,951 | **Files:** 294 .ts files  
 **Purpose:** The heart of OpenClaw — runs the gateway server that accepts WebSocket connections from CLI/plugins, exposes HTTP endpoints (OpenAI-compatible API, control UI), manages agent sessions, chat routing, cron, browser control, node subscriptions, and plugin lifecycle.
 
 #### v2026.2.19 Changes
@@ -205,7 +205,7 @@ HTTP:     Client → openai-http.ts or server/plugins-http → server-chat → s
 
 ## 2. `src/config/` — Configuration Loading, Schema & Validation
 
-**Lines:** ~48,565 | **Files:** ~85 .ts files  
+**Lines:** ~36,614 | **Files:** 198 .ts files  
 **Purpose:** Loads, validates, merges, and provides access to `openclaw.json` configuration. Defines all config types, Zod schemas, session management, legacy migration, and path resolution.
 
 ### Key Files & Roles
@@ -319,7 +319,7 @@ openclaw.json → io.ts (read) → parseConfigJson5 → merge-config (includes) 
 
 ## 3. `src/routing/` — Session Key Resolution & Message Routing
 
-**Lines:** ~1,606 (3 files) | **Files:** 3 .ts files  
+**Lines:** ~1,804 | **Files:** 10 .ts files  
 **Purpose:** Resolves which agent handles a message based on channel, chat type, account, and configured bindings. Builds session keys that uniquely identify conversations.
 
 ### Files
@@ -360,7 +360,7 @@ Incoming message (channel, sender, group) → resolveAgentRoute() → { agentId,
 
 ## 4. `src/infra/` — Infrastructure Utilities
 
-**Lines:** ~71,198 | **Files:** ~130+ .ts files  
+**Lines:** ~58,260 | **Files:** 325 .ts files  
 **Purpose:** The utility layer — everything from retry logic, restart management, error handling, home directory resolution, outbound message delivery, exec approvals, heartbeat, update checking, device pairing, network utilities, provider usage tracking, and more.
 
 ### Major Subsystems
@@ -529,7 +529,7 @@ Heartbeat: Timer → heartbeat-runner → heartbeat-events → agent proactive a
 
 ## 5. `src/daemon/` — Process Management & Service Lifecycle
 
-**Lines:** ~5,098 | **Files:** ~25 .ts files  
+**Lines:** ~6,093 | **Files:** 42 .ts files  
 **Purpose:** Manages OpenClaw as a system service — installing/uninstalling launchd (macOS), systemd (Linux), and schtasks (Windows) services. Handles service runtime, diagnostics, and log paths.
 
 ### Files
@@ -587,7 +587,7 @@ Service runs: openclaw gateway start → server.impl.ts (gateway module)
 
 ## 6. `src/types/` — Shared Type Definitions
 
-**Lines:** ~9 files, minimal | **Files:** 9 `.d.ts` files  
+**Lines:** ~139 | **Files:** 8 `.d.ts` files  
 **Purpose:** Ambient TypeScript declarations for third-party modules that lack types.
 
 ### Files

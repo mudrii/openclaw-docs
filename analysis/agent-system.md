@@ -1,11 +1,11 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 
-> Updated: 2026-02-26 | Version: v2026.2.25
+> Updated: 2026-02-27 | Version: v2026.2.26
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
 ### Purpose
-The core engine of OpenClaw. Handles LLM agent execution (the "PI embedded runner"), tool definitions and policy enforcement, model selection/auth/fallback, system prompt construction, sandbox management, session management primitives, skills, subagent orchestration, and workspace management. This is the largest module (~660 files, 75 tools).
+The core engine of OpenClaw. Handles LLM agent execution (the "PI embedded runner"), tool definitions and policy enforcement, model selection/auth/fallback, system prompt construction, sandbox management, session management primitives, skills, subagent orchestration, and workspace management. This is the largest module (~683 files, 75 tools).
 
 ### Key Subsystems & Files
 
