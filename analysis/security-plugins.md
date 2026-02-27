@@ -118,7 +118,7 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Security / MS Teams file consent** (@tdjackey): `fileConsent/invoke` upload acceptance/decline is bound to the originating conversation before consuming pending uploads, preventing cross-conversation pending-file upload or cancellation via leaked `uploadId` values.
 - **Security / Gateway pairing for operator sessions** (@tdjackey): pairing is now required for operator device-identity sessions authenticated with shared token auth; unpaired devices can no longer self-assign operator scopes.
 - **Security / Exec approvals — argv binding and spawn hardening** (@tdjackey): approval matching is bound to exact argv identity and whitespace; symlink `cwd` paths and non-canonical executable argv are rejected at spawn time, blocking mutable-cwd symlink retarget chains between approval and execution.
-- **Security / Slack group + Telegram group fail-closed** (#25988, #26111, @bmendonca3): DM pairing-store fallback removed from group allowlist evaluation for both Telegram and MS Teams; group sender access now requires explicit `groupAllowFrom` or per-group `allowFrom`.
+- **Security / Telegram + MS Teams group fail-closed** (#25988, #26111, @bmendonca3): DM pairing-store fallback removed from group allowlist evaluation for both Telegram and MS Teams; group sender access now requires explicit `groupAllowFrom` or per-group `allowFrom`.
 - **Security / Nextcloud Talk replay dedupe + unsigned webhook rejection** (@aristorechina, @bmendonca3): replayed signed webhook events are dropped with persistent per-account dedupe; unsigned traffic rejected before full body reads; unexpected webhook backend origins rejected when account base URL is configured.
 
 ---
@@ -148,7 +148,7 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 
 ### Exported API
 - `runSecurityAudit()` → `SecurityAuditReport` (findings with severity: critical/warn/info)
-- `runSecurityFix()` → `SecurityFixResult` (auto-remediation actions)
+- `fixSecurityFootguns()` → `SecurityFixResult` (auto-remediation actions)
 - `wrapExternalContent()`, `detectSuspiciousPatterns()` — injection defense
 - `safeEqualSecret()` — timing-safe comparison
 - `isPathInside()` — path traversal prevention
@@ -229,7 +229,7 @@ Full plugin lifecycle: discovery, loading, validation, registration, hook execut
 ### Exported API
 - `loadOpenClawPlugins()` → `PluginRegistry`
 - `createHookRunner()` / `initializeGlobalHookRunner()` — lifecycle hook execution
-- `installPlugin()`, `uninstallPlugin()`, `updatePlugin()`
+- `installPluginFromArchive/Dir/File/NpmSpec/Path()`, `uninstallPlugin()`, `updateNpmInstalledPlugins()`
 - `registerPluginCommand()`, `registerPluginHttpRoute()`
 - `discoverOpenClawPlugins()` — plugin discovery
 - `setActivePluginRegistry()` / `getActivePluginRegistry()`
@@ -675,6 +675,7 @@ Documentation generation (only test files found).
 | `nostr/` | Nostr (NIP-04 encrypted DMs) channel |
 | `signal/` | Signal channel |
 | `slack/` | Slack channel |
+| `synology-chat/` | Synology Chat channel |
 | `telegram/` | Telegram channel |
 | `tlon/` | Tlon/Urbit channel |
 | `twitch/` | Twitch channel |

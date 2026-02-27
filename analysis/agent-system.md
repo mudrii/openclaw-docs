@@ -378,7 +378,7 @@ The message processing pipeline. Receives inbound messages, decides whether/how 
 |------|------|
 | `commands.ts` | Command dispatcher |
 | `commands-core.ts` | Core commands (/new, /reset, /stop, etc.) |
-| `commands-session.ts` | Session commands (/session, /sessions) |
+| `commands-session.ts` | Session commands (/session) |
 | `commands-models.ts` | Model commands (/model, /models) |
 | `commands-config.ts` | Config commands |
 | `commands-status.ts` | Status commands (/status) |
@@ -893,7 +893,7 @@ When event fires:
 
 ### sessions-spawn-hooks
 
-- **File**: `src/agents/subagent-spawn.ts` (new, 373 lines — located under `src/agents/` per test file `sessions-spawn-hooks.test.ts`)
+- **File**: `src/agents/subagent-spawn.ts` (535 lines in `v2026.2.25` — located under `src/agents/` per test file `sessions-spawn-hooks.test.ts`)
 - **What changed**: Session-spawn hook integration now runs directly in `subagent-spawn.ts`. `ensureThreadBindingForSubagentSpawn()` invokes `subagent_spawning` on the global hook runner before a thread-bound spawn proceeds. On spawn failure, `runSubagentEnded` is emitted so the thread binding is cleaned up even if the gateway `agent` RPC fails.
 - **Hook contract**: The `subagent_spawning` hook must return `{ status: "ok", threadBindingReady: true }` for `thread=true` spawns to proceed. Any other return value or error causes the provisional child session to be deleted and an error returned to the tool caller.
 - **Operational impact**: Channel plugins (Discord) register `subagent_spawning` hooks to create the thread and return binding confirmation before the agent run is dispatched.
@@ -997,4 +997,3 @@ When event fires:
 - **Direct-chat metadata selectively hidden** — `message_id`/`message_id_full` and sender metadata are hidden from the normalized chat type only (not sender-id sentinels) — preserves group metadata visibility for correct routing.
 
 ---
-

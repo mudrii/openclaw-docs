@@ -299,7 +299,7 @@ pnpm vitest run --coverage
 □ pnpm check:docs                   # Required when docs files changed
 □ CI checks green                   # Required before merge
 □ Branch up-to-date with main       # Required before merge
-□ CHANGELOG.md update               # Required for maintainer workflow PRs (including internal/test-only)
+□ CHANGELOG.md update               # Required for maintainer workflow PRs (including internal/test-only), with `(#<PR>)` and `thanks @<pr-author>` when available
 □ git diff --stat                   # Review staged scope
 □ grep all callers                  # If changing exported signatures
 □ Squash fix-on-fix commits         # Keep logical commits only

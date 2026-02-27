@@ -22,7 +22,7 @@
 ### Overview
 Lightweight utility module for session metadata, key parsing, transcript events, and policy enforcement. No classes — pure functions. Provides the foundational vocabulary (types + helpers) that the routing and gateway modules build on.
 
-### File Inventory (7 source, 2 tests)
+### File Inventory (7 source, 1 test)
 
 | File | Description |
 |------|-------------|
@@ -81,7 +81,7 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 
 ### Test Coverage
 - `send-policy.test.ts` — Rule matching, channel/chatType filtering, key prefix matching
-- `session-key-utils.test.ts` — Key parsing, subagent/cron/ACP detection, thread parent resolution
+- Session-key parsing is validated through routing/session-key tests in `src/routing/` (no dedicated `session-key-utils.test.ts` in this release).
 
 ### Known Patterns
 - **Observer** — `transcript-events.ts` (listener set with add/remove)
@@ -100,7 +100,7 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 ### Overview
 Maps incoming channel messages to agent sessions. Given a channel, account, peer (group/DM), guild, and roles, resolves which agent handles it and builds the canonical session key. Central to multi-agent, multi-channel routing.
 
-### File Inventory (3 source, 2 tests)
+### File Inventory (5 source, 5 tests)
 
 | File | Description |
 |------|-------------|
@@ -190,7 +190,7 @@ None
 ### Overview
 Provider-specific authentication and model discovery for GitHub Copilot and Qwen Portal. These are specialized OAuth/token-exchange flows that don't fit the general auth-profiles system.
 
-### File Inventory (5 source, 4 tests)
+### File Inventory (6 source, 5 tests)
 
 | File | Description |
 |------|-------------|
@@ -255,14 +255,14 @@ Provider-specific authentication and model discovery for GitHub Copilot and Qwen
 ## 4. Module: hooks
 
 ### Overview
-Event-driven extensibility system. Hooks are triggered on lifecycle events (command, session, agent, gateway) and loaded from bundled, managed, workspace, or plugin directories. Each hook has a `HOOK.md` manifest with frontmatter metadata. Includes Gmail webhook integration as a major built-in hook.
+Event-driven extensibility system. Hooks are triggered on lifecycle events (command, session, agent, gateway, message) and loaded from bundled, managed, workspace, or plugin directories. Each hook has a `HOOK.md` manifest with frontmatter metadata. Includes Gmail webhook integration as a major built-in hook.
 
 ### Architecture Pattern
 - **Plugin architecture** with directory-based discovery
 - **Event bus** (register/trigger pattern in `internal-hooks.ts`)
 - **Frontmatter-driven metadata** (HOOK.md files)
 
-### File Inventory (21 source, 11 tests)
+### File Inventory (23 source, 15 tests)
 
 | File | Description |
 |------|-------------|
@@ -292,7 +292,7 @@ Event-driven extensibility system. Hooks are triggered on lifecycle events (comm
 
 | Type | File | Description |
 |------|------|-------------|
-| `InternalHookEventType` | internal-hooks.ts | `"command" \| "session" \| "agent" \| "gateway"` |
+| `InternalHookEventType` | internal-hooks.ts | `"command" \| "session" \| "agent" \| "gateway" \| "message"` |
 | `InternalHookEvent` | internal-hooks.ts | Event payload with type, action, sessionKey, context, messages |
 | `InternalHookHandler` | internal-hooks.ts | `(event) → Promise<void> \| void` |
 | `AgentBootstrapHookEvent` | internal-hooks.ts | Specialized event for agent bootstrap with workspaceDir, bootstrapFiles |
@@ -356,15 +356,15 @@ Hooks are loaded from multiple sources with later sources overriding by name:
 - Reads: `hooks.enabled`, `hooks.internal.enabled`, `hooks.internal.handlers[]`, `hooks.internal.entries.<key>`, `hooks.internal.load.extraDirs`, `hooks.internal.installs`, `hooks.path`, `hooks.token`, `hooks.presets[]`, `hooks.gmail.*`
 - Writes: `hooks.gmail.*`, `hooks.token`, `hooks.presets`, `hooks.internal.installs`
 
-### Test Coverage (11 tests)
+### Test Coverage (representative tests)
 - `internal-hooks.test.ts` — Register, trigger, unregister, error handling
 - `loader.test.ts` — Hook loading from directories, legacy config
 - `workspace.test.ts` — Hook discovery, precedence, snapshot building
 - `frontmatter.test.ts` — Metadata parsing from HOOK.md
 - `install.test.ts` — Archive/npm/path installation
-- `hooks-install.e2e.test.ts` — End-to-end installation flows
+- `hooks-install.test.ts` — Hook installation validation flows
 - `gmail.test.ts` — Config resolution, argument building
-- `gmail-watcher.test.ts` — Watcher lifecycle, address-in-use detection
+- `gmail-watcher-lifecycle.test.ts` — Watcher lifecycle, address-in-use detection
 - `gmail-setup-utils.test.ts` — gcloud/dependency utilities
 - `bundled/bootstrap-extra-files/handler.test.ts` — Extra file injection
 - `bundled/session-memory/handler.test.ts` — Session memory saving
@@ -381,7 +381,7 @@ Hooks are loaded from multiple sources with later sources overriding by name:
 ## 5. Module: agents
 
 ### Overview
-The largest module (263 source files, 267 tests). This is the **AI agent runtime** — it manages model selection, tool execution, system prompt construction, session management, sandbox environments, authentication, skills, subagents, and the embedded pi-agent integration. The core loop: receive message → build system prompt → select model → call LLM → handle tool calls → stream response.
+The largest module (342 source files, 318 tests). This is the **AI agent runtime** — it manages model selection, tool execution, system prompt construction, session management, sandbox environments, authentication, skills, subagents, and the embedded pi-agent integration. The core loop: receive message → build system prompt → select model → call LLM → handle tool calls → stream response.
 
 ### Architecture Pattern
 - **Embedded agent runtime** — Wraps `@mariozechner/pi-ai` / `pi-agent-core` / `pi-coding-agent`
@@ -492,7 +492,7 @@ The largest module (263 source files, 267 tests). This is the **AI agent runtime
 | `openclaw-tools.ts` | OpenClaw-specific tools (sessions, subagents, camera) |
 
 #### Tools Subdirectory (`tools/`)
-40 files implementing individual tools:
+46 files implementing individual tools:
 
 | File | Tool |
 |------|------|
@@ -696,7 +696,7 @@ The gateway is OpenClaw's **server process** — a WebSocket + HTTP server that 
 - **Method handlers** — Each RPC method in `server-methods/` subdirectory
 - **Protocol versioning** — `PROTOCOL_VERSION` for client compatibility
 
-### File Inventory (145 source, 83 tests)
+### File Inventory (184 source, 101 tests)
 
 #### Server Core
 | File | Purpose |

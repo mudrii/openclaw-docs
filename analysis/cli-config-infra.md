@@ -324,14 +324,14 @@ type RouteSpec = {
 | `cron-cli.test.ts` | Cron CLI commands |
 | `cron-cli/shared.test.ts` | Cron shared utilities |
 | `daemon-cli-compat.test.ts` | Daemon CLI backward compat |
-| `daemon-cli.coverage.e2e.test.ts` | Daemon CLI E2E |
+| `daemon-cli.coverage.test.ts` | Daemon CLI coverage |
 | `deps.test.ts` | CLI dependency checks |
 | `dns-cli.test.ts` | DNS CLI commands |
 | `exec-approvals-cli.test.ts` | Exec approvals CLI |
-| `gateway-cli.coverage.e2e.test.ts` | Gateway CLI E2E |
+| `gateway-cli.coverage.test.ts` | Gateway CLI coverage |
 | `gateway-cli/discover.test.ts` | Gateway discovery |
 | `gateway-cli/run-loop.test.ts` | Gateway run loop |
-| `gateway.sigterm.e2e.test.ts` | Gateway SIGTERM handling |
+| `gateway.sigterm.test.ts` | Gateway SIGTERM handling |
 | `hooks-cli.test.ts` | Hooks CLI |
 | `logs-cli.test.ts` | Logs CLI |
 | `memory-cli.test.ts` | Memory CLI |

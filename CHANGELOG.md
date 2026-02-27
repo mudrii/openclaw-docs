@@ -2,13 +2,14 @@
 
 Consolidated changelog assembled from versioned changelog files in this repository.
 
-Release policy: this file tracks published releases only (stable tags). It does not track unreleased branch snapshots.
+Release policy: this file tracks published releases only (stable tags). It does not track unreleased branch snapshots; when historically relevant, notes may mention npm republished builds tied to a stable tag.
 
 ---
 
-## OpenClaw v2026.2.25 — Current Released Summary
+## OpenClaw v2026.2.25 — Latest Documented Release Summary
 
-> **Released:** 2026-02-26 | **Policy note:** latest released section stays at top.
+> **Released:** 2026-02-26 | **Policy note:** latest *documented* released section stays at top.
+> **Upstream latest stable tag:** `v2026.2.26` (published 2026-02-27T00:01:43Z); synthesis for this docs repo is pending.
 
 ## Highlights
 
@@ -73,7 +74,7 @@ For full detail, see the v2026.2.25 notes in the upstream release changelog (`op
 
 # Changelog: v2026.2.14 -> v2026.2.15
 
-> **Released:** 2026-02-15 | **Commits:** 880 | **Files changed:** 1,526 | **Lines changed:** ~113,000
+> **Released:** 2026-02-16 | **Commits:** 705 | **Files changed:** 1,492 | **Lines changed:** 108,031 (+62,497 / -45,534)
 
 ---
 
@@ -263,7 +264,7 @@ Agent/tool orchestration prompts and automation scripts need explicit progress c
 
 > **Window analyzed:** `v2026.2.17..v2026.2.19` (572 commits)
 > **Method:** behavior and operator/developer impact focus; ignore low-signal test/style churn
-> **Package version confirmed:** `2026.2.19-2` (npm)
+> **Tag/package note:** stable release tag is `v2026.2.19`; npm also published a repackaged build `2026.2.19-2` in this release window.
 
 ---
 
@@ -616,7 +617,7 @@ Gateway lock and tool-call synthetic IDs are migrated from SHA-1 to SHA-256 with
 # OpenClaw v2026.2.22 — Synthesis Review
 
 **Cycle:** v2026.2.21 → v2026.2.22  
-**Released:** 2026-02-24  
+**Released:** 2026-02-23  
 **Scope:** Platform expansion, runtime hardening, multilingual memory, and a major security cycle  
 **Breaking changes:** 4  
 **Security fixes:** 30+  

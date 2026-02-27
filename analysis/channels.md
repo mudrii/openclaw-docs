@@ -997,7 +997,7 @@ Agent tool call: message(action="send", target="...", message="...")
 <!-- v2026.2.21 -->
 - **Thread-bound subagents** (`src/discord/monitor/provider.ts`, `native-command.ts`) — New per-thread subagent session system. Each Discord thread can be bound to a dedicated agent session via a `ThreadBindingManager` (`src/discord/monitor/thread-bindings.ts`). New slash commands:
   - `/focus` — bind the current thread to a named subagent session.
-  - `/list` — list active thread bindings.
+  - `/agents` — list active thread bindings (`/subagents list` also exposes run-level listing).
   - Thread-bound sessions route continuation messages back to the bound subagent automatically. TTL defaults to 24 hours; configurable via `channels.discord.accounts.<id>.threadBindings.ttlHours` and per-session overrides.
 
 <!-- v2026.2.21 -->

@@ -28,7 +28,7 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. The `agents` module (the largest at ~649 files) contains the AI runtime: model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module (~223 files) is the message processing pipeline that sits between channels and agents — handling commands, directives, session management, model routing, queue management, and reply delivery.
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. The `agents` module (the largest at ~660 `.ts` files) contains the AI runtime: model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module (~228 `.ts` files) is the message processing pipeline that sits between channels and agents — handling commands, directives, session management, model routing, queue management, and reply delivery.
 
 The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, and feature extensions are loaded dynamically from an `extensions/` directory. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
@@ -153,9 +153,9 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 
 | Module | Files (src) | Lines (approx) | Purpose | Key Dependencies |
 |--------|-------------|-----------------|---------|------------------|
-| `agents/` | 649 | ~123,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration), auth profiles | config, routing, sessions, hooks, channels, infra, pi-ai |
-| `auto-reply/` | 223 | ~47,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
-| `gateway/` | 282 | ~62,000+ | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control | agents, config, routing, channels, plugins, infra |
+| `agents/` | 660 | ~123,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration), auth profiles | config, routing, sessions, hooks, channels, infra, pi-ai |
+| `auto-reply/` | 228 | ~47,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
+| `gateway/` | 285 | ~62,000+ | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control | agents, config, routing, channels, plugins, infra |
 | `config/` | 191 | ~34,000+ | Config loading, Zod schemas, session store, legacy migration, path resolution | channels (types), infra |
 | `infra/` | 297 | ~53,000+ | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
 | `channels/` | 137 | ~17,000+ | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
@@ -505,7 +505,7 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 ### Audit & Remediation
 
 - **Security audit:** `security/audit.ts` → `runSecurityAudit()` scans config + filesystem + channels
-- **Auto-fix:** `security/fix.ts` → `runSecurityFix()` — chmod state dirs to safe permissions
+- **Auto-fix:** `security/fix.ts` → `fixSecurityFootguns()` — chmod state dirs to safe permissions
 - **Code scanning:** `security/skill-scanner.ts` scans skill/plugin code for dangerous patterns (eval, exec, fetch)
 - **Filesystem inspection:** `security/audit-fs.ts` checks POSIX mode bits and Windows ACLs
 
@@ -814,22 +814,22 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 **Where:** `hooks/internal-hooks.ts` (register/trigger), `sessions/transcript-events.ts` (pub/sub), `infra/system-events.ts`, `infra/heartbeat-events.ts`, `gateway/server-broadcast.ts` (WS event broadcast).
 
 ### 3. Registry Pattern
-**Where:** `plugins/registry.ts` (PluginRegistry), `agents/bash-process-registry.ts` (running processes), `agents/subagent-registry.ts`, `gateway/node-registry.ts`, `auto-reply/dispatcher-registry.ts`, `auto-reply/commands-registry.ts`.
+**Where:** `plugins/registry.ts` (PluginRegistry), `agents/bash-process-registry.ts` (running processes), `agents/subagent-registry.ts`, `gateway/node-registry.ts`, `auto-reply/reply/dispatcher-registry.ts`, `auto-reply/commands-registry.ts`.
 
 ### 4. Factory Pattern
-**Where:** `memory/embeddings.ts` (createEmbeddingProvider), `plugins/registry.ts` (createPluginRegistry), `auto-reply/reply-dispatcher.ts` (createReplyDispatcher), `agents/pi-tools.ts` (createOpenClawTools).
+**Where:** `memory/embeddings.ts` (createEmbeddingProvider), `plugins/registry.ts` (createPluginRegistry), `auto-reply/reply/reply-dispatcher.ts` (createReplyDispatcher), `agents/pi-tools.ts` (createOpenClawTools).
 
 ### 5. Strategy / Tiered Matching
 **Where:** `routing/resolve-route.ts` — Binding resolution uses ordered predicate tiers (peer → guild+roles → channel → default). `agents/model-selection.ts` — Model resolution with alias → fuzzy → allowlist strategies.
 
 ### 6. Middleware Pattern
-**Where:** `agents/tool-policy-pipeline.ts` (tool call policies), `agents/pi-tools.before-tool-call.ts` (pre-tool hooks), `gateway/server-middleware.ts` (HTTP auth), `telegram/bot.ts` (grammY middleware).
+**Where:** `agents/tool-policy-pipeline.ts` (tool call policies), `agents/pi-tools.before-tool-call.ts` (pre-tool hooks), `gateway/http-auth-helpers.ts` (HTTP auth boundary helpers), `telegram/bot.ts` (grammY middleware).
 
 ### 7. Builder Pattern
 **Where:** `agents/system-prompt.ts` — System prompt construction assembles sections: identity, skills, memory, tools, workspace, runtime, time. `agents/workspace.ts` — Bootstrap file assembly.
 
 ### 8. Guard / Circuit Breaker
-**Where:** `agents/context-window-guard.ts` (context overflow), `agents/session-tool-result-guard.ts` (oversized results), `agents/pi-extensions/compaction-safeguard.ts` (infinite compaction loops), `auto-reply/agent-runner-execution.ts` (error recovery with session reset).
+**Where:** `agents/context-window-guard.ts` (context overflow), `agents/session-tool-result-guard.ts` (oversized results), `agents/pi-extensions/compaction-safeguard.ts` (infinite compaction loops), `auto-reply/reply/agent-runner-execution.ts` (error recovery with session reset).
 
 ### 9. Barrel / Re-export Pattern
 **Where:** Extensively used for public API surfaces: `agents/pi-embedded.ts` → `pi-embedded-runner.ts` → individual modules. `auto-reply/reply.ts`, `hooks/hooks.ts`, `config/config.ts`, etc.
@@ -907,7 +907,8 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Extension packages (`extensions/*/package.json`) | 31 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current source package: `2026.2.25` (tag `v2026.2.25`). Counts measured from the released tag snapshot.
+> Current analyzed source package: `2026.2.25` (tag `v2026.2.25`). Counts measured from that released tag snapshot.
+> Upstream latest stable tag as of 2026-02-27: `v2026.2.26` (published), not yet fully synthesized in this document.
 
 ### Key External Dependencies
 
@@ -964,7 +965,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 ### Major Refactor
 
-- **Channel deduplication** — Shared helpers extracted from per-channel send/normalize code into `channels/plugins/outbound/shared.ts` and `channels/plugins/normalize/shared.ts`; reduces duplicated media-upload, markdown-conversion, and chunk-splitting logic across Telegram, Discord, Slack, LINE, and Signal
+- **Channel deduplication** — Shared helpers extracted from per-channel send/normalize code into `channels/plugins/outbound/direct-text-media.ts` and `channels/plugins/normalize/shared.ts`; reduces duplicated media-upload, markdown-conversion, and chunk-splitting logic across Telegram, Discord, Slack, LINE, and Signal
 
 ### Performance
 

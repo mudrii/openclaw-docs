@@ -107,7 +107,7 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Non-network navigation schemes blocked** — `fix(browser)`: non-network navigation schemes blocked in browser module (e.g., `file://`, `javascript:`, `data:` URIs)
 - **noVNC observer tokens** — `fix(sandbox)`: noVNC observer sessions now require one-time token auth plus mandatory password auth
 
-### File Inventory (22 files + 2 new infra files)
+### File Inventory (28 TypeScript files in `v2026.2.25`: 19 source + 9 tests)
 
 | File | Description |
 |------|-------------|
@@ -831,7 +831,7 @@ Plugin system for OpenClaw — handles discovery, installation, loading, lifecyc
 
 ### Configuration
 - `plugins.*` — Plugin enable/disable state
-- `plugins.<id>.enabled` — Per-plugin toggle
+- `plugins.entries.<id>.enabled` — Per-plugin toggle
 - Plugin manifests in `openclaw.plugin.json`
 
 ### Test Coverage (16 test files)
@@ -848,7 +848,7 @@ Plugin system for OpenClaw — handles discovery, installation, loading, lifecyc
 ### Module Overview
 Public SDK for plugin authors. Re-exports essential types and utilities from internal modules so plugins don't need to import from deep internal paths. Entry point: `index.ts`.
 
-### File Inventory (8 files)
+### File Inventory (30 TypeScript files in `v2026.2.25`: 22 source + 8 tests)
 
 | File | Description |
 |------|-------------|
@@ -896,8 +896,8 @@ Public SDK for plugin authors. Re-exports essential types and utilities from int
 ### External Dependencies
 - `node:fs`, `node:path`, `node:crypto`
 
-### Test Coverage (1 test file)
-- `index.test.ts` — Verifies SDK exports are accessible
+### Test Coverage (8 test files)
+- `index.test.ts`, `allow-from.test.ts`, `group-access.test.ts`, `persistent-dedupe.test.ts`, `status-helpers.test.ts`, `temp-path.test.ts`, `text-chunking.test.ts`, `webhook-targets.test.ts`
 
 ---
 
@@ -912,7 +912,7 @@ Agent Client Protocol (ACP) implementation — provides an MCP-compatible server
 - **Prompt size bounds** — Prompt input capped at 2 MiB to prevent memory exhaustion
 - See DEVELOPER-REFERENCE.md §9 (gotchas 33–45) for related hardening details
 
-### File Inventory (14 files)
+### File Inventory (17 TypeScript files in `v2026.2.25`: 11 source + 6 tests)
 
 | File | Description |
 |------|-------------|
