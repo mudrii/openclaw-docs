@@ -1,6 +1,6 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 
-> Updated: 2026-02-26 | Version: v2026.2.25 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-02-27 | Version: v2026.2.26 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -107,7 +107,7 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Non-network navigation schemes blocked** — `fix(browser)`: non-network navigation schemes blocked in browser module (e.g., `file://`, `javascript:`, `data:` URIs)
 - **noVNC observer tokens** — `fix(sandbox)`: noVNC observer sessions now require one-time token auth plus mandatory password auth
 
-### File Inventory (28 TypeScript files in `v2026.2.25`: 19 source + 9 tests)
+### File Inventory (29 TypeScript files in `v2026.2.26`: 19 source + 10 tests)
 
 | File | Description |
 |------|-------------|
@@ -848,7 +848,7 @@ Plugin system for OpenClaw — handles discovery, installation, loading, lifecyc
 ### Module Overview
 Public SDK for plugin authors. Re-exports essential types and utilities from internal modules so plugins don't need to import from deep internal paths. Entry point: `index.ts`.
 
-### File Inventory (30 TypeScript files in `v2026.2.25`: 22 source + 8 tests)
+### File Inventory (36 TypeScript files in `v2026.2.26`: 25 source + 11 tests)
 
 | File | Description |
 |------|-------------|
@@ -896,8 +896,8 @@ Public SDK for plugin authors. Re-exports essential types and utilities from int
 ### External Dependencies
 - `node:fs`, `node:path`, `node:crypto`
 
-### Test Coverage (8 test files)
-- `index.test.ts`, `allow-from.test.ts`, `group-access.test.ts`, `persistent-dedupe.test.ts`, `status-helpers.test.ts`, `temp-path.test.ts`, `text-chunking.test.ts`, `webhook-targets.test.ts`
+### Test Coverage (11 test files)
+- `index.test.ts`, `allow-from.test.ts`, `command-auth.test.ts`, `fetch-auth.test.ts`, `group-access.test.ts`, `persistent-dedupe.test.ts`, `ssrf-policy.test.ts`, `status-helpers.test.ts`, `temp-path.test.ts`, `text-chunking.test.ts`, `webhook-targets.test.ts`
 
 ---
 
@@ -912,7 +912,7 @@ Agent Client Protocol (ACP) implementation — provides an MCP-compatible server
 - **Prompt size bounds** — Prompt input capped at 2 MiB to prevent memory exhaustion
 - See DEVELOPER-REFERENCE.md §9 (gotchas 33–45) for related hardening details
 
-### File Inventory (17 TypeScript files in `v2026.2.25`: 11 source + 6 tests)
+### File Inventory (43 TypeScript files in `v2026.2.26`: 30 source + 13 tests)
 
 | File | Description |
 |------|-------------|

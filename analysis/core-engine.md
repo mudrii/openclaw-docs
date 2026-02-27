@@ -381,7 +381,7 @@ Hooks are loaded from multiple sources with later sources overriding by name:
 ## 5. Module: agents
 
 ### Overview
-The largest module (342 source files, 318 tests). This is the **AI agent runtime** — it manages model selection, tool execution, system prompt construction, session management, sandbox environments, authentication, skills, subagents, and the embedded pi-agent integration. The core loop: receive message → build system prompt → select model → call LLM → handle tool calls → stream response.
+The largest module (348 source files, 335 tests). This is the **AI agent runtime** — it manages model selection, tool execution, system prompt construction, session management, sandbox environments, authentication, skills, subagents, and the embedded pi-agent integration. The core loop: receive message → build system prompt → select model → call LLM → handle tool calls → stream response.
 
 ### Architecture Pattern
 - **Embedded agent runtime** — Wraps `@mariozechner/pi-ai` / `pi-agent-core` / `pi-coding-agent`
@@ -492,7 +492,7 @@ The largest module (342 source files, 318 tests). This is the **AI agent runtime
 | `openclaw-tools.ts` | OpenClaw-specific tools (sessions, subagents, camera) |
 
 #### Tools Subdirectory (`tools/`)
-46 files implementing individual tools:
+47 files implementing individual tools:
 
 | File | Tool |
 |------|------|
@@ -696,7 +696,7 @@ The gateway is OpenClaw's **server process** — a WebSocket + HTTP server that 
 - **Method handlers** — Each RPC method in `server-methods/` subdirectory
 - **Protocol versioning** — `PROTOCOL_VERSION` for client compatibility
 
-### File Inventory (184 source, 101 tests)
+### File Inventory (187 source, 107 tests)
 
 #### Server Core
 | File | Purpose |

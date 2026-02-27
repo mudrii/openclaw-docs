@@ -893,7 +893,7 @@ When event fires:
 
 ### sessions-spawn-hooks
 
-- **File**: `src/agents/subagent-spawn.ts` (535 lines in `v2026.2.25` — located under `src/agents/` per test file `sessions-spawn-hooks.test.ts`)
+- **File**: `src/agents/subagent-spawn.ts` (550 lines in `v2026.2.26` — located under `src/agents/` per test file `sessions-spawn-hooks.test.ts`)
 - **What changed**: Session-spawn hook integration now runs directly in `subagent-spawn.ts`. `ensureThreadBindingForSubagentSpawn()` invokes `subagent_spawning` on the global hook runner before a thread-bound spawn proceeds. On spawn failure, `runSubagentEnded` is emitted so the thread binding is cleaned up even if the gateway `agent` RPC fails.
 - **Hook contract**: The `subagent_spawning` hook must return `{ status: "ok", threadBindingReady: true }` for `thread=true` spawns to proceed. Any other return value or error causes the provisional child session to be deleted and an error returned to the tool caller.
 - **Operational impact**: Channel plugins (Discord) register `subagent_spawning` hooks to create the thread and return binding confirmation before the agent run is dispatched.

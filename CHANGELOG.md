@@ -6,10 +6,26 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.2.25 — Latest Documented Release Summary
+## OpenClaw v2026.2.26 — Latest Documented Release Summary
 
-> **Released:** 2026-02-26 | **Policy note:** latest *documented* released section stays at top.
-> **Upstream latest stable tag:** `v2026.2.26` (published 2026-02-27T00:01:43Z); synthesis for this docs repo is pending.
+> **Released:** 2026-02-27 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.2.25..v2026.2.26` | **Scan stats:** 340 commits, 856 files changed, +58,881 / -7,073 lines
+
+## Highlights
+
+- **External secrets management:** new `openclaw secrets` workflow (audit/configure/apply/reload) with strict path validation and safer migration scrubbing.
+- **ACP thread-bound agents:** ACP runtimes now own thread sessions with lifecycle controls and coalesced thread replies.
+- **Agents routing CLI:** `openclaw agents bindings/bind/unbind` for account-scoped route management and binding upgrades.
+- **Codex WebSocket transport:** `openai-codex` defaults to WebSocket-first with SSE fallback and transport docs.
+- **Onboarding + reliability fixes:** plugin-owned onboarding hooks, Gemini CLI OAuth risk confirmation, DM allowlist inheritance enforcement, delivery-queue backoff, and typing cleanup guardrails.
+
+For full detail, see the v2026.2.26 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.2.26`).
+
+---
+
+## OpenClaw v2026.2.25 — Release Summary
+
+> **Released:** 2026-02-26
 
 ## Highlights
 
