@@ -1,8 +1,9 @@
-# OpenClaw Developer Reference
+# OpenClaw Agent README
 
-> Practical reference for making code changes safely. Load before PRs, bug fixes, or refactoring.
-> Designed for both human contributors and AI agents/tools.
-> Release-only scope: guidance in this document maps to published OpenClaw releases, not unreleased branch state.
+> Load this document before any PR, bug fix, refactor, or new feature work.
+> Designed for AI agents and human contributors.
+> This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
+> Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
 
 ---
 
@@ -12,11 +13,18 @@ Use this routing first to avoid scanning the whole file.
 
 | Task | Read in this order |
 | --- | --- |
-| Fix message delivery bug | §2 Message Lifecycle -> §3 (`auto-reply/`, `channels/`) -> §9 Telegram/Race gotchas -> §5 checklist |
-| Add or change config key | §6 config reference -> §3 (`config/*`) -> §5 checklist |
-| Add a tool | §8 file placement -> §2 Tool Execution -> §3 (`agents/pi-tools.ts`) -> §5 checklist |
-| Change routing/session behavior | §2 Message Lifecycle -> §3 (`routing/*`) -> §9 session/race gotchas |
-| Prepare PR | §5 checklist -> §10 PR practices |
+| Fix message delivery bug | §2 Message Lifecycle → §3 (`auto-reply/`, `channels/`) → §9 Telegram/Race gotchas → §5 checklist |
+| Add or change config key | §6 config reference → §3 (`config/*`) → §5 checklist |
+| Add a tool | §8 file placement → §2 Tool Execution → §3 (`agents/pi-tools.ts`) → §5 checklist |
+| Change routing/session behavior | §2 Message Lifecycle → §3 (`routing/*`) → §9 session/race gotchas (#3, #17, #18, #20) |
+| Fix session or memory bug | §2 Message Lifecycle → §3 (`sessions/`, `memory/`) → §9 gotchas #10 #12 #20 → §5 checklist |
+| Add or modify a hook | §2 Hook Loading → §3 (`hooks/internal-hooks.ts`) → §8 new hook placement → §5 checklist |
+| Add a new model or provider | §6 config (`authProfiles`, `models`) → §3 (`agents/model-selection.ts`) → §9 gotchas #59 #68 #71 #72 → §5 checklist |
+| Fix a security issue | `SECURITY.md` → §1 blast radius → §5 checklist (run `openclaw security audit` before PR) |
+| Add channel-specific behavior | §1 channel module risk → §2 Message Lifecycle → §3 channel impact rows → §5 checklist |
+| Plugin/extension development | §2 Plugin Loading → §8 file placement (`extensions/`) → §5 checklist |
+| Prepare PR | §4 testing → §5 checklist → §10 PR practices |
+| Debug triage | §11 Debugging Workflow → §9 gotcha index → §2 critical paths |
 
 Fast rule: identify module in §1, then run only the matching impact row in §3 plus relevant gotchas in §9.
 
@@ -85,6 +93,8 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 | `pairing/pairing-store.ts`          | Account-scoped device pairing store                                |
 | `channels/status-reactions.ts`      | Shared lifecycle reaction controller (used by Telegram and Discord) |
 | `node-host/invoke-system-run.ts`    | system.run command resolution (security-critical)                  |
+| `process/exec.ts`                   | `runCommandWithTimeout()` — used by every tool execution path      |
+| `agents/model-selection.ts`         | Model resolution across all agents, directives, cron, subagents    |
 
 ### Risk Level Definitions
 
@@ -94,8 +104,6 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 | 🔴 HIGH | Multi-subsystem module with large blast radius | Targeted subsystem tests + pre-PR checklist |
 | 🟡 MEDIUM | Shared module with moderate import fan-out | Module tests + caller verification |
 | 🟢 LOW | Leaf/isolated module | Local tests + smoke checks |
-
----
 
 ---
 
@@ -118,12 +126,14 @@ Channel SDK event (grammY/Carbon/Bolt/SSE/RPC)
   ├─ reply/get-reply-inline-actions.ts         # handle /new, /status, etc.
   └─ reply/get-reply-run.ts                    # runPreparedReply()
 → src/auto-reply/reply/agent-runner.ts         # runReplyAgent()
-→ src/auto-reply/reply/agent-runner-execution.ts # runAgentTurnWithFallback()
-→ src/agents/pi-embedded-runner/run/           # runEmbeddedPiAgent()
-  ├─ system-prompt.ts                          # build system prompt
-  ├─ model-selection.ts                        # resolve model + auth
-  ├─ pi-tools.ts                               # register tools
-  └─ agents/pi-embedded-subscribe.ts           # process LLM stream
+→ src/auto-reply/reply/agent-runner-execution.ts   # runAgentTurnWithFallback()
+→ src/agents/pi-embedded-runner/run.ts             # runEmbeddedPiAgent()
+  ├─ pi-embedded-runner/system-prompt.ts           # build system prompt
+  ├─ agents/model-selection.ts                     # resolve model + auth
+  ├─ agents/pi-tools.ts                            # register tools
+  ├─ pi-embedded-runner/run/attempt.ts             # single attempt execution
+  ├─ pi-embedded-runner/run/payloads.ts            # build LLM payloads
+  └─ agents/pi-embedded-subscribe.handlers.tools.ts # process LLM stream + tool calls
 → src/auto-reply/reply/block-reply-pipeline.ts # coalesce blocks
 → src/auto-reply/reply/reply-dispatcher.ts     # buffer + human delay
 → src/channels/plugins/outbound/<channel>.ts   # format + chunk
@@ -199,8 +209,8 @@ gateway/server-plugins.ts
 | `routing/resolve-route.ts`       | All channel monitors, gateway session resolution, cron delivery                                                                                |
 | `routing/session-key.ts`         | Session key parsing everywhere, cron sessions, subagent sessions                                                                               |
 | `agents/pi-tools.ts`             | ALL tool tests, tool policy, tool display, sandbox tool policy                                                                                 |
-| `agents/pi-embedded-runner/run/` | The entire agent execution path, fallback, compaction, streaming                                                                               |
-| `agents/system-prompt.ts`        | Agent behavior changes - test with actual LLM calls                                                                                            |
+| `agents/pi-embedded-runner/run.ts` + `run/` | The entire agent execution path, fallback, compaction, streaming                                                                     |
+| `agents/pi-embedded-runner/system-prompt.ts` | Agent behavior changes - test with actual LLM calls                                                                                  |
 | `agents/model-selection.ts`      | Model resolution across all agents, directives, cron, subagents                                                                                |
 | `agents/tool-policy*.ts`         | Tool access for all tools, sandbox, subagent restrictions                                                                                      |
 | `auto-reply/dispatch.ts`         | All channel inbound paths                                                                                                                      |
@@ -236,31 +246,57 @@ gateway/server-plugins.ts
 # Full suite (parallel runner, matches CI)
 pnpm test
 
-# Single module (direct vitest for targeted runs)
-pnpm vitest run src/config/
+# Single module (targeted vitest run)
+pnpm exec vitest run src/config/
+# or: bunx vitest run src/config/
 
 # Single file
-pnpm vitest run src/config/io.write-config.test.ts
+pnpm exec vitest run src/config/io.write-config.test.ts
 
 # Watch mode
-pnpm vitest src/config/io.write-config.test.ts
+pnpm exec vitest src/config/io.write-config.test.ts
 
-# With coverage
-pnpm vitest run --coverage
+# With coverage (uses vitest.unit.config.ts)
+pnpm test:coverage
+
+# E2E tests only
+pnpm test:e2e
+
+# Memory-constrained hosts (non-Mac-Studio, CI stragglers)
+OPENCLAW_TEST_PROFILE=low OPENCLAW_TEST_SERIAL_GATEWAY=1 pnpm test
+
+# Live tests (requires real API keys)
+CLAWDBOT_LIVE_TEST=1 pnpm test:live
 ```
+
+### Test Config Files
+
+| Config | Used for |
+| --- | --- |
+| `vitest.unit.config.ts` | Unit tests (`pnpm test:coverage`) |
+| `vitest.e2e.config.ts` | End-to-end tests (`pnpm test:e2e`) |
+| `vitest.gateway.config.ts` | Gateway integration tests |
+| `vitest.live.config.ts` | Live tests against real APIs |
+| `vitest.extensions.config.ts` | Extension/plugin tests |
+
+`pnpm test` runs `scripts/test-parallel.mjs`, which spawns multiple vitest processes across these configs.
 
 ### Test Framework: Vitest
 
-- Config: `vitest.config.ts` at project root
+- Linter/formatter: Oxlint + Oxfmt (`pnpm check` = format + tsgo + oxlint + custom boundary lints)
 - Mocking: `vi.mock()`, `vi.fn()`, `vi.spyOn()`
 - Assertions: `expect()` with Vitest matchers
+- Coverage threshold: 70% lines/branches/functions/statements (V8)
+- **Do not set test workers above 16** — causes memory issues; already tried.
+- Pre-commit hooks: `prek install` — runs same checks as CI before each commit.
 
 ### Test Patterns
 
 | Pattern      | Example                                |
 | ------------ | -------------------------------------- |
 | Unit test    | `src/config/io.write-config.test.ts`                |
-| E2E test     | `src/cli/program.smoke.test.ts`    |
+| E2E test     | `src/agents/bash-tools.exec.pty.e2e.test.ts` |
+| Smoke test   | `src/cli/program.smoke.test.ts`    |
 | Test harness | `src/cron/service.test-harness.ts`     |
 | Test helpers | `src/test-helpers/`, `src/test-utils/` |
 | Mock file    | `src/cron/isolated-agent.mocks.ts`     |
@@ -299,16 +335,27 @@ pnpm vitest run --coverage
 □ pnpm check:docs                   # Required when docs files changed
 □ CI checks green                   # Required before merge
 □ Branch up-to-date with main       # Required before merge
-□ CHANGELOG.md update               # Required for maintainer workflow PRs (including internal/test-only), with `(#<PR>)` and `thanks @<pr-author>` when available
+□ CHANGELOG.md update               # User-facing changes only; no internal/meta notes
+                                     # Include `(#<PR>)` suffix + `thanks @<pr-author>` when available
+                                     # Pure test additions/fixes do NOT need a CHANGELOG entry
 □ git diff --stat                   # Review staged scope
 □ grep all callers                  # If changing exported signatures
 □ Squash fix-on-fix commits         # Keep logical commits only
+□ Use scripts/committer "<msg>" <files>  # Do NOT use manual git add/commit — keeps staging scoped
 
 Conditional checks:
 □ If `config/*` changed: run config-focused tests + read-back validation of changed keys
 □ If `routing/*` changed: verify session key parsing + cron + subagent routing
 □ If `agents/pi-tools*` changed: run tool policy + tool execution paths
 □ If `auto-reply/reply/get-reply.ts` changed: run reply pipeline checks across fallback paths
+□ If `gateway/protocol/schema/**` changed: run pnpm protocol:gen:swift && pnpm protocol:check
+```
+
+### Fix Commands (when pnpm check fails)
+
+```bash
+pnpm format:fix          # oxfmt --write — auto-fix formatting
+pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
 
 ### Release-window Workflow Additions (v2026.2.24)
@@ -437,11 +484,12 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 | `MsgContext`                  | `auto-reply/templating.ts`           | Inbound message context                                        |
 | `ReplyPayload`                | `auto-reply/types.ts`                | Reply output (text, media, replyTo)                            |
 | `ChannelPlugin`               | `channels/plugins/types.plugin.ts`   | Channel plugin contract                                        |
-| `ChannelId` / `ChatChannelId` | `channels/plugins/types.core.ts`     | Channel identifier types                                       |
+| `ChannelId`                   | `channels/plugins/types.core.ts`     | `ChatChannelId | (string & {})` — extensible channel ID        |
+| `ChatChannelId`               | `channels/registry.ts`               | Built-in channel IDs (re-exported via `types.core.ts`)         |
 | `ChatType`                    | `channels/chat-type.ts`              | `"direct" \| "group" \| "channel"`                             |
 | `ThinkLevel`                  | `auto-reply/thinking.ts`             | `"off" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh"` |
 | `VerboseLevel`                | `auto-reply/thinking.ts`             | `"off" \| "on" \| "full"`                                      |
-| `ToolPolicyAction`            | `agents/tool-policy.ts`              | `"allow" \| "deny" \| "ask"`                                   |
+| `ToolPolicyLike`              | `agents/tool-policy.ts`              | `{ allow?: string[]; deny?: string[] }` — tool access policy   |
 | `EmbeddedPiRunResult`         | `agents/pi-embedded-runner/types.ts` | Agent run result                                               |
 | `ResolvedAgentRoute`          | `routing/resolve-route.ts`           | Routing result                                                 |
 | `InputProvenance`             | `sessions/input-provenance.ts`       | Message origin tracking                                        |
@@ -498,7 +546,7 @@ src/<module>/
 
 - **Config & Auth:** #1, #6, #16, #33, #34, #37, #44, #61, #62, #67, #68, #73, #74, #82
 - **Routing & Sessions:** #3, #6, #17, #18, #20, #67, #70
-- **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36, #83
+- **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36
 - **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52, #63, #66, #79, #80, #84, #88, #89
 - **Security/Network:** #38, #42, #43, #45, #46, #47, #48, #53, #54, #55, #56, #57, #58, #64, #65, #66, #73, #74, #75
 - **Channel/Streaming Config:** #36, #49, #50, #62, #72, #81, #83
@@ -863,3 +911,350 @@ src/<module>/
 5. Confirm fix did not regress fallback paths (cron, channel send, subagent completion).
 
 For ambiguous runtime failures: capture exact error string, map via "Common Errors -> First Fix", then inspect nearest owning module.
+
+---
+
+## 12. Repository Structure
+
+### Top-Level Layout
+
+```
+openclaw/
+├── src/                     # Main TypeScript source (see §1 for module map)
+├── extensions/              # Channel plugin extensions (pnpm workspace packages)
+│   ├── bluebubbles/         # BlueBubbles iMessage
+│   ├── msteams/             # Microsoft Teams
+│   ├── matrix/              # Matrix
+│   ├── zalo/ zalouser/      # Zalo
+│   ├── voice-call/          # Voice call
+│   ├── discord/ telegram/   # Additional channel extensions
+│   ├── slack/ signal/       # Additional channel extensions
+│   ├── whatsapp/            # WhatsApp
+│   └── ...                  # 30+ total; full list: extensions/
+├── apps/                    # Native apps
+│   ├── ios/                 # iOS app (Swift/SwiftUI)
+│   ├── macos/               # macOS menubar app (Swift/SwiftUI)
+│   └── android/             # Android app (Kotlin/Gradle)
+├── docs/                    # Mintlify documentation (docs.openclaw.ai)
+│   ├── zh-CN/               # Auto-generated Chinese translation — do NOT edit directly
+│   └── .i18n/               # i18n pipeline config and glossaries
+├── ui/                      # Control UI (Lit web components, legacy decorators)
+├── scripts/                 # Maintainer workflow and build scripts
+│   ├── committer            # Scoped commit helper (use instead of git add/commit)
+│   ├── pr-review            # PR review script (maintainer flow)
+│   ├── pr-prepare           # PR prepare script
+│   ├── pr-merge             # PR merge script
+│   └── clawlog.sh           # Query macOS unified logs for OpenClaw subsystem
+├── skills/                  # Bundled skills shipped with the package
+├── packages/                # Internal workspace packages
+├── vendor/                  # Vendored dependencies
+├── dist/                    # Built output (gitignored; generated by pnpm build)
+├── AGENTS.md                # Canonical agent/AI guidelines (see §15)
+├── CLAUDE.md                # Symlink → AGENTS.md
+├── CONTRIBUTING.md          # Contributor guide
+├── CHANGELOG.md             # User-facing release notes
+├── package.json             # Root package — version, scripts, deps
+├── pnpm-workspace.yaml      # pnpm workspace config
+├── vitest.config.ts         # Default vitest config
+├── vitest.unit.config.ts    # Unit test config (used by pnpm test:coverage)
+├── vitest.e2e.config.ts     # E2E test config
+├── vitest.gateway.config.ts # Gateway integration test config
+├── vitest.live.config.ts    # Live (real API) test config
+├── vitest.extensions.config.ts # Extension/plugin test config
+├── tsconfig.json            # TypeScript config (legacy decorators enabled for Control UI)
+└── tsdown.config.ts         # Build bundler config
+```
+
+### Source Modules (`src/`)
+
+Core built-in channels (leaf modules, 🟢 risk):
+
+```
+src/telegram/    src/discord/    src/slack/      src/signal/
+src/imessage/    src/web/        src/line/       src/whatsapp/
+```
+
+Additional source modules beyond §1's map:
+
+| Module | Purpose |
+| --- | --- |
+| `acp/` | Agent Communication Protocol server |
+| `canvas-host/` | Canvas/A2UI host integration |
+| `link-understanding/` | URL/link resolution and understanding |
+| `markdown/` | Markdown processing and rendering |
+| `node-host/` | Node.js host process management |
+| `pairing/` | Account-scoped device pairing |
+| `plugin-sdk/` | Public plugin SDK exports |
+| `terminal/` | Terminal UI utilities (table, palette, progress) |
+| `tts/` | Text-to-speech |
+| `tui/` | Terminal UI (TUI) |
+| `wizard/` | Onboarding wizard |
+| `daemon/` | Daemon management |
+
+Extension channels live in `extensions/` as separate pnpm workspace packages. Keep extension-only deps in the extension's own `package.json`; do not add them to root `package.json`.
+
+### Version Numbering
+
+Format: `YYYY.M.D` — year, month, day of release.
+
+- `v2026.2.26` = stable release
+- `v2026.2.26-beta.1` = prerelease (npm dist-tag `beta`)
+- `main` branch = dev head (no tag)
+
+Version must be bumped in all locations simultaneously: `package.json`, `apps/android/app/build.gradle.kts`, `apps/ios/Sources/Info.plist`, `apps/macos/Sources/OpenClaw/Resources/Info.plist`, and `docs/install/updating.md`. See `AGENTS.md` for the full list.
+
+---
+
+## 13. Development Environment Setup
+
+### Prerequisites
+
+| Requirement | Notes |
+| --- | --- |
+| **Node.js 22+** | No `.nvmrc`; enforce via asdf or nvm. Both Node and Bun paths must stay working. |
+| **pnpm** | Primary package manager. Lock file is `pnpm-lock.yaml`. |
+| **Bun** | Preferred for dev/test script execution (`bunx vitest`, `pnpm dev`). Keep `pnpm-lock.yaml` in sync when touching deps. |
+| **Swift toolchain** | Required for `pnpm check` (`check:host-env-policy:swift`) and macOS/iOS app builds. |
+| **Xcode** | Required for iOS/macOS development. |
+
+### Bootstrap
+
+```bash
+# 1. Install dependencies
+pnpm install
+
+# 2. Install pre-commit hooks (runs same checks as CI)
+prek install
+
+# 3. Build
+pnpm build
+```
+
+If `node_modules` is missing or a command fails with "not found", run `pnpm install` first, then retry.
+
+### Running the CLI Locally
+
+```bash
+# Run CLI via Bun (dev mode — no build step required)
+pnpm openclaw <command>
+
+# Example
+pnpm openclaw config get agents
+
+# Alt: run built output directly
+node dist/index.js <command>
+```
+
+### Gateway (macOS)
+
+The gateway runs as the macOS menubar app. Start/stop via the app, not ad-hoc tmux sessions.
+
+```bash
+# Restart gateway via helper script
+scripts/restart-mac.sh
+
+# Kill + restart manually on server/VM (not macOS app)
+pkill -9 -f openclaw-gateway || true
+nohup openclaw gateway run --bind loopback --port 18789 --force > /tmp/openclaw-gateway.log 2>&1 &
+
+# Verify
+openclaw channels status --probe
+tail -n 120 /tmp/openclaw-gateway.log
+```
+
+### Full Quality Gate (CI Equivalent)
+
+```bash
+pnpm build          # TypeScript compilation + bundling
+pnpm check          # Format + type check + lint (see breakdown below)
+pnpm test           # Full test suite (parallel)
+pnpm check:docs     # Required when any docs file changes
+```
+
+`pnpm check` runs this chain:
+
+```
+oxfmt --check                          # format check
+pnpm tsgo                              # TypeScript type check
+oxlint --type-aware                    # lint
+scripts/check-no-random-messaging-tmp.mjs
+scripts/check-channel-agnostic-boundaries.mjs
+scripts/check-no-raw-channel-fetch.mjs
+scripts/check-no-pairing-store-group-auth.mjs
+scripts/check-pairing-account-scope.mjs
+scripts/generate-host-env-security-policy-swift.mjs --check
+```
+
+Run `pnpm check` before every push — not just on changed files. This is the CI gate.
+
+### Protocol Schema Sync
+
+When changing `src/gateway/protocol/schema/**`:
+
+```bash
+pnpm protocol:gen        # Regenerate dist/protocol.schema.json
+pnpm protocol:gen:swift  # Regenerate apps/macos/Sources/OpenClawProtocol/GatewayModels.swift
+pnpm protocol:check      # Verifies both files match (fails CI if out of sync)
+```
+
+Forgetting `pnpm protocol:gen:swift` after a schema change will fail `protocol:check` on every PR that rebases onto your commit.
+
+### macOS Log Query
+
+```bash
+./scripts/clawlog.sh          # Query unified macOS logs for OpenClaw subsystem
+./scripts/clawlog.sh -f       # Follow (tail) mode
+```
+
+---
+
+## 14. Key CLI Commands
+
+Quick reference for commands mentioned throughout this document.
+
+| Command | Purpose |
+| --- | --- |
+| `openclaw doctor` | Diagnose config and service issues; run first after any upgrade or when something breaks |
+| `openclaw doctor --fix` | Auto-fix detected issues (config migration, path rebinding, stale state) |
+| `openclaw security audit` | Security audit — required gate before any security-adjacent PR |
+| `openclaw gateway install` | Install / reinstall gateway as a system service |
+| `openclaw channels status --probe` | Verify channel connectivity |
+| `openclaw config set <key> <value>` | Set a config key |
+| `openclaw config get <key>` | Read a config key |
+| `openclaw config patch <path> <json>` | Patch nested config path — always read-back verify after |
+| `openclaw message send ...` | Send a test message |
+
+### State Directory (`~/.openclaw/`)
+
+| Path | Contents |
+| --- | --- |
+| `openclaw.json` | Main config (JSON5) |
+| `openclaw.json.bak` | Auto-backup before patches |
+| `agents/<id>/agent/` | Per-agent runtime state, auth profiles |
+| `agents/<id>/sessions/` | Session JSONL logs (`*.jsonl`) |
+| `agents/<id>/qmd/` | QMD memory collections (per-agent isolated) |
+| `cron/` | Cron job state store |
+| `credentials/` | Web provider credentials |
+| `devices/` | Device pairing state |
+| `delivery-queue/` | Outbound delivery queue |
+| `exec-approvals.json` | Exec approval records |
+| `memory/` | Memory / QMD index |
+| `browser/` | Browser session data |
+| `canvas/` | Canvas / A2UI state |
+| `logs/` | Log files |
+| `media/` | Media cache |
+| `skills/` | Installed skills |
+| `workspace/` | Agent workspace files |
+
+### Commit Helper
+
+Use `scripts/committer "<msg>" <file...>` instead of manual `git add` + `git commit`. This keeps staging scoped to your changes and avoids accidentally including unrelated files — especially important in multi-agent sessions.
+
+```bash
+scripts/committer "fix: correct session key parsing" src/routing/session-key.ts
+```
+
+---
+
+## 15. AGENTS.md and CLAUDE.md
+
+`AGENTS.md` at the repo root is the **canonical AI/agent guidelines file**. `CLAUDE.md` is a symlink pointing to it (`ln -s AGENTS.md CLAUDE.md`).
+
+**Always load `AGENTS.md` before starting work.** It is the authoritative source for:
+
+- Project structure and module organization
+- Build, test, and dev commands (the source of truth over this document for commands)
+- Coding style and naming conventions (TypeScript ESM, strict typing, no `any`, no `@ts-nocheck`)
+- Commit and PR guidelines (pointer to `.agents/skills/PR_WORKFLOW.md` for full maintainer flow)
+- Agent-specific operational notes: macOS gateway, multi-agent safety invariants, vocabulary
+- Security and configuration tips
+- Platform-specific notes (iOS/macOS Observation framework, SwiftUI, Android)
+
+### Key Rules from AGENTS.md
+
+- File references in chat/comments: repo-root relative only — never absolute paths or `~/...`
+- GitHub issue/PR comments: use heredoc (`-F - <<'EOF'`) not `-b "..."` when body contains backticks
+- Never edit `node_modules` — not even for a quick fix
+- Never commit real phone numbers, API keys, or live config values
+- Any dependency in `pnpm.patchedDependencies` must use an exact version (no `^`/`~`)
+- When adding a new `AGENTS.md` in any sub-package, also create a `CLAUDE.md` symlink there
+
+### i18n Docs
+
+`docs/zh-CN/**` is auto-generated — do not edit directly. The same AGENTS.md style rules (no emojis in headings, no absolute paths, etc.) apply to all locale variants including `docs/zh-CN/` and `docs/ja-JP/`. Workflow: update English docs → adjust `docs/.i18n/glossary.zh-CN.json` → run `scripts/docs-i18n` → targeted fixes only if instructed.
+
+---
+
+## 16. Coding Style Rules
+
+> Source of truth: `AGENTS.md`. Repeated here for quick reference.
+
+### Language & Tooling
+
+- **TypeScript (ESM)**. Strict typing. Avoid `any`.
+- Formatting: **Oxfmt** (`pnpm format` / `pnpm format:fix`)
+- Linting: **Oxlint** with `--type-aware` (`pnpm lint` / `pnpm lint:fix`)
+- Never add `@ts-nocheck`. Never disable `no-explicit-any`. Fix root causes.
+- Never share class behavior via prototype mutation. Use explicit inheritance/composition.
+
+### Naming
+
+- **OpenClaw** for product/app/docs headings
+- **openclaw** for CLI command, package/binary, paths, config keys
+- File references in chat/comments/PRs: **repo-root relative only** — never absolute paths or `~/...`
+
+### Code Quality
+
+- Add brief comments for tricky/non-obvious logic only — do not add comments to code you didn't change.
+- Keep files under ~500 LOC (guideline). Split/refactor when it improves clarity or testability.
+- CLI progress: use `src/cli/progress.ts` (`osc-progress` + `@clack/prompts`). Do not hand-roll spinners.
+- Status output: use `src/terminal/table.ts` with shared palette from `src/terminal/palette.ts`.
+
+### Dependencies
+
+- Any dependency in `pnpm.patchedDependencies` must use **exact version** (no `^`/`~`).
+- Patching dependencies (pnpm patches, overrides, vendored changes) requires **explicit approval**.
+- **Never edit `node_modules`** — not even for a quick fix. Updates overwrite everything.
+- **Never update the Carbon dependency** — explicit prohibition.
+
+### Maintainers & Ownership
+
+See `CONTRIBUTING.md` for the full maintainer list with GitHub handles and area ownership. Key areas:
+- Shadow — Discord, community moderation
+- Jos — Telegram, API, Nix
+- Tyler — Agents/subagents, cron, BlueBubbles, macOS app
+- Vincent — Agents, Telemetry, Hooks, Security
+- Josh Avant — Core, CLI, Gateway, Security, Agents
+
+---
+
+## 17. Multi-Agent Safety Rules
+
+> Critical for agents operating in parallel. Source: `AGENTS.md`.
+
+### Invariants (Never Violate)
+
+1. **Do NOT** create/apply/drop `git stash` entries unless explicitly requested (includes `git pull --rebase --autostash`).
+2. **Do NOT** create/remove/modify `git worktree` checkouts unless explicitly requested.
+3. **Do NOT** switch branches or check out a different branch unless explicitly requested.
+4. When user says **"push"** → you may `git pull --rebase` to integrate latest changes. Never discard other agents' work.
+5. When user says **"commit"** → scope to your changes only.
+6. When user says **"commit all"** → commit everything in grouped chunks.
+7. When you see **unrecognized files** → keep going. Focus on your changes and commit only those.
+
+### Commit Workflow
+
+Always use `scripts/committer "<msg>" <file...>` instead of `git add` + `git commit`. This keeps staging scoped to your specific changes and prevents accidentally including other agents' in-progress work.
+
+### Focus Reports
+
+- Focus reports on your edits only.
+- Avoid guard-rail disclaimers unless truly blocked.
+- When multiple agents touch the same file, continue if safe.
+- End with a brief "other files present" note only if relevant.
+
+### Lint/Format Churn
+
+- If staged+unstaged diffs are formatting-only → auto-resolve without asking.
+- If commit/push already requested → auto-stage formatting fixes in the same or a tiny follow-up commit.
+- Only ask when changes are **semantic** (logic/data/behavior).
