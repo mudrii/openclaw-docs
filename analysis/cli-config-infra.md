@@ -1644,7 +1644,7 @@ User types: openclaw <command> [args]
 
 ### CLI <!-- v2026.3.1 -->
 
-- **`openclaw config file` subcommand** (#26256): new `config file` subcommand prints the active config file path resolved from `OPENCLAW_CONFIG_PATH` or the default location (`~/.openclaw/openclaw.json`). Implementation adds `runConfigFile()` to `config-cli.ts` and registers the subcommand under `config`. Contributor: @cyb1278588254. <!-- v2026.3.1 -->
+- **`openclaw config file` subcommand** (#26256): new `config file` subcommand prints the active config file path using explicit precedence resolution: `OPENCLAW_CONFIG_PATH` (or legacy `CLAWDBOT_CONFIG_PATH`) first, then existing state-dir candidates, and finally the canonical `state-dir/openclaw.json` path. Implementation adds `runConfigFile()` to `config-cli.ts` and registers the subcommand under `config`. Contributor: @cyb1278588254. <!-- v2026.3.1 -->
 
 - **Cron list: rename Agent to Agent ID, add Model column** (#26259): `cron list` output now labels the agent column as `Agent ID` (showing the actual `agentId`, not the model) and adds a separate `Model` column for isolated `agentTurn` jobs. Missing agent IDs display `-` instead of `default`. Implementation in `cron-cli/shared.ts` (`printCronList`). Contributor: @openperf. <!-- v2026.3.1 -->
 
@@ -1668,7 +1668,7 @@ User types: openclaw <command> [args]
 
 ### Infra <!-- v2026.3.1 -->
 
-- **Docker image health checks** (#31272): the gateway now exposes built-in HTTP liveness/readiness probe endpoints (`/health`, `/healthz`, `/ready`, `/readyz`) for Docker/Kubernetes health checks, with fallback routing so existing handlers are not shadowed. `docker-compose.yml` includes a `healthcheck` directive fetching `http://127.0.0.1:18789/healthz`. Contributor: @vincentkoc. <!-- v2026.3.1 -->
+- **Docker image health checks** (#31272): the gateway now exposes built-in HTTP liveness/readiness probe endpoints (`/health`, `/healthz`, `/ready`, `/readyz`). Probe handlers apply when no plugin has claimed those paths, so plugin routes retain precedence. `docker-compose.yml` includes a `healthcheck` directive fetching `http://127.0.0.1:18789/healthz`. Contributor: @vincentkoc. <!-- v2026.3.1 -->
 
 - **Docker image OCI labels** (#31196): `Dockerfile` now includes `org.opencontainers.image.*` base-image annotations (base name, digest, source, URL, docs, license, title, description) for downstream image consumers. Contributor: @vincentkoc. <!-- v2026.3.1 -->
 

@@ -13,7 +13,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ## Highlights
 
-- **Gateway health probes:** built-in `/health`, `/healthz`, `/ready`, `/readyz` HTTP endpoints for Docker/Kubernetes liveness and readiness checks, with fallback routing so existing handlers are not shadowed.
+- **Gateway health probes:** built-in `/health`, `/healthz`, `/ready`, `/readyz` HTTP endpoints for Docker/Kubernetes liveness and readiness checks. Probe handlers run when no plugin route matches those paths, so existing plugin routes retain precedence.
 - **OpenAI Responses WebSocket transport:** `openai` provider defaults to WebSocket-first (`transport: "auto"`) with SSE fallback, shared WS stream/connection runtime, per-session cleanup, and server-side compaction payload mutation on the WS path.
 - **Telegram DM topics:** per-DM `direct` + topic config (allowlists, `dmPolicy`, `skills`, `systemPrompt`, `requireTopic`) with topic-aware authorization, debounce, and distinct inbound/outbound session routing.
 - **Discord thread inactivity lifecycle:** `idleHours` (default 24h) and optional `maxAgeHours` replace fixed TTL, with `/session idle` + `/session max-age` commands.
@@ -35,6 +35,8 @@ For full detail, see the v2026.3.1 notes in the upstream release changelog (`ope
 | `apps/` | 17 |
 | `scripts/` | 13 |
 | `test/` | 2 |
+
+*Note: This distribution is a sampled breakdown; additional files in generated, tooling, or misc paths make up the remaining count to match the stated total.*
 
 ## Breaking / Behavior Shifts
 
@@ -157,6 +159,8 @@ For full detail, see the v2026.2.25 notes in the upstream release changelog (`op
 | `ui/` | 12 |
 | `scripts/` | 5 |
 | `test/` | 4 |
+
+*Note: This distribution is a sampled breakdown; additional files in generated, tooling, or misc paths make up the remaining count to match the stated total.*
 
 ## Breaking / Behavior Shifts
 

@@ -84,7 +84,7 @@
 ### v2026.3.1 Changes <!-- v2026.3.1 -->
 
 **Gateway HTTP / Health Probes:**
-- **Built-in liveness/readiness endpoints** (#31272): gateway now registers `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) via a path→status map in `server-http.ts`. These are unauthenticated and suitable for Docker `HEALTHCHECK`, Kubernetes `livenessProbe`/`readinessProbe`, and external uptime monitors. The Dockerfile documents these endpoints; container health checks should probe `/healthz` or `/readyz`.
+- **Built-in liveness/readiness endpoints** (#31272): gateway now registers `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) via a path→status map in `server-http.ts`. These are unauthenticated and suitable for Docker `HEALTHCHECK`, Kubernetes `livenessProbe`/`readinessProbe`, and external uptime monitors. Probe handlers run only when no plugin route claims the same path, so plugin routes keep precedence. The Dockerfile documents these endpoints; container health checks should probe `/healthz` or `/readyz`.
 - **Control UI method guard for non-UI routes**: plugin-owned HTTP routes under `/plugins` and `/api` are excluded from the Control UI SPA fallback, preventing untrusted plugins from claiming arbitrary UI paths. POST is allowed for non-UI routes via extracted `server/http-auth.ts`.
 - **Control UI CSP: Google Fonts origins**: `style-src` includes `https://fonts.googleapis.com`, `font-src` includes `https://fonts.gstatic.com` for deployments loading external Google Fonts.
 - **Control UI origins wildcard handling**: `origin-check.ts` now accepts `"*"` in `gateway.controlUi.allowedOrigins` (values are trimmed and lowercased via a `Set` for O(1) lookup).
