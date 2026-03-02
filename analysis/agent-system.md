@@ -1,12 +1,12 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-02-27 | Version: v2026.2.26
+> Updated: 2026-03-02 | Version: v2026.3.1
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
 ### Purpose
-The core engine of OpenClaw. Handles LLM agent execution (the "PI embedded runner"), tool definitions and policy enforcement, model selection/auth/fallback, system prompt construction, sandbox management, session management primitives, skills, subagent orchestration, and workspace management. This is the largest module (~683 files, 75 tools).
+The core engine of OpenClaw. Handles LLM agent execution (the "PI embedded runner"), tool definitions and policy enforcement, model selection/auth/fallback, system prompt construction, sandbox management, session management primitives, skills, subagent orchestration, and workspace management. This is the largest module (~703 files, 75+ tools).
 
 ### Key Subsystems & Files
 
@@ -996,5 +996,80 @@ When event fires:
 ### Auto-reply
 
 - **Direct-chat metadata selectively hidden** — `message_id`/`message_id_full` and sender metadata are hidden from the normalized chat type only (not sender-id sentinels) — preserves group metadata visibility for correct routing.
+
+---
+
+## v2026.3.1 Changes
+
+<!-- v2026.3.1 -->
+
+### Agent Reasoning & Thinking
+
+- **Claude 4.6 defaults to `adaptive` thinking** — `resolveThinkingDefault()` in `model-selection.ts` now returns `"adaptive"` for Claude Opus 4.6 and Sonnet 4.6 models (matched via `CLAUDE_46_MODEL_RE`), letting the model dynamically decide when and how much to reason. Commit `37d036714`.
+- **`thinkingDefault: "adaptive"` config support** (#31227) — The `ThinkLevel` union type in `auto-reply/thinking.ts` gains `"adaptive"` as a recognized level. `normalizeThinkLevel()` maps both `"adaptive"` and `"auto"` to the canonical `"adaptive"` value. `listThinkingLevels()` includes it in available levels. Commit `c9f0d6ac8`.
+- **Per-model thinking defaults prioritized** (#30439) — Per-model thinking overrides (`agents.defaults.models.<key>.params.thinking`) are now evaluated before the global `thinkingDefault`, giving operators fine-grained control per model entry.
+- **Thinking fallback: retry with `think=off`** — `pickFallbackThinkingLevel()` in `pi-embedded-helpers/thinking.ts` now falls back to `"off"` when a provider error includes `"not supported"` but does not list supported values, allowing requests to succeed on providers that reject thinking levels entirely.
+
+### Model Fallback & Failover
+
+- **Additional network errors as failover-worthy** — `resolveFailoverReasonFromError()` in `failover-error.ts` now classifies `ECONNREFUSED`, `ENETUNREACH`, `EHOSTUNREACH`, `ENETRESET`, and `EAI_AGAIN` error codes as `"timeout"` failover reasons, joining the existing `ETIMEDOUT`/`ESOCKETTIMEDOUT`/`ECONNRESET`/`ECONNABORTED` set.
+- **`session_expired` failover reason** — New `"session_expired"` failover reason (status 410 Gone) for CLI-provider sessions that no longer exist, with dedicated `isCliSessionExpiredErrorMessage()` classifier.
+- **Avoid false rate-limit from `tpm` substrings** — `hasRateLimitTpmHint()` now uses word-boundary matching (`\btpm\b`) instead of substring includes, preventing error messages containing "tpm" as part of longer words (e.g. model names) from being misclassified as rate-limit errors. The `ERROR_PATTERNS.rate_limited` entry for TPM is also a regex with `\b` boundaries.
+- **Copilot token refresh** — GitHub Copilot API tokens are now refreshed 5 minutes before expiry during long-running turns, with automatic retry on auth errors. Commit `2dcd2f909`.
+- **Preserve reasoning in provider fallback resolution** — `resolveModel()` in `pi-embedded-runner/model.ts` now resolves the `reasoning` flag from the matching configured model entry (`configuredModel?.reasoning`) instead of hardcoding `false`, and likewise resolves `contextWindow` and `maxTokens` from the matching entry before falling back to the first provider model.
+
+### Runtime Events & Subagents
+
+- **Typed `task_completion` internal events** — New file `internal-events.ts` introduces a typed `AgentInternalEvent` system. `AgentTaskCompletionInternalEvent` carries structured fields (`source`, `childSessionKey`, `announceType`, `taskLabel`, `status`, `result`, `replyInstruction`) replacing the previous ad-hoc `[System Message]` text format for subagent/cron completion handoff. `formatAgentInternalEventsForPrompt()` renders events into a trusted system context block.
+- **Subagent announce uses structured events** — `subagent-announce.ts` now builds `AgentInternalEvent[]` arrays and threads them through `deliverSubagentAnnouncement()`, `maybeQueueSubagentAnnounce()`, and `sendSubagentAnnounceDirectly()`. Announce queue items carry `internalEvents` for coalesced batch delivery. The `steerMessage` parameter is separated from `triggerMessage` to support different content for PI steering vs. queue delivery. Commit `4c43fccb3`.
+- **Reject unsupported `sessions_spawn` delivery params** — `sessions-spawn-tool.ts` now declares `UNSUPPORTED_SESSIONS_SPAWN_PARAM_KEYS` (`target`, `transport`, `channel`, `to`, `threadId`, `thread_id`, `replyTo`, `reply_to`) and throws a `ToolInputError` if any are present, directing agents to use `message` or `sessions_send` for channel delivery instead.
+- **Slack announce threadId fix** (#31105) — `resolveSubagentCompletionOrigin()` no longer blindly copies `conversationId` into `threadId`, which caused invalid `thread_ts` for Slack DM/top-level delivery. Only explicit requester thread hints are preserved. Commit `6a1eedf10`.
+- **Sandbox mode for `sessions_spawn`** — New `sandbox` parameter (`"inherit"` | `"require"`) in the sessions spawn tool schema, passed through to the subagent spawn flow.
+
+### Diffs Plugin (New Extension)
+
+- **`extensions/diffs/`** (new) — Read-only diff viewer and PNG renderer plugin. Registered as plugin `"diffs"` with `createDiffsTool()` for agents, HTTP handler for browser-based viewing, and `before_prompt_build` hook injecting `DIFFS_AGENT_GUIDANCE`. Supports rendering diffs from before/after text or unified patches, with configurable defaults via `diffsPluginConfigSchema`. Artifacts stored in a `DiffArtifactStore` with TTL and max pixel cap enforcement.
+
+### OpenAI Responses API
+
+- **Rewritten store patches** — `shouldForceResponsesStore()` in `pi-embedded-runner/extra-params.ts` now respects `model.compat.supportsStore === false` to avoid forcing `store=true` on providers that do not support it (e.g. Azure OpenAI Responses). Also fixes `isDirectOpenAIBaseUrl()` returning `true` for empty base URLs (now returns `false`).
+- **Auto-inject `context_management` for compatible models** — OpenAI Responses API integration now enables server-side compaction (`context_management`) via `shouldEnableOpenAIResponsesServerCompaction()` with a compact threshold of 70% of `contextWindow` (min 1,000 tokens, default 80,000).
+- **Function call reasoning pair downgrade** — `downgradeOpenAIFunctionCallReasoningPairs()` strips `|fc_*` suffixes from tool call IDs when the matching `reasoning` item with a valid signature is absent from the same assistant turn, preventing OpenAI rejection of replayed `function_call` items.
+
+### Prompt Spoofing Hardening
+
+- **Stop injecting queued runtime events into user-role prompt text** — Completion events are now routed through the structured `AgentInternalEvent` system and rendered via `formatAgentInternalEventsForPrompt()` into trusted system-prompt context, rather than being injected as `[System Message]` blocks in user-facing text.
+- **Neutralize spoof markers in untrusted content** — `sanitizeInboundSystemTags()` in `auto-reply/reply/inbound-text.ts` replaces `[System Message]`, `[System]`, `[Assistant]`, `[Internal]` brackets with parenthesized forms and rewrites `System:` line prefixes to `System (untrusted):`. Suspicious patterns added to `security/external-content.ts` detection. Commit `5b8f492a4`.
+- **System prompt messaging section updated** — Removed references to `[System Message]` blocks in `system-prompt.ts`; replaced with guidance about "runtime-generated completion events" in assistant voice.
+
+### Auto-reply
+
+- **NO_REPLY: strip token from mixed-content messages** (#30916, #30955) — `normalizeReplyPayload()` in `normalize-reply.ts` now calls `stripSilentToken()` to remove a trailing `NO_REPLY` from mixed-content text (e.g. "result text NO_REPLY") so the token never leaks to end users. If stripping leaves nothing, the message is treated as silent.
+- **`stripSilentToken()` utility** (new) — `tokens.ts` exports `stripSilentToken(text, token)` that strips a trailing silent reply token from mixed content, returning the remaining text trimmed.
+- **Block reply timeout path: normalize through `Promise.resolve`** — `createBlockReplyPipeline()` in `block-reply-pipeline.ts` wraps `onBlockReply()` return value in `Promise.resolve()` before passing to `withTimeout()`, handling cases where `onBlockReply` returns `undefined` instead of a Promise.
+
+### Compaction
+
+- **Remove post-compaction audit injection message** — `post-compaction-audit.ts` deleted entirely (111-line file). The post-compaction audit that checked for required startup file reads (WORKFLOW_AUTO.md, daily memory files) is removed.
+- **Identifier preservation instructions** — `compaction.ts` gains `IDENTIFIER_PRESERVATION_INSTRUCTIONS` and `buildCompactionSummarizationInstructions()` supporting configurable `identifierPolicy` (`"strict"` | `"custom"` | `"off"`) from `AgentCompactionIdentifierPolicy`. Strict mode (default) preserves UUIDs, hashes, IDs, tokens, API keys, hostnames, IPs, ports, URLs, and file names exactly as written during compaction summarization.
+
+### Cron
+
+- **Heartbeat light bootstrap context: opt-in `--light-context`** (#26064) — `runCronIsolatedAgentTurn()` checks `agentPayload.lightContext` and sets `bootstrapContextMode: "lightweight"` for heartbeat/cron runs, reducing the bootstrap context injected into isolated sessions. Commit `0f2dce048`.
+- **Delivery mode `none`: disable messaging tool** — When `deliveryPlan.mode === "none"`, the message tool is now disabled (`disableMessageTool: true`) in isolated cron runs, preventing cron jobs with no delivery target from sending messages.
+- **One-shot reschedule re-arm** (#28915) — Completed `at` (one-shot) jobs can now be rescheduled to run again. `computeNextRunAtMs()` also accepts `schedule.cron` as an alias for `schedule.expr` for broader compatibility. Croner year-rollback bug workaround added with tomorrow-UTC retry. Commit `08c35eb13`.
+- **Cron list: rename Agent to Agent ID, add Model column** (#26259) — `printCronList()` now shows `"Agent ID"` header (was `"Agent"`) and adds a `"Model"` column displaying `payload.model` for `agentTurn` jobs. Missing `agentId` shows `"-"` instead of `"default"`. Commit `cb6f993b4`.
+- **Cron run exit code: return 0 only for `ok:true, ran:true`** (#31121) — `cron run` CLI command now exits with code 0 only when the gateway returns `{ ok: true, ran: true }`. Any other outcome (including `ok:true, ran:false`) exits with code 1. Commit `ffe1937b9`.
+- **Subagent model for isolated cron** (#11474) — `runCronIsolatedAgentTurn()` now resolves `subagents.model` (agent-level or global) and applies it as the preferred model for isolated cron sessions, subject to the model allowlist.
+- **Per-job payload fallbacks** (#26120) — `payload.fallbacks` array in cron job definitions takes priority over agent-level fallback chains.
+- **Fresh CLI session ID for new cron sessions** (#29774) — Fresh isolated cron sessions no longer reuse a stored CLI session ID, which was incorrectly activating the resume watchdog profile (timeout ~1/3 of configured).
+
+### Sessions
+
+- **Sessions list transcript paths handling** — `sessions-list-tool.ts` now resolves transcript paths more robustly: handles `storePath` placeholders containing `{agentId}` or `~` prefixes, skips the `"(multiple)"` sentinel, and uses `resolveSessionFilePathOptions()` for proper agent-scoped path resolution.
+
+### Cron Tool
+
+- **Flat-params recovery for `patch` action** — `cron-tool.ts` now accepts `additionalProperties: true` in the tool schema and recovers flat patch parameters (`name`, `schedule`, `payload`, `delivery`, `enabled`, etc.) into a synthetic `patch` object when the LLM passes them at the top level instead of nested.
 
 ---

@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-02-27 | Version: v2026.2.26 | Codebase: /path/to/openclaw
-> Modules: agents (683 files), gateway (294 files), sessions (8 files), routing (10 files), providers (11 files), hooks (38 files)
+> Updated: 2026-03-02 | Version: v2026.3.1 | Codebase: /path/to/openclaw
+> Modules: agents (690 files), gateway (298 files), sessions (9 files), routing (10 files), providers (11 files), hooks (38 files)
 
 ---
 
@@ -23,13 +23,13 @@
 ### Overview
 Lightweight utility module for session metadata, key parsing, transcript events, and policy enforcement. No classes — pure functions. Provides the foundational vocabulary (types + helpers) that the routing and gateway modules build on.
 
-### File Inventory (7 source, 1 test)
+### File Inventory (7 source, 2 tests)
 
 | File | Description |
 |------|-------------|
 | `input-provenance.ts` | Tracks origin of user messages (external_user, inter_session, internal_system) |
 | `level-overrides.ts` | Parse/apply verbose level overrides on session entries |
-| `model-overrides.ts` | Apply model/provider/auth-profile overrides to SessionEntry |
+| `model-overrides.ts` | Apply model/provider/auth-profile overrides to SessionEntry; clears stale runtime model identity on override change |
 | `send-policy.ts` | Rule-based policy engine deciding allow/deny for session sends |
 | `session-key-utils.ts` | Parse agent session keys, detect cron/subagent/ACP/thread keys |
 | `session-label.ts` | Validate session labels (max 64 chars) |
@@ -82,6 +82,7 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 
 ### Test Coverage
 - `send-policy.test.ts` — Rule matching, channel/chatType filtering, key prefix matching
+- `model-overrides.test.ts` — Override application, stale runtime field clearing, fallback notice cleanup (added v2026.3.1)
 - Session-key parsing is validated through routing/session-key tests in `src/routing/` (no dedicated `session-key-utils.test.ts` in this release).
 
 ### Known Patterns
@@ -91,6 +92,7 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 
 ### Recent Changes
 
+- **v2026.3.1:** `model-overrides.ts` now clears stale runtime `model`/`modelProvider` fields when the user switches model overrides, so status surfaces immediately reflect the selected model. Clears `fallbackNoticeSelectedModel`/`fallbackNoticeActiveModel`/`fallbackNoticeReason` on any override update. New `model-overrides.test.ts` added.
 - **v2026.2.23:** Session keys canonicalized to lowercase; legacy case-variant entries migrated automatically. (`sessions/store.ts`)
 - **v2026.2.22:** `session.dmScope` defaults to `per-channel-peer` on new CLI installs. Symlinked state-dir aliases resolved during transcript-path validation.
 
@@ -138,7 +140,7 @@ Maps incoming channel messages to agent sessions. Given a channel, account, peer
 ### Routing Algorithm (resolve-route.ts)
 The route resolver uses a **tiered matching** strategy against config bindings:
 
-1. **binding.peer** — Exact peer (group/channel ID) match
+1. **binding.peer** — Exact peer (group/channel ID) match (group/channel kinds treated as equivalent via `peerKindMatches`)
 2. **binding.peer.parent** — Parent peer match (thread inheritance)
 3. **binding.guild+roles** — Discord guild + role-based routing
 4. **binding.guild** — Discord guild match
@@ -148,6 +150,9 @@ The route resolver uses a **tiered matching** strategy against config bindings:
 8. **default** — Falls back to default agent
 
 Uses a `WeakMap` cache on the config object for evaluated bindings (max 2000 keys).
+
+### Multi-Account Default Routing
+`channels.<channel>.defaultAccount` allows selecting a preferred account ID when multiple accounts are configured for a channel. The value is normalized before matching against configured account IDs. Falls back to the first configured account if the default is unset or does not match.
 
 ### DM Session Scoping
 Controlled by `session.dmScope`:
@@ -173,16 +178,20 @@ Controlled by `session.dmScope`:
 None
 
 ### Configuration
-- Reads: `bindings[]`, `agents.list[]`, `session.dmScope`, `session.identityLinks`
+- Reads: `bindings[]`, `agents.list[]`, `session.dmScope`, `session.identityLinks`, `channels.<channel>.defaultAccount`
 
 ### Test Coverage
-- `resolve-route.test.ts` — Tier matching, guild/role routing, DM scoping, identity links
+- `resolve-route.test.ts` — Tier matching, guild/role routing, DM scoping, identity links, group/channel peer kind equivalence
 - `session-key.test.ts` — Key building, normalization, thread suffixes
 
 ### Known Patterns
 - **Strategy/tiered matching** — Binding resolution uses ordered predicate tiers
 - **WeakMap caching** — Config-scoped binding evaluation cache
 - **Normalization** — Aggressive input sanitization throughout
+
+### Recent Changes
+
+- **v2026.3.1:** `peerKindMatches()` treats `group` and `channel` peer kinds as equivalent for binding scope matching, fixing bindings that targeted group peers but received channel-typed inbound messages (or vice versa). `channels.<channel>.defaultAccount` config key added for multi-account default routing. Inbound metadata now includes `account_id` in trusted inbound context (`fix(inbound-meta): #30984`).
 
 ---
 
@@ -248,6 +257,7 @@ Provider-specific authentication and model discovery for GitHub Copilot and Qwen
 
 ### Recent Changes
 
+- **v2026.3.1:** Copilot token refresh: proactively refresh GitHub Copilot API tokens before expiry and retry on 401 auth errors during long-running embedded turns, preventing mid-session auth failures for Copilot-provider subagents.
 - **v2026.2.23:** Vercel AI Gateway normalizes `vercel-ai-gateway/claude-*` shorthand refs to canonical Anthropic-routed IDs. Anthropic OAuth tokens (`sk-ant-oat-*`) skip `context-1m-*` beta injection. OpenRouter: conflicting top-level `reasoning_effort` removed when injecting `reasoning.effort`. Groq: TPM limit errors no longer classified as context overflow.
 - **v2026.2.22:** Mistral provider added (embeddings + voice). Grounded Gemini web search via `tools.webSearch.provider: "gemini"`. Google Vertex AI available for Claude models. OpenRouter: inject `cache_control` on system prompts for Anthropic models.
 
@@ -592,6 +602,8 @@ The largest module (348 source files, 335 tests). This is the **AI agent runtime
 | `subagent-announce.ts` | Announce subagent results to parent |
 | `subagent-announce-queue.ts` | Queue subagent announcements |
 | `subagent-depth.ts` | Subagent nesting depth tracking |
+| `subagent-spawn.ts` | Subagent spawning with sandbox mode and delivery params |
+| `internal-events.ts` | Typed `AgentInternalEvent` system for structured task completion handoff (new v2026.3.1) |
 
 #### Other
 | File | Purpose |
@@ -633,6 +645,8 @@ The largest module (348 source files, 335 tests). This is the **AI agent runtime
 | `EmbeddedPiAgentMeta` | pi-embedded-runner/types.ts | Agent metadata for a run |
 | `PromptMode` | system-prompt.ts | `"full" \| "minimal" \| "none"` — system prompt detail level |
 | `ToolPolicyAction` | tool-policy.ts | `"allow" \| "deny" \| "ask"` |
+| `AgentInternalEvent` | internal-events.ts | Typed internal event union (`task_completion`) for structured subagent/cron handoff |
+| `AgentTaskCompletionInternalEvent` | internal-events.ts | `{ type: "task_completion", source, childSessionKey, status, result, replyInstruction }` |
 
 ### Internal Dependencies (major)
 - `config/*` — Configuration types and loading
@@ -681,6 +695,7 @@ The largest module (348 source files, 335 tests). This is the **AI agent runtime
 
 ### Recent Changes
 
+- **v2026.3.1:** Subagent runtime events: typed `task_completion` internal events (`AgentInternalEvent` in new `internal-events.ts`) replace ad-hoc system-message handoff for subagent/cron completion announces. `AnnounceQueueItem` carries `internalEvents` array through queue drain and direct delivery paths. Cron completions skip the subagent status header. Announce steer messages use `formatAgentInternalEventsForPrompt()` instead of raw trigger strings. `sessions_spawn` rejects unsupported channel-delivery params (`target`, `transport`, `channel`, `to`, `threadId`, `replyTo`) with a `ToolInputError`. Thinking defaults: Claude 4.6 defaults to `adaptive` thinking; `thinkingDefault` config now accepts `"adaptive"` level. `thinkingDefault` priority: per-model defaults take precedence over agent-level defaults, and session entry `thinkingLevel`/`verboseLevel`/`reasoningLevel` are checked before agent defaults. Model failover: `ECONNREFUSED`, `ENETUNREACH`, `EHOSTUNREACH`, `ENETRESET`, `EAI_AGAIN` classified as failover-worthy network errors alongside existing `ETIMEDOUT`/`ESOCKETTIMEDOUT`/`ECONNRESET`/`ECONNABORTED`. Failover reason classification: `hasRateLimitTpmHint()` uses `\btpm\b` word-boundary regex instead of substring `includes("tpm")`, preventing false rate-limit classification from unrelated error messages containing `tpm` substrings. Copilot token refresh: proactively refresh GitHub Copilot tokens before expiry during long-running embedded turns. Sessions list: `transcriptPath` resolution now resolves per-agent store paths (including `{agentId}` expansion and `~` home-dir expansion) instead of requiring a pre-resolved store path. Subagent Slack thread delivery: `threadId` no longer blindly set to `conversationId`; only explicit requester thread hints are preserved, fixing invalid `thread_ts` on Slack DM/top-level delivery.
 - **v2026.2.23:** Reasoning: when `thinking=low` (model-default thinking), auto-reasoning stays disabled. Reasoning-required errors no longer classified as context overflow. Context overflow: detect additional error shapes + Chinese patterns. HTTP 502/503/504 treated as failover-eligible transient timeouts.
 - **v2026.2.22:** Moonshot: `supportsDeveloperRole=false` forced. Kimi token limit errors classified as context overflow. Google: non-base64 `thought_signature` sanitized from replay transcripts. Mistral: tool-call IDs sanitized. Ollama: large integer args preserved as exact strings. Transcripts: tool-call names validated before persistence.
 
@@ -732,8 +747,10 @@ The gateway is OpenClaw's **server process** — a WebSocket + HTTP server that 
 | File | Purpose |
 |------|---------|
 | `server/http-listen.ts` | HTTP listener setup |
+| `server/http-auth.ts` | Canvas auth, plugin route auth, and `isCanvasPath` helpers (extracted from server-http.ts in v2026.3.1) |
 | `server/plugins-http.ts` | Plugin HTTP routes |
 | `server/tls.ts` | TLS configuration |
+| `server-http.ts` | HTTP request router; includes health probe handler (`/health`, `/healthz`, `/ready`, `/readyz`) for container checks (added v2026.3.1) |
 | `openai-http.ts` | OpenAI-compatible HTTP API |
 | `openresponses-http.ts` | OpenAI Responses API compatibility |
 | `open-responses.schema.ts` | Responses API schema |
@@ -806,12 +823,17 @@ The gateway is OpenClaw's **server process** — a WebSocket + HTTP server that 
 | `server-wizard-sessions.ts` | Wizard session management |
 | `server-reload-handlers.ts` | Config reload handlers |
 
+#### Startup & Configuration
+| File | Purpose |
+|------|---------|
+| `startup-control-ui-origins.ts` | Seed `gateway.controlUi.allowedOrigins` for non-loopback installs at startup (new v2026.3.1) |
+
 #### Node Management
 | File | Purpose |
 |------|---------|
 | `node-registry.ts` | Mobile/remote node registry |
 | `server-mobile-nodes.ts` | Mobile node connection handling |
-| `server-node-events.ts` | Node event handling |
+| `server-node-events.ts` | Node event handling (expanded with typed node event dispatch in v2026.3.1) |
 | `server-node-events-types.ts` | Node event types |
 | `server-node-subscriptions.ts` | Node event subscriptions |
 | `node-command-policy.ts` | Node command security policy |
@@ -937,6 +959,7 @@ Channel (Telegram/Discord/...)
 
 ### Recent Changes
 
+- **v2026.3.1:** Health probes: `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) endpoints added to `server-http.ts` via `GATEWAY_PROBE_STATUS_BY_PATH` map and `handleGatewayProbeRequest()` for container health checks (Kubernetes, Docker, Fly.io). Control UI method guard: POST requests to `/plugins/*` and `/api/*` paths fall through to their respective handlers instead of being caught by the SPA fallback, preventing untrusted plugins from claiming arbitrary UI paths. WS security: origin allowlist in `origin-check.ts` upgraded from array `includes` to `Set.has`; wildcard `["*"]` in `gateway.controlUi.allowedOrigins` now explicitly accepted. Control UI CSP: `style-src` includes `https://fonts.googleapis.com` and `font-src` includes `https://fonts.gstatic.com` for Google Fonts support. Control UI origins: `startup-control-ui-origins.ts` seeds `gateway.controlUi.allowedOrigins` for non-loopback installs upgrading to v2026.2.26+ at startup. macOS supervised restart: `restartGatewayProcessWithFreshPid()` uses `launchctl kickstart -k` (via `triggerOpenClawRestart()`) on macOS under launchd to bypass ThrottleInterval delays. macOS TLS certs: `NODE_EXTRA_CA_CERTS` added to LaunchAgent environment for custom CA certificate support. Node exec approval: `systemRunPlanV2` renamed to `systemRunPlan` (breaking: old node clients sending `systemRunPlanV2` payloads will fail approval matching). `system.run` pins to canonical `realpath`: `resolveCommandResolution()` now resolves `resolvedRealPath` via `fs.realpathSync`, used in approval binding for symlink-resistant command identity. `node.canvas.capability.refresh` added to `NODE_ROLE_METHODS` in method-scopes. Canvas auth helpers extracted from `server-http.ts` into `server/http-auth.ts`.
 - **v2026.2.23:** WS: repeated unauthorized request floods closed per-connection with sampled rejection logging. Config Write: `unsetPaths` applied with immutable path-copy updates; prototype-key traversal rejected in `config get/set/unset`.
 - **v2026.2.22:** Auth: unified credential-source precedence via shared resolver helpers. Pairing: `operator.admin` satisfies `operator.*` scope checks; loopback scope-upgrade auto-approved; default scope bundles include `operator.read`/`operator.write`.
 
@@ -1188,5 +1211,45 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ### Usage Accounting
 - **Moonshot/Kimi cache metrics** (#25436): `cached_tokens` and `prompt_tokens_details.cached_tokens` fields from Moonshot/Kimi responses are now parsed into normalized cache-read usage metrics. Contributor: @Elarwei001.
+
+---
+
+## v2026.3.1 Changes (2026-03-02)
+
+~588 commits across core engine modules in the v2026.3.1 release window. Key changes by sub-module:
+
+### Agents
+- **Subagent runtime events** — New `internal-events.ts` introduces typed `AgentInternalEvent` union (currently `task_completion` type) replacing ad-hoc system-message handoff for subagent and cron completion announces. Events carry structured fields (`source`, `childSessionKey`, `status`, `result`, `replyInstruction`) and are formatted via `formatAgentInternalEventsForPrompt()`. `AnnounceQueueItem` carries `internalEvents[]` through both queued and direct delivery paths. Cron completions skip the subagent status header in `buildCompletionDeliveryMessage()`.
+- **Subagent Slack thread delivery fix** — `threadId` in `resolveSubagentCompletionOrigin()` no longer blindly copies `conversationId`; only explicit requester thread hints are preserved, fixing invalid `thread_ts` on Slack DM/top-level delivery. (`6a1eedf10`, #31105)
+- **Thinking defaults** — Claude 4.6 defaults to `adaptive` thinking. `thinkingDefault` config now accepts `"adaptive"` level. Per-model thinking defaults take precedence over agent-level defaults. Session entry `thinkingLevel`/`verboseLevel`/`reasoningLevel` are checked before agent defaults in directive resolution. (`37d036714`, `0f2dce048`, `c9f0d6ac8`)
+- **sessions_spawn delivery param rejection** — `sessions_spawn` tool rejects unsupported channel-delivery params (`target`, `transport`, `channel`, `to`, `threadId`, `replyTo`) with `ToolInputError`, directing callers to use `message` or `sessions_send` instead. New `sandbox` param with `"inherit"` | `"require"` modes. (`b0c7f1ebe`, #31000, #31110)
+- **Model failover expansion** — `ECONNREFUSED`, `ENETUNREACH`, `EHOSTUNREACH`, `ENETRESET`, `EAI_AGAIN` classified as failover-worthy network errors alongside existing codes. (`76ed274aa`)
+- **Failover reason classification** — `hasRateLimitTpmHint()` uses `\btpm\b` word-boundary regex instead of substring `includes("tpm")`, preventing false rate-limit classification from error messages that happen to contain `tpm` as a substring (e.g. `untpm`, `atpm`). Rate-limit error patterns updated to use regex for `tpm`.
+- **Copilot token refresh** — Proactively refresh GitHub Copilot API tokens before expiry and retry on 401 auth errors during long-running embedded turns, preventing mid-session auth failures. (`2dcd2f909`)
+- **Sessions list transcript paths** — `sessions-list-tool.ts` resolves `transcriptPath` per-agent using `resolveSessionFilePathOptions()` with `{agentId}` expansion and `~` home-dir expansion, instead of requiring a pre-resolved store path. (`53d6e07a6`, @martinfrancois)
+- **Model overrides** — `applyModelOverrideToSessionEntry()` clears stale runtime `model`/`modelProvider` fields when overrides change, so status surfaces immediately reflect the selected model. Clears fallback notice fields on update.
+
+### Gateway
+- **Health probes** — `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) HTTP endpoints added via `GATEWAY_PROBE_STATUS_BY_PATH` map and `handleGatewayProbeRequest()` in `server-http.ts` for container health checks (Kubernetes, Docker, Fly.io). (`eeb72097b`, #31272)
+- **Control UI method guard** — POST requests to `/plugins/*` and `/api/*` paths fall through to their respective handlers instead of being caught by the SPA fallback, preventing untrusted plugins from claiming arbitrary UI paths.
+- **WS security** — Origin allowlist in `origin-check.ts` upgraded from array `includes()` to `Set.has()`; wildcard `["*"]` in `gateway.controlUi.allowedOrigins` now explicitly accepted.
+- **Control UI CSP** — `style-src` includes `https://fonts.googleapis.com` and `font-src` includes `https://fonts.gstatic.com` for Google Fonts support.
+- **Control UI origins** — New `startup-control-ui-origins.ts` seeds `gateway.controlUi.allowedOrigins` for non-loopback installs upgrading to v2026.2.26+ at startup. Persists to config file on success.
+- **macOS supervised restart** — `restartGatewayProcessWithFreshPid()` uses `launchctl kickstart -k` via `triggerOpenClawRestart()` on macOS under launchd (`OPENCLAW_LAUNCHD_LABEL` env) to bypass ThrottleInterval delays for intentional restarts. (`process-respawn.ts`)
+- **macOS TLS certs** — `NODE_EXTRA_CA_CERTS` added to LaunchAgent environment for custom CA certificate support. (`d33f24c4e`)
+- **Canvas auth refactor** — `authorizeCanvasRequest()`, `enforcePluginRouteGatewayAuth()`, and `isCanvasPath()` extracted from `server-http.ts` into `server/http-auth.ts`.
+- **Node method scopes** — `node.canvas.capability.refresh` added to `NODE_ROLE_METHODS` in `method-scopes.ts`.
+
+### Sessions
+- **Internal routing** — `preserve external lastTo routing for internal turns`: internal turns no longer overwrite `lastTo`/`lastChannel` with internal values, so external delivery continues to target the correct channel. (`95db5bb5e`)
+
+### Routing
+- **Peer kind equivalence** — `peerKindMatches()` treats `group` and `channel` peer kinds as equivalent for binding scope matching, fixing bindings that targeted group peers but received channel-typed inbound messages (or vice versa). (`70ee256ae`, @Sid-Qin)
+- **Multi-account default routing** — `channels.<channel>.defaultAccount` config key added for selecting a preferred account when multiple accounts are configured. (`41537e930`)
+- **Inbound metadata** — `account_id` included in trusted inbound metadata context. (`0202d79df`, @Stxle2)
+
+### Breaking Changes
+- **Node exec approval payloads** — `systemRunPlanV2` renamed to `systemRunPlan`; `systemRunBindingV1` renamed to `systemRunBinding`. Old node clients sending `V2`/`V1`-suffixed payloads will fail approval matching. (`155118751`)
+- **Node `system.run` pins to canonical `realpath`** — `resolveCommandResolution()` resolves `resolvedRealPath` via `fs.realpathSync()` for symlink-resistant command identity in approval bindings.
 
 ---

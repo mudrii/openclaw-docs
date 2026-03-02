@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-02-27 | Version: v2026.2.26
+> Updated: 2026-03-02 | Version: v2026.3.1
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -25,7 +25,7 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Windows daemon cmd injection** — Hardened Windows daemon service commands against command injection
 
 #### v2026.2.21 Changes <!-- v2026.2.21 -->
-- **system.run command resolution** — `fix(security)`: centralized and hardened in `src/node-host/invoke-system-run.ts` (new 402-line module). Validates command path, sanitizes env overrides via `sanitizeSystemRunEnvOverrides()`, and resolves command through `resolveSystemRunCommand()` before any allowlist evaluation
+- **system.run command resolution** — `fix(security)`: centralized and hardened in `src/node-host/invoke-system-run.ts` (new ~420-line module). Validates command path, sanitizes env overrides via `sanitizeSystemRunEnvOverrides()`, and resolves command through `resolveSystemRunCommand()` before any allowlist evaluation
 - **Startup-file env injection blocked** — `fix(security)`: environment variable injection via startup files (`.bashrc`, `.zshrc`, etc.) blocked across host execution paths via `sanitizeSystemRunEnvOverrides()` / `sanitizeHostExecEnv()`
 - **Heredoc allowlist parsing hardened** — `fix(security)`: more heredoc patterns recognized and blocked in allowlist parsing
 - **Command substitution in heredocs blocked** — `fix(security)`: `$(cmd)` and backtick substitution in unquoted heredoc bodies now blocked
@@ -86,6 +86,13 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Plugin install manifest sanitization:** Strip `workspace:*` devDependency entries from copied plugin manifests before `npm install --omit=dev`. Ignore backup/disabled directory patterns (`.backup-*`, `.bak`, `.disabled*`). Move updater backup dirs under `.openclaw-install-backups`
 - **Plugin allowlist:** `openclaw plugins enable` updates allowlists via shared plugin-enable policy. Auto-enable writes `channels.<id>.enabled=true` (not `plugins.entries.<id>`). Built-in channels also allowlisted when `plugins.allow` is active
 
+#### v2026.3.1 Plugin & Install Changes
+
+- **NPM spec install .tgz detection** — `packNpmSpecToArchive()` in `install-source-utils.ts` now detects `.tgz` archives via `parsePackedArchiveFromStdout()` when `npm pack` JSON output is empty, and falls back to `findPackedArchiveInDir()` scanning the working directory for the most recently modified `.tgz` file. E404 errors now return a user-friendly "Package not found on npm" message with a doc link.
+- **Windows plugin install EINVAL** — `exec.ts` resolves `node` and `npm` to their CLI script paths on Windows to avoid `EINVAL` spawn errors from shim executables. Contributor: @codertony.
+- **ACP/ACPX streaming** — ACPX extension pinned to 0.1.15, with configurable command/version probing. Health-check tolerates missing `--version` output via `ensure.ts` fallback. ACPX Windows cmd wrapper spawning hardened with strict wrapper policy.
+- **Plugin discovery order** — Global auto-discovered extensions (`~/.openclaw/extensions/`) now discovered after bundled plugins, giving bundled versions precedence.
+
 #### v2026.2.22 Security Audit New Findings
 
 - `gateway.nodes.allow_commands_dangerous` — audit finding for risky `gateway.nodes.allowCommands` overrides
@@ -130,6 +137,66 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - **Gemini CLI OAuth warning gate** — explicit account-risk warning and confirmation before starting Gemini CLI OAuth flow; docs updated accordingly.
 - **Temp-dir permission hardening** — Linux temp dirs forced to `0700` with self-healing before trust checks to avoid insecure writable temp paths.
 
+#### v2026.3.1 Changes
+
+**Prompt spoofing hardening:**
+- Queued runtime events (subagent/cron completion announces) are no longer injected as user-role prompt text. A new `src/agents/internal-events.ts` module provides structured `AgentInternalEvent` types routed through trusted system-prompt context via `formatAgentInternalEventsForPrompt()`. Subagent announce delivery in `subagent-announce.ts` now builds typed `AgentTaskCompletionInternalEvent` payloads and forwards them through `internalEvents` on the announce queue, rather than concatenating freeform `[System Message]` blocks into user-facing messages.
+- System prompt in `system-prompt.ts` removes `[System Message]` spoof markers from messaging guidelines; completion events are now described generically as "runtime-generated completion events."
+- Unicode bracket folding in `external-content.ts` expanded: 14 additional Unicode angle bracket/ornament codepoints (U+00AB, U+00BB, U+300A, U+300B, U+27EA-U+27EF, U+276C-U+276F) are now folded to ASCII `<`/`>` to neutralize visually-similar spoof markers.
+
+**Exec approval payloads (BREAKING):**
+- `SystemRunApprovalBindingV1` and `SystemRunApprovalPlanV2` renamed to `SystemRunApprovalBinding` and `SystemRunApprovalPlan` respectively; the `version` field is removed from both types. Node exec approval payloads now require `systemRunPlan` (was `systemRunPlanV2`) and `systemRunBinding` (was `systemRunBindingV1`) in `ExecApprovalRequestPayload`. Gateway-side matching and normalization functions renamed accordingly (`normalizeSystemRunApprovalPlan`, `buildSystemRunApprovalBinding`, `matchSystemRunApprovalBinding`).
+- `buildSystemRunApprovalPlanV2()` renamed to `buildSystemRunApprovalPlan()` in `invoke-system-run-plan.ts`. The `shellCommand` parameter removed from `hardenApprovedExecutionPaths()`: all argv entries are now resolved through canonical realpath via the new `resolveCommandResolutionFromArgv()` in `src/infra/exec-command-resolution.ts`.
+
+**Shell env markers:**
+- `OPENCLAW_SHELL` environment variable injected into child shell environments during exec, ACP client, ACPX, and TUI local shell runs. Values include `exec`, `acp-client`, `acpx`, `tui-local` to identify the runtime context. Contributor: @vincentkoc.
+
+**Feishu webhook ingress hardening:**
+- Feishu webhook rate-limit state bounded with `FEISHU_WEBHOOK_RATE_LIMIT_MAX_TRACKED_KEYS` (4,096 keys) hard cap. Stale-window pruning runs periodically via `maybePruneWebhookRateLimitState()`, evicting entries older than the 60s rate-limit window. When the key cap is exceeded, oldest entries are evicted via FIFO trimming (`trimWebhookRateLimitState()`). Contributor: @bmendonca3.
+
+**Compaction audit injection removed:**
+- Post-compaction audit injection message (Layer 3) removed from `agent-runner.ts`. This audit injected `enqueueSystemEvent` user-role messages referencing `WORKFLOW_AUTO.md` after context compaction, creating a persistent prompt injection vector. Layer 1 (compaction summary) and Layer 2 (workspace context refresh from AGENTS.md) remain intact.
+
+**Compaction identifier preservation:**
+- New `buildCompactionSummarizationInstructions()` in `compaction.ts` adds configurable identifier preservation policy (`AgentCompactionIdentifierPolicy`: `strict`, `custom`, `off`) to compaction summarization. Default `strict` policy instructs the summarizer to preserve all opaque identifiers (UUIDs, hashes, IDs, tokens, URLs, file names) exactly as written.
+
+**Workspace boundary errors:**
+- `SafeOpenErrorCode` gains `outside-workspace` code. `openFileWithinRoot()` in `fs-safe.ts` now throws `SafeOpenError("outside-workspace", "file is outside workspace root")` instead of the misleading generic `"path escapes root"` when resolved paths fall outside the workspace root. Home-prefix expansion (`~/`) added before path resolution.
+
+**Sandbox mkdirp boundary checks:**
+- `fs-safe.ts` adds pre-open `lstat` directory rejection to prevent `EISDIR` errors from leaking to messaging channels. `SafeOpenSyncAllowedType` parameter added to `openVerifiedFileSync` for directory-aware boundary checks. Contributor: @glitch418x.
+
+**Docker sandbox browser hardening:**
+- Sandbox browser `--no-sandbox` flag now correctly applied in Docker container environments. Contributor: @Lukavyi.
+
+**Signal sync message null-handling:**
+- `sentTranscript` sync messages filtered from bypass of loop protection. Sync message presence filtering hardened. Contributors: @Sid-Qin.
+
+**Security audit new findings:**
+- `gateway.control_ui.allowed_origins_wildcard` — audit finding when `gateway.controlUi.allowedOrigins` includes `"*"`, which disables origin allowlisting for Control UI/WebChat requests. Severity is critical for non-loopback bind, warn for loopback.
+- `channels.feishu.doc_owner_open_id` — audit finding when Feishu doc tool is enabled, warning that `feishu_doc` action `create` can grant document access to the trusted requesting Feishu user.
+
+**Model failover expansion:**
+- `resolveFailoverReasonFromError()` in `failover-error.ts` now triggers model failover on `ECONNREFUSED`, `ENETUNREACH`, `EHOSTUNREACH`, `ENETRESET`, and `EAI_AGAIN` error codes (previously only `ETIMEDOUT`, `ESOCKETTIMEDOUT`, `ECONNRESET`, `ECONNABORTED`).
+
+**Model directive @ parsing fix:**
+- `splitTrailingAuthProfile()` in `model-ref-profile.ts` now splits at the first `@` after the last `/` (was: last `@` in the string). This fixes auth-profile extraction for model refs containing `@` characters in the organization/path portion (e.g., `org@team/model-name@profile`). Contributor: @haosenwang1018.
+
+**Secrets/Auth profile normalization:**
+- Inline `SecretRef` `token`/`key` fields normalized to canonical `tokenRef`/`keyRef` in runtime config snapshots.
+
+**Copilot token refresh:**
+- Copilot token refresh now runs before expiry and retries on auth errors.
+
+**Plugin discovery order:**
+- Bundled extensions now discovered before global auto-discovered extensions. Global extensions from `~/.openclaw/extensions/` are scanned after bundled plugins, so bundled versions take precedence unless users explicitly override via `plugins.load.paths`.
+
+**Plugin loader refactor:**
+- `activatePluginRegistry()` extracted as shared helper in `loader.ts`, ensuring both fresh-load and cached-registry paths call `setActivePluginRegistry()` and `initializeGlobalHookRunner()` consistently.
+
+**Plugin tool context:**
+- `OpenClawPluginToolContext` in `plugins/types.ts` gains `requesterSenderId` (trusted sender ID from inbound context) and `senderIsOwner` (whether the trusted sender is an owner).
+
 ---
 
 ### Key Files
@@ -154,6 +221,9 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 | **New (src/infra/)** | |
 | `install-safe-path.ts` | Sanitize skill/plugin install target paths — `unscopedPackageName()`, `safeDirName()`, `safePathSegmentHashed()` |
 | `path-safety.ts` | Cross-platform path containment — `resolveSafeBaseDir()`, `isWithinDir()` |
+| `exec-command-resolution.ts` | <!-- v2026.3.1 --> Canonical command resolution from argv — `resolveCommandResolutionFromArgv()` resolves raw executable to realpath for approval binding |
+| **New (src/agents/)** | |
+| `internal-events.ts` | <!-- v2026.3.1 --> Structured internal event types (`AgentInternalEvent`, `AgentTaskCompletionInternalEvent`) and `formatAgentInternalEventsForPrompt()` — routes runtime events through trusted system-prompt context instead of user-role text |
 
 ### Exported API
 - `runSecurityAudit()` → `SecurityAuditReport` (findings with severity: critical/warn/info)
@@ -164,6 +234,8 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 - `buildUntrustedChannelMetadata()` — safe metadata formatting
 - `DEFAULT_GATEWAY_HTTP_TOOL_DENY`, `DANGEROUS_ACP_TOOLS` — risk constants
 - <!-- v2026.2.21 --> Per-wrapper untrusted content IDs — `wrapExternalContent()` now attaches a unique per-wrapper ID to each untrusted content boundary for attribution (#19009)
+- <!-- v2026.3.1 --> `formatAgentInternalEventsForPrompt()` — structured internal event rendering for system-prompt context
+- <!-- v2026.3.1 --> `buildCompactionSummarizationInstructions()` — configurable identifier preservation policy for compaction summarization
 
 ### Dependencies
 Imports from: `agents/`, `browser/config`, `channels/`, `cli/`, `config/`, `gateway/`, `infra/`, `pairing/`, `plugins/`, `process/`, `routing/`
@@ -305,13 +377,17 @@ Implements the ACP (Agent Client Protocol) server and client for IDE/editor inte
 - **Prompt size bounds** — Prompt input capped at 2 MiB to prevent memory exhaustion
 - See DEVELOPER-REFERENCE.md §9 (gotchas 33–45) for related security hardening details
 
+#### v2026.3.1 Changes
+- **OPENCLAW_SHELL env marker** — ACP client tags spawned bridge environments with `OPENCLAW_SHELL=acp-client` to identify runtime context in child shell processes.
+- **ACP stream char limits** — Stream character limits renamed to `output`/`sessionUpdate` for clarity.
+
 ### Key Files
 
 | File | Role |
 |------|------|
 | `index.ts` | Barrel: exports `serveAcpGateway`, `createInMemorySessionStore` |
 | `server.ts` | ACP server — connects to gateway WebSocket as a client, bridges ACP ↔ gateway |
-| `client.ts` | ACP client — permission resolver that auto-approves safe tools, prompts for dangerous ones |
+| `client.ts` | ACP client — permission resolver that auto-approves safe tools, prompts for dangerous ones; <!-- v2026.3.1 --> now injects `OPENCLAW_SHELL=acp-client` into spawned bridge env |
 | `translator.ts` | `AcpGatewayAgent` — translates between ACP protocol events and gateway methods |
 | `session.ts` | In-memory session store with abort controller tracking |
 | `session-mapper.ts` | Maps ACP session metadata (labels, keys) to gateway session keys |
@@ -365,14 +441,19 @@ Runs OpenClaw as a paired "node" device — connects to gateway, executes comman
 - **Apple Watch companion** — New `watch-companion/` module for glanceable status, quick actions, haptic notifications
 - **Plaintext ws:// blocked** — WebSocket connections to non-loopback hosts must use `wss://`
 
+#### v2026.3.1 Changes
+- **Exec approval payloads (BREAKING)** — `buildSystemRunApprovalPlanV2()` renamed to `buildSystemRunApprovalPlan()`; `invoke.ts` now calls `buildSystemRunApprovalPlan()`. The `shellCommand` parameter removed from `hardenApprovedExecutionPaths()` — all argv entries resolved through canonical realpath via `resolveCommandResolutionFromArgv()`. The `version` field removed from approval plan and binding types.
+- **system.run canonical realpath** — `invoke-system-run-plan.ts` replaces inline `isPathLikeExecutableToken()` with shared `resolveCommandResolutionFromArgv()` from `src/infra/exec-command-resolution.ts`, pinning executable paths to their resolved realpath.
+
 ### Key Files
 
 | File | Role |
 |------|------|
 | `config.ts` | Node host config (nodeId, token, gateway connection) — read/write `node.json` |
 | `runner.ts` | Main node host runner — connects to gateway as node client, handles invoke requests |
-| `invoke.ts` | Command execution handler — routes `system.run` to `invoke-system-run.ts`, validates against exec allowlists, spawns processes, caps output |
-| `invoke-system-run.ts` | <!-- v2026.2.21 --> Centralized `system.run` hardening — `handleSystemRunInvoke()`: resolves command via `resolveSystemRunCommand()`, sanitizes env overrides, evaluates shell/argv allowlists, gates macOS exec host, handles approval decisions |
+| `invoke.ts` | Command execution handler — routes `system.run` to `invoke-system-run.ts`, validates against exec allowlists, spawns processes, caps output; <!-- v2026.3.1 --> calls `buildSystemRunApprovalPlan()` (was `buildSystemRunApprovalPlanV2()`) |
+| `invoke-system-run.ts` | <!-- v2026.2.21 --> Centralized `system.run` hardening (~478 lines at v2026.3.1) — `handleSystemRunInvoke()`: resolves command via `resolveSystemRunCommand()`, sanitizes env overrides, evaluates shell/argv allowlists, gates macOS exec host, handles approval decisions |
+| `invoke-system-run-plan.ts` | <!-- v2026.3.1 --> Approval plan building and execution path hardening — `buildSystemRunApprovalPlan()`, `hardenApprovedExecutionPaths()` now uses `resolveCommandResolutionFromArgv()` for canonical realpath resolution |
 | `invoke-browser.ts` | Browser proxy for remote nodes — routes browser commands through local browser control |
 | `with-timeout.ts` | Generic timeout wrapper with AbortController |
 
@@ -393,7 +474,7 @@ Process spawning, command queuing with lanes, child process lifecycle management
 
 | File | Role |
 |------|------|
-| `exec.ts` | Core exec functions — `runExec`, `runCommandWithTimeout`, Windows command resolution |
+| `exec.ts` | Core exec functions — `runExec`, `runCommandWithTimeout`, Windows command resolution; <!-- v2026.3.1 --> resolves `node`/`npm` to CLI script paths on Windows to avoid EINVAL spawn errors |
 | `command-queue.ts` | Lane-based command queue — serializes execution per lane (main/cron/subagent/nested) with concurrency control |
 | `lanes.ts` | `CommandLane` enum: Main, Cron, Subagent, Nested |
 | `child-process-bridge.ts` | Signal forwarding bridge (SIGTERM/SIGINT/SIGHUP) from parent to child |

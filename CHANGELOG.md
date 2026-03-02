@@ -6,7 +6,108 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.2.26 — Latest Documented Release Summary
+## OpenClaw v2026.3.1 — Latest Documented Release Summary
+
+> **Released:** 2026-03-02 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.2.26..v2026.3.1` | **Scan stats:** 588 commits, 1,081 files changed, +67,443 / -8,115 lines
+
+## Highlights
+
+- **Gateway health probes:** built-in `/health`, `/healthz`, `/ready`, `/readyz` HTTP endpoints for Docker/Kubernetes liveness and readiness checks, with fallback routing so existing handlers are not shadowed.
+- **OpenAI Responses WebSocket transport:** `openai` provider defaults to WebSocket-first (`transport: "auto"`) with SSE fallback, shared WS stream/connection runtime, per-session cleanup, and server-side compaction payload mutation on the WS path.
+- **Telegram DM topics:** per-DM `direct` + topic config (allowlists, `dmPolicy`, `skills`, `systemPrompt`, `requireTopic`) with topic-aware authorization, debounce, and distinct inbound/outbound session routing.
+- **Discord thread inactivity lifecycle:** `idleHours` (default 24h) and optional `maxAgeHours` replace fixed TTL, with `/session idle` + `/session max-age` commands.
+- **Android nodes expansion:** camera, device health, notifications, motion sensors, voice TTS, contacts, calendar, and photos tools for Android node runtimes.
+- **Feishu massive hardening:** 20+ changes covering docx tables, reactions, chat tools, reply-in-thread, multi-account routing, group session scopes, typing backoff, post markdown parsing, media attachment fixes, and prompt-spoofing prevention.
+- **Subagent runtime events:** typed `task_completion` internal events replace ad-hoc system-message handoff, with gateway/CLI plumbing for structured `internalEvents`.
+- **Security hardening:** prompt spoofing prevention (Feishu preview injection blocked), Feishu webhook ingress bounded rate-limit state, gateway WS flood protection for unauthorized request floods, and various auth/routing fixes.
+
+For full detail, see the v2026.3.1 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.1`).
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | 593 |
+| `extensions/` | 194 |
+| `docs/` | 56 |
+| `ui/` | 32 |
+| `apps/` | 17 |
+| `scripts/` | 13 |
+| `test/` | 2 |
+
+## Breaking / Behavior Shifts
+
+1. **Node exec approval payloads now require `systemRunPlan`.** `host=node` approval requests without that plan are rejected outright.
+2. **Node `system.run` pins path-token commands to canonical executable paths (`realpath`)** in both allowlist and approval execution flows. Integrations/tests that asserted token-form argv (e.g. `tr`) must now accept canonical paths (e.g. `/usr/bin/tr`).
+
+## Major Features
+
+- **Gateway health probes** (`/health`, `/healthz`, `/ready`, `/readyz`) for Docker/K8s container orchestration.
+- **OpenAI Responses WebSocket-first transport** with SSE fallback, per-session cleanup, and compaction payload mutation.
+- **Telegram DM topics** with per-DM topic config, session routing, and topic-aware authorization/debounce.
+- **Discord thread inactivity lifecycle** (`idleHours`/`maxAgeHours`) replacing fixed TTL.
+- **Android nodes parity:** `camera.list`, `device.permissions`, `device.health`, `notifications.actions`, `system.notify`, `photos.latest`, `contacts.search`/`contacts.add`, `calendar.events`/`calendar.add`, `motion.activity`/`motion.pedometer`, plus voice TTS via ElevenLabs WebSocket.
+- **Feishu docx tables + uploads:** `create_table`, `write_table_cells`, `create_table_with_values`, `upload_image`, `upload_file` actions on `feishu_doc` tool.
+- **Feishu reactions:** inbound `im.message.reaction.created_v1` handling with verified reaction routing and fail-closed filtering.
+- **Feishu chat tooling:** `feishu_chat` tool for chat info and member queries (`channels.feishu.tools.chat`).
+- **Feishu reply-in-thread:** `replyInThread` config (`disabled|enabled`) for group replies with topic-scoped session routing.
+- **Feishu group session scopes:** configurable `group`, `group_sender`, `group_topic`, `group_topic_sender` with legacy `topicSessionMode` compatibility.
+- **CLI `config file`:** prints active config path resolved from `OPENCLAW_CONFIG_PATH` or the default location.
+- **Diffs plugin tool:** read-only diff rendering from before/after text or unified patches, with gateway viewer URLs for canvas and PNG.
+- **Memory LanceDB custom config:** support custom OpenAI `baseUrl` and embedding dimensions.
+- **ACP/ACPX streaming:** pinned to `0.1.15` with configurable command/version probing and streamlined `final_only` delivery.
+- **Shell env markers:** `OPENCLAW_SHELL` set across `exec`, `acp`, `acp-client`, `tui-local` runtimes.
+- **Cron/heartbeat light bootstrap context:** opt-in lightweight bootstrap mode (`--light-context`, `agents.*.heartbeat.lightContext`).
+- **Subagent runtime events:** typed `task_completion` events with gateway/CLI `internalEvents` plumbing.
+- **Web UI cron i18n + German locale:** localized cron pages plus German (`de`) locale support.
+
+## High-Signal Runtime Fixes
+
+- Feishu multi-account routing with `defaultAccount` outbound routing support, cross-channel session disambiguation with inbound `account_id` metadata.
+- Feishu prompt spoofing prevention: inbound message previews no longer enqueued as system events, blocking preview text from leaking into trusted `System:` context.
+- Feishu typing backoff: rate-limit and quota errors now re-thrown so keepalive circuit breaker stops retries.
+- Feishu post markdown parsing: shared markdown-aware parser with locale-wrapper support and code fidelity.
+- Telegram reply media context: replied media files included in inbound context with DM authorization gating.
+- Telegram outbound chunking: oversize splitting routed through shared outbound pipeline with retry on escaped HTML limits.
+- Slack user-token resolution normalized through resolved account metadata for consistent token sourcing.
+- Slack native commands: `/agentstatus` registration to avoid Slack-reserved `/status` conflict.
+- LINE voice transcription: M4A classified as `audio/mp4` instead of `video/mp4`.
+- Cron delivery mode `none` now correctly disables agent messaging tool.
+- Sessions list transcript paths handle missing/relative/template values correctly.
+- Model directives: email-based auth profile IDs now parsed correctly (split at first `@` after last slash).
+- Thinking fallback: retry with `think=off` when providers reject unsupported thinking levels without alternatives.
+- Failover reason classification: avoid false TPM rate-limit classification from incidental substrings.
+- OpenAI Responses compaction: unified store patches, `compat.supportsStore=false` honored, auto-injected `context_management`.
+- Gateway WS: repeated post-handshake unauthorized request floods per connection now closed with sampled rejection logs.
+- Usage normalization: negative prompt/input token values clamped to zero.
+- Auto-reply `NO_REPLY` token stripped from mixed-content messages.
+
+## Security Hardening
+
+- **Prompt spoofing prevention:** Feishu inbound message previews blocked from system-event injection.
+- **Feishu webhook ingress:** bounded rate-limit state with stale-window pruning and hard key cap prevents unbounded pre-auth memory growth.
+- **Gateway WS flood protection:** close repeated post-handshake unauthorized request floods per connection with sampled rejection logs.
+- **Feishu reaction verification:** timeout + fail-closed filtering drops non-bot or unverified reactions.
+- **Compaction audit:** post-compaction audit injection message removed.
+- **Web tools RFC2544:** benchmark range allowed for trusted endpoints to avoid false SSRF blocks through proxy fake-IP networking.
+
+## Maintainer Upgrade Checklist (v2026.3.1)
+
+1. **Node exec approvals:** verify all `host=node` exec approval integrations send `systemRunPlan` in payloads; requests without it are now rejected.
+2. **Node system.run canonical paths:** update any tests or integrations that assert token-form argv (e.g. `tr`) to accept canonical `realpath` form (e.g. `/usr/bin/tr`).
+3. **Feishu prompt spoofing:** confirm inbound preview text is no longer appearing in agent system context after upgrade.
+4. **Feishu multi-account routing:** if using multiple Feishu accounts, configure `channels.feishu.defaultAccount` for explicit outbound routing.
+5. **Feishu group session scopes:** review group session isolation settings if using topic-based or sender-based session routing.
+6. **Discord thread lifecycle:** audit any Discord thread TTL configurations; `idleHours` (default 24h) replaces fixed TTL.
+7. **Telegram DM topics:** if using DM topics, configure per-DM topic allowlists, `dmPolicy`, and `requireTopic` settings.
+8. **Gateway health probes:** verify `/health`, `/healthz`, `/ready`, `/readyz` paths are not already claimed by custom handlers.
+9. **OpenAI WS transport:** test WebSocket-first transport behavior; use `transport: "sse"` to opt out if needed.
+10. **Gateway WS flood protection:** verify no misbehaving clients are causing repeated unauthorized request floods; these connections are now actively closed.
+
+---
+
+## OpenClaw v2026.2.26 — Release Summary
 
 > **Released:** 2026-02-27 | **Policy note:** latest *documented* released section stays at top.
 > **Window analyzed:** `v2026.2.25..v2026.2.26` | **Scan stats:** 340 commits, 856 files changed, +58,881 / -7,073 lines

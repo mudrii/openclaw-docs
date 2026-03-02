@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-02-27 | Version: v2026.2.26 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-02 | Version: v2026.3.1 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -48,6 +48,24 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Workspace FS hardlink rejection** (@tdjackey): `tools.fs.workspaceOnly` and `tools.exec.applyPatch.workspaceOnly` boundary checks (including sandbox mount-root guards) now reject in-workspace hardlinked file aliases pointing outside the workspace, closing a hardlink-based boundary bypass that realpath alone could not detect.
 - **`agents.files` path hardening** (@tdjackey): `agents.files.get`/`agents.files.set` now blocks out-of-workspace symlink targets while keeping in-workspace symlink targets supported; gateway regression coverage added for both blocked escapes and allowed in-workspace symlinks.
 - **SSRF / IPv6 multicast** (@zpbrent): IPv6 multicast literals (`ff00::/8`) are now classified as blocked/private-internal targets in shared SSRF IP checks, preventing multicast literals from bypassing URL-host preflight and DNS answer validation.
+
+#### v2026.3.1 Changes
+
+- **Feishu webhook ingress bounded rate-limit state** (@bmendonca3): unauthenticated webhook rate-limit state is now bounded with stale-window pruning and a hard key cap to prevent unbounded pre-auth memory growth from rotating source keys (#26050).
+- **Feishu doc create grants bound to trusted requester context** (@Takhoffman): `feishu.docx.create` tool grants are now scoped to verified inbound requester identity via plugin tool context, with audit coverage for grant enforcement (#31184).
+- **Workspace safe writes TOCTOU hardening** (@tdjackey): `writeFileWithinRoot` opens existing files without truncation, creates missing files with exclusive create (`O_EXCL`), defers truncation until post-open identity+boundary validation, and removes out-of-root create artifacts on blocked races.
+- **fs-safe EISDIR sanitization**: directory-read failures are caught pre-open via `lstat` and sanitized defensively so raw `EISDIR` text never leaks to messaging surfaces (openclaw#31186).
+- **Sandbox media TOCTOU hardening**: media read paths in sandbox contexts are revalidated at use-time via `openFileWithinRoot` with hardlink rejection to prevent TOCTOU escape chains between workspace boundary check and file consumption.
+- **Web search citation redirect SSRF**: Gemini web search citation redirect resolution now enforces strict SSRF defaults so redirects to localhost/private/internal targets are blocked.
+- **Root-scoped writes symlink race hardening**: `writeFileWithinRoot` race window between path resolution and file open is closed with atomic create/open patterns.
+- **Security audit: wildcard origin and Feishu owner grant warnings**: `runSecurityAudit()` now emits warnings when `gateway.controlUi.allowedOrigins` contains wildcards and when Feishu owner grants are overly broad.
+- **Feishu system preview prompt leakage** (@stakeswky): inbound Feishu message previews are no longer enqueued as system events, preventing user preview text from being injected into later turns as trusted `System:` context (#31209).
+- **Subagent runtime events structured context**: ad-hoc subagent completion system-message handoff replaced with typed internal completion events (`task_completion`) rendered consistently across direct and queued announce paths, eliminating a prompt injection vector in system-message content.
+- **RFC2544 fake-IP compatibility for trusted fetch** (@sunkinux): `WEB_TOOLS_TRUSTED_NETWORK_SSRF_POLICY` now sets `allowRfc2544BenchmarkRange: true` so proxy fake-IP networking modes using `198.18.0.0/15` do not trigger false SSRF blocks on trusted web-tool fetch endpoints. The general SSRF guard still blocks the range (#31176).
+- **Edit workspace boundary error preservation** (@haosenwang1018): editing files outside workspace roots now surfaces the real "Path escapes workspace root" failure instead of a misleading access/file-not-found error (#31015).
+- **Sandbox mkdirp boundary checks** (@glitch418x): `SandboxFsBridge.mkdirp()` now passes `allowedType: "directory"` to boundary validation, allowing existing in-boundary subdirectories to pass validation without false `cannot create directories` failures (#30610).
+- **fs-safe outside-workspace error code** (@YuzuruS): new `"outside-workspace"` code in `SafeOpenErrorCode` union distinguishes root-escape checks from other `"invalid-path"` errors in `openFileWithinRoot`/`writeFileWithinRoot`, enabling consumers to surface accurate error messages.
+- **ACPX Windows spawn hardening** (@tdjackey): `.cmd/.bat` wrappers resolved via PATH/PATHEXT with strict fail-closed handling (`strictWindowsCmdWrapper`) by default for unresolvable wrappers on Windows.
 
 #### v2026.2.22 SSRF Hardening
 
@@ -108,7 +126,7 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Non-network navigation schemes blocked** — `fix(browser)`: non-network navigation schemes blocked in browser module (e.g., `file://`, `javascript:`, `data:` URIs)
 - **noVNC observer tokens** — `fix(sandbox)`: noVNC observer sessions now require one-time token auth plus mandatory password auth
 
-### File Inventory (29 TypeScript files in `v2026.2.26`: 19 source + 10 tests)
+### File Inventory (29 TypeScript files in `v2026.3.1`: 19 source + 10 tests)
 
 | File | Description |
 |------|-------------|
@@ -120,9 +138,13 @@ Central security audit, remediation, and content-safety module. Provides compreh
 | `audit-fs.ts` | Filesystem permission inspection (POSIX mode bits, symlink detection, Windows ACL) |
 | `audit-tool-policy.ts` | Resolves sandbox tool allow/deny policies for audit |
 | `channel-metadata.ts` | Safely wraps untrusted channel metadata (truncation, dedup, external content wrapping) |
+| `dangerous-config-flags.ts` | Detects dangerous configuration flags and surfaces audit findings |
 | `dangerous-tools.ts` | Shared constants for high-risk tool names (gateway HTTP deny list, ACP dangerous tools) |
+| `dm-policy-shared.ts` | Shared DM policy enforcement logic |
 | `external-content.ts` | Prompt injection defense — wraps external content with security boundaries, detects suspicious patterns |
 | `fix.ts` | Auto-remediation — `fixSecurityFootguns()` tightens groupPolicy, file permissions, allowFrom normalization |
+| `mutable-allowlist-detectors.ts` | Detect mutable allowlist entries (display names, tags) and flag for audit |
+| `safe-regex.ts` | Safe regex construction and validation utilities |
 | `scan-paths.ts` | Path containment utilities (`isPathInside`, skip node_modules/dotfiles) |
 | `secret-equal.ts` | Timing-safe secret comparison using `crypto.timingSafeEqual` |
 | `skill-scanner.ts` | Static analysis scanner for skill/plugin code — detects dangerous exec, eval, network, fs patterns |
@@ -134,10 +156,13 @@ Central security audit, remediation, and content-safety module. Provides compreh
 | `path-safety.test.ts` | Tests for path safety checks |
 | `audit.test.ts` | Tests for main audit orchestrator |
 | `audit-extra.sync.test.ts` | Tests for sync audit collectors |
+| `dm-policy-channel-smoke.test.ts` | Channel-level DM policy smoke tests |
+| `dm-policy-shared.test.ts` | Shared DM policy logic tests |
 | `external-content.test.ts` | Tests for prompt injection detection and content wrapping |
 | `fix.test.ts` | Tests for security auto-fix |
-| `secret-equal.test.ts` | Tests for timing-safe comparison |
+| `safe-regex.test.ts` | Tests for safe regex utilities |
 | `skill-scanner.test.ts` | Tests for code scanning rules |
+| `temp-path-guard.test.ts` | Tests for temp path guard validation |
 | `windows-acl.test.ts` | Tests for Windows ACL parsing |
 
 ### Key Types & Interfaces
@@ -227,13 +252,16 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - Reads: `channels.*` (groupPolicy, dmPolicy, allowFrom), `hooks.*`, `gateway.*`, `sandbox.*`, `logging.redactSensitive`, `browser.*`
 - Writes (fix): `channels.*.groupPolicy`, file permissions on state/config dirs
 
-### Test Coverage (7 test files)
+### Test Coverage (10 test files)
 - `audit.test.ts` — Full audit flow with stubbed channel plugins
 - `audit-extra.sync.test.ts` — Attack surface, hooks findings
+- `dm-policy-channel-smoke.test.ts` — DM policy channel smoke tests
+- `dm-policy-shared.test.ts` — Shared DM policy logic tests
 - `external-content.test.ts` — Injection detection, content wrapping
 - `fix.test.ts` — Auto-fix tightens policies and permissions
-- `secret-equal.test.ts` — Timing-safe comparison
+- `safe-regex.test.ts` — Safe regex validation
 - `skill-scanner.test.ts` — Code scanning rules
+- `temp-path-guard.test.ts` — Temp path guard validation
 - `windows-acl.test.ts` — Windows ACL parsing
 
 ---
@@ -423,7 +451,18 @@ Browser automation module providing a local HTTP control server for Playwright a
 - **Native images / workspaceOnly enforcement** (security, @tdjackey): `tools.fs.workspaceOnly` is now enforced for native prompt image auto-load (including history refs), preventing out-of-workspace sandbox mounts from being implicitly ingested as vision input. Released in `v2026.2.24`. Contributor: @tdjackey (reported).
 - **Control UI / Chat image URL safety** (#25444): image click URL opening now uses a centralized allowlist (`http/https/blob` + opt-in `data:image/*`) with opener isolation (`noopener,noreferrer` + `window.opener = null`) to prevent tabnabbing and unsafe schemes. Contributor: @shakkernerd.
 
-### File Inventory (non-test, ~60 source files)
+#### v2026.3.1 Changes
+
+- **Browser auth fail-closed bootstrap** (@ijxpwastaken): if browser-control auth auto-setup fails and no explicit `token`/`password` is configured, the browser control HTTP server now aborts startup instead of running unauthenticated. `server.ts` tracks `browserAuthBootstrapFailed` and checks for fallback auth before proceeding. New file `server.auth-fail-closed.test.ts` covers regression.
+- **Sandbox browser Docker `OPENCLAW_BROWSER_NO_SANDBOX=1`** (@Lukavyi): sandbox browser containers now receive `OPENCLAW_BROWSER_NO_SANDBOX=1` env var, and the security hash epoch is bumped to `2026-02-28-no-sandbox-env` so existing containers are recreated on upgrade. Comment in `browser.ts` clarifies that Chromium's setuid/namespace sandbox cannot work inside Docker containers without additional privileges (#29879).
+- **noVNC observer hardening**: observer token TTL reduced from 5 minutes to 60 seconds (`NOVNC_TOKEN_TTL_MS`), password entropy increased (8-char alphanumeric via `crypto.randomInt` over `NOVNC_PASSWORD_ALPHABET` instead of 4-byte hex). Token redemption no longer issues a `302` redirect (which placed credentials in `Location` query strings); `bridge-server.ts` now returns a no-cache/no-referrer bootstrap HTML page that client-side navigates to the noVNC URL with credentials in a fragment hash. The `NoVncObserverTokenEntry` type now stores `noVncPort`+`password` instead of a pre-built URL.
+- **Writable output path hardening**: new `output-atomic.ts` module provides `writeViaSiblingTempPath()` — browser download and trace outputs are finalized via sibling `.openclaw-output-{uuid}-{name}.part` temp files with atomic rename, and existing hardlinked writable targets are rejected (`nlink > 1` check in `validateCanonicalPathWithinRoot`), blocking hardlink-alias overwrite paths under browser temp roots.
+- **Browser open & navigate `url` alias** (@vincentkoc): `open` and `navigate` browser tool actions accept `url` as an alias parameter alongside existing parameter names via `browser-tool.schema.ts` and `browser-tool.ts` (#29260).
+- **Browser paths outside-workspace error** (@YuzuruS): `resolveCheckedPathsWithinRoot` now maps `SafeOpenError` with code `"outside-workspace"` to a specific `"File is outside {scopeLabel}"` message instead of a generic invalid-path error. New `outside-workspace` safe-open error code propagated across edit/browser/media consumers (#29715).
+- **Navigate targetId resolution** (#25326): after renderer-swap navigations, the response now returns the correct `targetId` from the new target instead of the stale pre-swap ID.
+- **Snapshot route test coverage**: new `routes/agent.snapshot.test.ts` adds contract tests for snapshot routes.
+
+### File Inventory (non-test, ~78 source files, ~47 test files)
 
 | File | Description |
 |------|-------------|
@@ -497,6 +536,7 @@ Browser automation module providing a local HTTP control server for Playwright a
 | `profiles-service.ts` | Profile CRUD service (create, delete, list) |
 | `proxy-files.ts` | Proxy file persistence for browser results |
 | `screenshot.ts` | Screenshot normalization (resize, byte limit) |
+| `output-atomic.ts` | Atomic write-via-rename for browser download/trace output files |
 | `resolved-config-refresh.ts` | Hot-reload browser config from disk |
 
 ### Key Types & Interfaces
@@ -605,6 +645,10 @@ Browser automation module providing a local HTTP control server for Playwright a
 - **Sandbox browser network hardened** <!-- v2026.2.21 -->: outbound network restrictions tightened for sandboxed browser runs
 - **Sandbox browser hash migration** <!-- v2026.2.21 -->: browser session labels migrated from SHA-1 to SHA-256; stale labels flagged by audit check `sandbox.browser_container.hash_epoch_stale`
 - **SHA-256 synthetic IDs** <!-- v2026.2.21 -->: all synthetically-generated IDs migrated from SHA-1 to SHA-256 (#22528/#7343)
+- **Auth fail-closed bootstrap** <!-- v2026.3.1 -->: browser control server startup aborts if auth bootstrap fails and no explicit fallback auth exists
+- **noVNC observer hardening** <!-- v2026.3.1 -->: shorter token TTL (60s), higher password entropy, credentials kept out of `Location` headers via fragment-hash bootstrap page
+- **Writable output atomic finalization** <!-- v2026.3.1 -->: download/trace output files written via sibling temp + atomic rename; hardlinked targets rejected
+- **Outside-workspace error propagation** <!-- v2026.3.1 -->: dedicated `outside-workspace` error code prevents misleading not-found/invalid-path fallbacks
 
 ### Configuration
 - `browser.enabled` — Enable/disable browser control (default: true)
@@ -614,7 +658,7 @@ Browser automation module providing a local HTTP control server for Playwright a
 - `browser.baseUrl` — Base URL for control server
 - Browser control auth token stored in state dir
 
-### Test Coverage (38 test files)
+### Test Coverage (47 test files)
 - Chrome launch/detection, CDP helpers, profile management
 - Server auth, CSRF, route contracts (snapshots, act, tabs, storage)
 - Playwright session management, role snapshots, AI integration
@@ -849,7 +893,7 @@ Plugin system for OpenClaw — handles discovery, installation, loading, lifecyc
 ### Module Overview
 Public SDK for plugin authors. Re-exports essential types and utilities from internal modules so plugins don't need to import from deep internal paths. Entry point: `index.ts`.
 
-### File Inventory (36 TypeScript files in `v2026.2.26`: 25 source + 11 tests)
+### File Inventory (44 TypeScript files in `v2026.3.1`: 29 source + 15 tests)
 
 | File | Description |
 |------|-------------|
@@ -913,7 +957,7 @@ Agent Client Protocol (ACP) implementation — provides an MCP-compatible server
 - **Prompt size bounds** — Prompt input capped at 2 MiB to prevent memory exhaustion
 - See DEVELOPER-REFERENCE.md §9 (gotchas 33–45) for related hardening details
 
-### File Inventory (43 TypeScript files in `v2026.2.26`: 30 source + 13 tests)
+### File Inventory (43 TypeScript files in `v2026.3.1`: 30 source + 13 tests)
 
 | File | Description |
 |------|-------------|
@@ -1030,10 +1074,10 @@ canvas-host → (minimal, mostly standalone)
 ### Total Counts
 | Module | Source Files | Test Files | Exported Types | Exported Functions |
 |--------|-------------|------------|----------------|-------------------|
-| security | 15 | 7 | 16 | ~30 |
+| security | 19 | 10 | 16 | ~30 |
 | web | ~35 | ~35 | ~14 | ~40 |
-| browser | ~60 | ~38 | ~30 | ~80 |
+| browser | ~78 | ~47 | ~30 | ~80 |
 | canvas-host | 3 | 2 | 5 | 6 |
 | plugins | ~30 | ~16 | ~25 | ~40 |
-| plugin-sdk | 7 | 1 | 3 | 6 |
+| plugin-sdk | 29 | 15 | 3 | 6 |
 | acp | 10 | 4 | 8 | 13 |

@@ -1,22 +1,22 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-02-27 | Version: v2026.2.26
+> Updated: 2026-03-02 | Version: v2026.3.1
 
 ## Overview
 
 | Module | Files | Lines | Purpose |
 |--------|-------|-------|---------|
-| src/cli/ | 258 | 37,349 | CLI commands, argument parsing, program construction |
-| src/commands/ | 319 | 57,709 | Command implementations (agent, doctor, onboard, etc.) |
-| src/tui/ | 45 | 7,476 | Terminal UI, interactive chat mode |
-| src/browser/ | 122 | 20,066 | Browser control, CDP, Playwright automation |
-| src/media/ | 30 | 3,786 | Media handling, MIME detection, storage |
+| src/cli/ | 261 | 38,455 | CLI commands, argument parsing, program construction |
+| src/commands/ | 322 | 59,211 | Command implementations (agent, doctor, onboard, etc.) |
+| src/tui/ | 45 | 7,589 | Terminal UI, interactive chat mode |
+| src/browser/ | 125 | 20,579 | Browser control, CDP, Playwright automation |
+| src/media/ | 34 | 3,962 | Media handling, MIME detection, storage |
 | src/media-understanding/ | 51 | 6,336 | Attachment processing (image/audio/video understanding) |
 | src/link-understanding/ | 6 | 333 | URL/link extraction and processing |
-| src/tts/ | 4 | 2,218 | Text-to-speech (Edge, OpenAI, ElevenLabs) |
-| src/markdown/ | 14 | 2,627 | Markdown → IR → platform-specific rendering |
-| src/canvas-host/ | 5 | 1,088 | Canvas/A2UI system for node displays |
+| src/tts/ | 4 | 2,240 | Text-to-speech (Edge, OpenAI, ElevenLabs) |
+| src/markdown/ | 14 | 2,725 | Markdown → IR → platform-specific rendering |
+| src/canvas-host/ | 6 | 1,395 | Canvas/A2UI system for node displays |
 
 ---
 
@@ -464,6 +464,7 @@ Low-level media utilities: MIME detection, file storage with TTL, base64 encodin
 | `input-files.ts` | Input file extraction (PDF text, document content) |
 | `outbound-attachment.ts` | Outbound attachment handling |
 | `png-encode.ts` | PNG encoding |
+| `load-options.ts` | `OutboundMediaLoadParams`, `resolveOutboundMediaLocalRoots()` — outbound media load options and local root resolution |
 | `read-response-with-limit.ts` | Read HTTP response with byte limit |
 
 ### Key Exports
@@ -640,7 +641,7 @@ Converts Markdown to an intermediate representation (IR) with style spans and li
 
 | File | Role |
 |------|------|
-| `ir.ts` | **Core** (~700 lines): `markdownToIR()`, `markdownToIRWithMeta()`, `chunkMarkdownIR()` — parses Markdown via `markdown-it` into `MarkdownIR` (text + style spans + link spans) |
+| `ir.ts` | **Core** (~950 lines): `markdownToIR()`, `markdownToIRWithMeta()`, `chunkMarkdownIR()` — parses Markdown via `markdown-it` into `MarkdownIR` (text + style spans + link spans) |
 | `render.ts` | `renderMarkdownWithMarkers()` — renders IR back to text with configurable style markers |
 | `frontmatter.ts` | `parseFrontmatterBlock()` — YAML/line-based frontmatter parsing |
 | `whatsapp.ts` | `markdownToWhatsApp()` — converts standard Markdown to WhatsApp formatting (`**bold**` → `*bold*`, `~~strike~~` → `~strike~`) |
@@ -835,3 +836,45 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Usage accounting <!-- v2026.2.24 -->
 
 - **Moonshot-Kimi cache metrics** (#25436): `cached_tokens` and `prompt_tokens_details.cached_tokens` fields from Moonshot/Kimi API responses are parsed into normalized cache-read usage metrics. Contributor: @Elarwei001. <!-- v2026.2.24 -->
+
+## v2026.3.1 Changes <!-- v2026.3.1 -->
+
+### Tools <!-- v2026.3.1 -->
+
+- **Diffs plugin tool** — New `extensions/diffs/` plugin (26 files, ~4,900 lines) providing a read-only diff viewer and PNG renderer for agents. Accepts before/after text or unified patches and renders them via a Playwright-based screenshotter. Supports `view`, `image`, or `both` output modes with configurable themes (dark/light), layouts (unified/split), and artifact TTL. Gateway viewer URLs are generated for canvas output. Registered as a standard plugin tool with HTTP handler and `before_prompt_build` guidance injection. Files: `extensions/diffs/index.ts`, `src/tool.ts`, `src/render.ts`, `src/browser.ts`, `src/store.ts`, `src/http.ts`, `src/config.ts`, `src/prompt-guidance.ts`. <!-- v2026.3.1 -->
+
+- **Edit workspace boundary errors** — `fs-safe.ts` now uses a new `"outside-workspace"` error code (distinct from `"invalid-path"`) with the message "file is outside workspace root" when a path escapes the workspace root. Previously the generic `"invalid-path"` code was used, which consumers often mapped to a misleading "not found" message. Downstream consumers (`pi-tools.read.ts`, `browser/paths.ts`, `media/server.ts`, `media/store.ts`) now surface the accurate "outside workspace" message. Contributor: @YuzuruS (#29715). Files: `src/infra/fs-safe.ts`, `src/media/server.ts`, `src/media/store.ts`. <!-- v2026.3.1 -->
+
+### Browser <!-- v2026.3.1 -->
+
+- **Browser navigate targetId resolution** (#25326) — After a navigation that triggers a Chrome renderer swap (the old CDP target disappears), `resolveTargetIdAfterNavigate()` in `routes/agent.snapshot.ts` now refreshes the tab list, matches the navigated URL to the replacement target, and returns the correct new `targetId`. Includes a retry with 800ms delay if the replacement tab has not yet appeared. <!-- v2026.3.1 -->
+
+- **Browser open & navigate `url` alias** (#29260) — The `open` and `navigate` browser tool actions now accept `url` as an alias parameter for `targetUrl`, via a new `readTargetUrlParam()` helper. Contributor: @vincentkoc. Files: `src/agents/tools/browser-tool.ts`, `src/agents/tools/browser-tool.schema.ts`. <!-- v2026.3.1 -->
+
+- **Browser auth fail-closed** — If browser control auth bootstrap fails and no explicit auth (token or password) is configured, the browser control HTTP server now refuses to start rather than running unauthenticated. File: `src/browser/server.ts`. <!-- v2026.3.1 -->
+
+- **Browser harden writable output paths** — Stricter validation of writable output paths in the browser module. File: `src/browser/output-atomic.ts`, `src/browser/paths.ts`. <!-- v2026.3.1 -->
+
+- **Sandbox browser docker no-sandbox** (#29879) — Sandbox browser creation applies `--no-sandbox` Chrome flag for Docker environments. Contributor: @Lukavyi. File: `src/agents/sandbox/browser.ts`. <!-- v2026.3.1 -->
+
+### Media <!-- v2026.3.1 -->
+
+- **TTS voice bubbles for Feishu and WhatsApp** (#27366) — Previously only Telegram received opus audio output and had `shouldVoice=true` for voice-bubble playback. A new `VOICE_BUBBLE_CHANNELS` set (`telegram`, `feishu`, `whatsapp`) is used by `resolveOutputFormat()` and `maybeApplyTtsToPayload()` so all three channels get opus output and voice-bubble delivery. Contributors: @smthfoxy, @Takhoffman. File: `src/tts/tts.ts`. <!-- v2026.3.1 -->
+
+- **LINE voice transcription M4A detection** (#31151) — `detectContentType()` in `src/line/download.ts` now inspects the MPEG-4 ftyp box major brand (bytes 8-11) to distinguish M4A audio (`audio/mp4`, brands `M4A ` / `M4B `) from MP4 video. Previously all ftyp containers were classified as `video/mp4`, preventing voice messages from being transcribed. Contributor: @scoootscooob. <!-- v2026.3.1 -->
+
+- **Feishu opus media send type** (#28269) — When sending opus audio files to Feishu, the outbound `msg_type` is now `"audio"` instead of `"media"`. The Feishu API requires the `audio` message type for opus files to render as playable voice messages. Contributor: @Glucksberg. File: `extensions/feishu/src/media.ts`. <!-- v2026.3.1 -->
+
+- **Telegram reply media context** (#28488) — When a user replies to a message containing media (photos, stickers, documents), the replied-to media files are now included in the inbound message context. Media fetch is deferred to the debounce flush for performance. Cached sticker reply media is preserved. Contributor: @obviyus. Files: `src/telegram/bot-handlers.ts`, `src/telegram/bot-message-context.ts`, `src/telegram/bot-message-dispatch.ts`. <!-- v2026.3.1 -->
+
+- **Feishu post embedded media** (#21786) — `parsePostContent()` in `extensions/feishu/src/post.ts` now extracts embedded video and audio (`media` tags with `file_key`) from rich-text post messages, in addition to existing image extraction. `resolveFeishuMediaList()` downloads the embedded media via the messageResource API. Contributor: @laopuhuluwa. <!-- v2026.3.1 -->
+
+### Web Tools <!-- v2026.3.1 -->
+
+- **RFC 2544 fake-IP compatibility** (#31176) — `WEB_TOOLS_TRUSTED_NETWORK_SSRF_POLICY` in `src/agents/tools/web-guarded-fetch.ts` now sets `allowRfc2544BenchmarkRange: true`, permitting the 198.18.0.0/15 address range for trusted fetch endpoints. This range is used by some corporate proxies and benchmarking infrastructure. Contributor: @sunkinux. <!-- v2026.3.1 -->
+
+### Usage <!-- v2026.3.1 -->
+
+- **Clamp negative prompt/input token values** (#30765) — `normalizeUsage()` in `src/agents/usage.ts` now clamps `rawInput` to zero. Some OpenAI-format providers pre-subtract `cached_tokens` from `prompt_tokens` upstream; when `cached_tokens` exceeds `prompt_tokens` the subtraction produces negative values that flowed through to the TUI status bar and `/usage` dashboard. <!-- v2026.3.1 -->
+
+- **Codex weekly usage window label** (#26267) — The secondary window label in `src/infra/provider-usage.fetch.codex.ts` now labels windows >= 168 hours as "Week" instead of "Day". Codex plans can have a weekly (604800s) quota window; the label previously always showed "Day" for any window >= 24h. Contributor: @Sid-Qin. <!-- v2026.3.1 -->

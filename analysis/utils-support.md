@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-02-27 | **Version:** v2026.2.26
+**Updated:** 2026-03-02 | **Version:** v2026.3.1
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~423 TypeScript files + 313 Swift files across 14 modules
 
@@ -201,7 +201,7 @@ The **auto-reply** module is the central brain of OpenClaw — the complete pipe
 | `TemplateContext` | `templating.ts` | Extended MsgContext with session info (SessionId, IsNewSession, BodyStripped) |
 | `FinalizedMsgContext` | `templating.ts` | MsgContext after normalization |
 | `OriginatingChannelType` | `templating.ts` | Union of ChannelId and InternalMessageChannel |
-| `ThinkLevel` | `thinking.ts` | `"off" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh"` |
+| `ThinkLevel` | `thinking.ts` | `"off" \| "minimal" \| "low" \| "medium" \| "high" \| "xhigh" \| "adaptive"` |
 | `VerboseLevel` | `thinking.ts` | `"off" \| "on" \| "full"` |
 | `ElevatedLevel` | `thinking.ts` | `"off" \| "on" \| "ask" \| "full"` |
 | `ReasoningLevel` | `thinking.ts` | `"off" \| "on" \| "stream"` |
@@ -909,3 +909,45 @@ Shared test utilities and mock factories.
 
 - **Direct-chat `message_id` and sender metadata hidden from normalized chat type** — `message_id`/`message_id_full` and sender metadata hidden from normalized chat type only — preserves group metadata visibility; prevents sender-id spoofed direct-mode classification. <!-- v2026.2.23 -->
 - **Inbound metadata stripping** (`src/gateway/chat-sanitize.ts`, backed by `src/auto-reply/reply/strip-inbound-meta.ts`) — The WS connection message handler now strips internal metadata blocks from inbound messages before routing them to channel surfaces or agent sessions. `stripEnvelopeFromMessage()` applies `stripInboundMetadata()` to all text content (both string and array-of-blocks forms), then strips `[Channel From Timestamp]` envelope headers and message-id hints from user-role messages. This prevents internal marker blocks (injected by the auto-reply pipeline for message correlation) from leaking into chat surfaces or being re-injected into subsequent agent turns. The function handles `content: string`, `content: [{type:"text", text:...}]`, and `text: string` message shapes, and is applied to every inbound message array via `stripEnvelopeFromMessages()`.
+
+## v2026.3.1 Changes <!-- v2026.3.1 -->
+
+### Auto-Reply <!-- v2026.3.1 -->
+
+- **NO_REPLY token stripping from mixed-content messages** (#30916, #30955) — `normalizeReplyPayload()` in `reply/normalize-reply.ts` now strips the `NO_REPLY` silent token from mixed-content messages (e.g. text containing both emoji and `NO_REPLY`) via the new `stripSilentToken()` helper in `tokens.ts`. Previously, only exact-match `NO_REPLY` was handled; mixed-content messages leaked the raw control text to end users. If stripping leaves nothing and there is no media/channelData, the message is treated as silent. The `stripSilentToken()` function uses a regex to remove a trailing silent token separated by whitespace.
+- **Block reply timeout path normalized through Promise.resolve** (#31200) — `createBlockReplyPipeline()` in `reply/block-reply-pipeline.ts` now wraps the `onBlockReply()` callback return value in `Promise.resolve()` before passing it to `withTimeout()`. This ensures deterministic timeout behavior even when the callback returns `undefined` instead of a promise. Previously, a non-promise return could bypass the timeout race.
+- **`ThinkLevel` gains `"adaptive"` variant** (#31227) — `thinking.ts` adds `"adaptive"` to the `ThinkLevel` union, enabling per-model thinking defaults that adapt based on provider capabilities (initially for Anthropic models). `normalizeThinkLevel()` now accepts `"adaptive"` as valid input. Per-model thinking defaults are resolved via the new `directive-handling.levels.ts` module.
+- **Inbound metadata includes `account_id`** (#30984) — `reply/inbound-meta.ts` now includes `account_id` (from `ctx.AccountId`) in the `openclaw.inbound_meta.v1` trusted metadata payload, and adds `topic_id` (from `ctx.MessageThreadId`) to the user context prefix. Enables multi-account-aware agent behaviors.
+- **Session routing preserves external `lastTo`/`lastChannel` for internal turns** — `reply/session.ts` refactors channel and destination resolution with a new `isExternalRoutingChannel()` guard and `resolveLastToRaw()` helper. Internal/non-deliverable sources (webchat, system) no longer overwrite previously known external delivery routes. This prevents internal session turns from corrupting the reply destination for subsequent external messages.
+
+### Logging <!-- v2026.3.1 -->
+
+- **Feishu runtime-gated logging** (#18841) — `extensions/feishu/src/bot.ts` replaces bare `console.log`/`console.error` calls with runtime-gated `log()`/`error()` obtained from `getFeishuRuntime()`, so typing indicator and message processing errors respect the configured log level instead of always writing to stderr.
+- **Ollama empty-discovery demoted from warn to debug** (#26379) — When Ollama is unreachable and not explicitly configured, the autodiscovery log is now emitted at debug level instead of warn. Explicitly configured Ollama instances still warn on unreachable.
+- **Discord allowlist diagnostics** — `src/discord/monitor/provider.allowlist.ts` and `src/discord/resolve-channels.ts` emit debug-level logs for guild/channel drops during allowlist resolution, including guild names and channel names in the log output for easier troubleshooting of permission misconfigurations.
+- **Configurable stuck-session warning threshold** — `logging/diagnostic.ts` adds `resolveStuckSessionWarnMs()` that reads `diagnostics.stuckSessionWarnMs` from config (default 120s). The diagnostic heartbeat now hot-reloads this threshold from config on each tick instead of using a hardcoded value.
+
+### Pairing <!-- v2026.3.1 -->
+
+- **AllowFrom account fallback for omitted `accountId`** (#31369) — `pairing/pairing-store.ts` `resolveAllowFromPath()` now treats an omitted or empty `accountId` as the default account, falling back to the channel-level `<channel>-allowFrom.json` path. Previously, callers that omitted `accountId` could silently read from the wrong store or create orphaned files.
+- **Device-auth v2 migration diagnostics** (#28305) — `src/gateway/protocol/connect-error-details.ts` (new) adds a device-auth detail code resolver that emits specific error codes for nonce mismatch, signature verification failure, and version downgrade attempts during device-auth handshake. Gateway server auth now includes these detail codes in WebSocket close frames for easier client-side diagnostics.
+
+### Delivery <!-- v2026.3.1 -->
+
+- **Subagent delivery params rejection** (#31000, #31110) — `src/agents/tools/sessions-spawn-tool.ts` now rejects unsupported channel-targeting parameters (`target`, `transport`, `channel`, `to`, `threadId`, `thread_id`, `replyTo`, `reply_to`) with a `ToolInputError` directing callers to use `message` or `sessions_send` for channel delivery. Prevents agents from passing through delivery parameters that `sessions_spawn` cannot honor.
+- **Subagent Slack announce thread fix** (#31105) — `src/agents/subagent-announce.ts` no longer blindly passes `conversationId` as `threadId` for bound completion announces. Only explicit requester thread hints are preserved, preventing invalid `thread_ts` errors on Slack DM/top-level delivery.
+- **Telegram multi-account fallback isolation** (#30673) — `src/telegram/bot-message-context.ts` and `mergeTelegramAccountConfig()` now exclude channel-level `groups` from the base config spread in multi-account setups. Channel-level groups are only inherited as fallback in single-account configurations. Multi-account setups must use account-level groups config. Prevents secondary bots from attempting to handle messages for groups they are not members of (fail-closed).
+- **Inbound metadata `account_id` in trusted context** — (See Auto-Reply section above.)
+
+### Usage <!-- v2026.3.1 -->
+
+- **Clamp negative prompt/input token values to zero** — `src/agents/usage.ts` `normalizeUsage()` now clamps negative `input` token values to 0. Some providers (pi-ai OpenAI-format) pre-subtract `cached_tokens` from `prompt_tokens` upstream; when cache exceeds prompt tokens the result is negative. `deriveSessionTotalTokens()` is also simplified to use `derivePromptTokens()` directly and no longer includes completion/output tokens in the session snapshot.
+- **Codex weekly usage window label** — `src/infra/provider-usage.fetch.codex.ts` now correctly labels secondary rate-limit windows >= 168 hours as "Week" (previously all windows >= 24h were labeled "Day").
+
+### Infra/Support <!-- v2026.3.1 -->
+
+- **Daemon systemd checks in containers** (#26089, #26699) — `src/daemon/systemd.ts` handles missing `systemctl` in containers by catching spawn failures and treating the service as unavailable rather than crashing. Unknown `is-enabled` errors fail closed.
+- **macOS supervised restart via `launchctl kickstart`** — `src/infra/process-respawn.ts` now issues an explicit `launchctl kickstart -k` before exiting on supervised restart, ensuring immediate respawn regardless of `ThrottleInterval`. Falls back to in-process restart if kickstart fails.
+- **macOS TLS certs: `NODE_EXTRA_CA_CERTS` default** (#22856) — `src/daemon/service-env.ts` sets `NODE_EXTRA_CA_CERTS` to `/etc/ssl/cert.pem` on macOS in both `buildServiceEnvironment` and `buildNodeServiceEnvironment` when not already set. Fixes TLS verification failures for HTTPS requests (Telegram, webhooks) when running as a LaunchAgent, since launchd does not inherit the shell environment.
+- **npm install fallback and global update** (#28318, #21039) — `src/process/exec.ts` adds `resolveNpmArgvForWindows()` to resolve npm/npx to `node + cli-script` instead of spawning `.cmd` directly, avoiding EINVAL on Windows (CVE-2024-27980). npm/npx are removed from the `.cmd` resolution list. Plugin install spawn now falls back correctly when `npm pack` output is empty.
+- **Gateway healthz/readyz probe endpoints** (#31272) — New HTTP probe endpoints for container health checks.

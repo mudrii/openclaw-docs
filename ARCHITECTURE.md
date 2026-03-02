@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-02-27 (source package: 2026.2.26) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-02 (source package: 2026.3.1) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -28,7 +28,7 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. The `agents` module (the largest at ~683 `.ts` files) contains the AI runtime: model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module (~248 `.ts` files) is the message processing pipeline that sits between channels and agents — handling commands, directives, session management, model routing, queue management, and reply delivery.
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. The `agents` module (the largest at ~720 `.ts` files) contains the AI runtime: model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module (~260 `.ts` files) is the message processing pipeline that sits between channels and agents — handling commands, directives, session management, model routing, queue management, and reply delivery.
 
 The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, and feature extensions are loaded dynamically from an `extensions/` directory. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
@@ -76,6 +76,9 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 │  │  │ Cron   │ │Browser │ │ Nodes  │ │Plugins │ │  Auth/Rate   │ │  APNs/   │ │
 │  │  │Service │ │Control │ │Registry│ │Lifecycle│ │  Limiting    │ │  Push    │ │
 │  │  └────────┘ └────────┘ └────────┘ └────────┘ └──────────────┘ └──────────┘ │
+│  │  ┌──────────────────┐                                                       │
+│  │  │ Health Probes    │  /health, /healthz (live), /ready, /readyz (ready)    │
+│  │  └──────────────────┘                                                       │
 │  └────────────────────────────────┬────────────────────────────────┘            │
 └───────────────────────────────────┼─────────────────────────────────────────────┘
                                     │
@@ -95,7 +98,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                      AGENTS MODULE (src/agents/)  ~683 files                    │
+│                      AGENTS MODULE (src/agents/)  ~720 files                    │
 │                                                                                 │
 │  ┌─────────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
 │  │ PI Embedded      │  │ System Prompt│  │Model Selection│  │  Auth Profiles  │ │
@@ -104,11 +107,12 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 │           │                                                                     │
 │  ┌────────▼────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐ │
 │  │ Tool Registry    │  │  Sandbox     │  │  Skills      │  │  Subagent       │ │
-│  │ 75 tools:        │  │  (Docker)    │  │  System      │  │  Registry       │ │
+│  │ 75+ tools:       │  │  (Docker)    │  │  System      │  │  Registry       │ │
 │  │ exec, browser,   │  └──────────────┘  └──────────────┘  └──────────────────┘ │
 │  │ web, memory,     │                                                           │
 │  │ message, cron,   │                                                           │
-│  │ canvas, nodes... │                                                           │
+│  │ canvas, nodes,   │                                                           │
+│  │ diffs (plugin).. │                                                           │
 │  └─────────────────┘                                                            │
 └──────────────────────────────────────┬──────────────────────────────────────────┘
                                        │
@@ -153,17 +157,17 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 
 | Module | Files (src) | Lines (approx) | Purpose | Key Dependencies |
 |--------|-------------|-----------------|---------|------------------|
-| `agents/` | 683 | ~123,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration), auth profiles | config, routing, sessions, hooks, channels, infra, pi-ai |
-| `auto-reply/` | 248 | ~47,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
-| `gateway/` | 294 | ~62,000+ | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control | agents, config, routing, channels, plugins, infra |
+| `agents/` | 720 | ~130,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration with typed `task_completion` events), auth profiles, OpenAI WS transport | config, routing, sessions, hooks, channels, infra, pi-ai |
+| `auto-reply/` | 260 | ~49,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
+| `gateway/` | 310 | ~66,000+ | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control, health probes (`/health`, `/healthz`, `/ready`, `/readyz`) | agents, config, routing, channels, plugins, infra |
 | `config/` | 191 | ~34,000+ | Config loading, Zod schemas, session store, legacy migration, path resolution | channels (types), infra |
 | `infra/` | 297 | ~53,000+ | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
 | `channels/` | 137 | ~17,000+ | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
 | `channels/status-reactions.ts` | 2 | ~850 | Shared lifecycle reaction controller for Telegram and Discord status events | channels, config, infra |
-| `telegram/` | 96 | ~24,000+ | Telegram Bot API via grammY: long-poll/webhook, topics, reactions, streaming | grammY, config, auto-reply, channels |
+| `telegram/` | 96 | ~24,000+ | Telegram Bot API via grammY: long-poll/webhook, topics (including per-DM topics with routing/authorization), reactions, streaming | grammY, config, auto-reply, channels |
 | `discord/` | 120 | ~30,000+ | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
 | `discord/voice/` | ~6 | ~800 | Discord voice channel join/leave management, auto-join, realtime conversation | discord, config, channels |
-| `discord/monitor/thread-bindings/` | ~4 | ~500 | Thread-bound subagent session management for Discord | discord, sessions, config |
+| `discord/monitor/thread-bindings/` | ~4 | ~500 | Thread-bound subagent session management with inactivity lifecycle (`idleHours` default 24h, `maxAgeHours`) for Discord | discord, sessions, config |
 | `slack/` | 84 | ~14,500+ | Slack via Socket Mode: channels, threads, slash commands, file uploads | @slack/web-api, config, auto-reply |
 | `signal/` | 31 | ~5,000+ | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
 | `line/` | 45 | ~7,800+ | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
@@ -202,7 +206,8 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `compat/` | 1 | ~20 | Legacy project name constants | — |
 | `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
 | `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | ~40 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins | plugin-sdk |
+| `extensions/` | ~40 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including new `diffs` diff-viewer plugin) | plugin-sdk |
+| `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 
 ---
@@ -227,12 +232,12 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                               │            │
                 Level 3  ┌────┴────────────┴────┐
                          │       agents/        │  ← Core runtime (28+ modules depend on it)
-                         │    (649 files)        │
+                         │    (720 files)        │
                          └──────────┬───────────┘
                                     │
                 Level 4  ┌──────────┴──────────┐
                          │     auto-reply/      │  ← Message pipeline (23+ dependents)
-                         │    (223 files)        │
+                         │    (260 files)        │
                          └──────────┬───────────┘
                                     │
                 Level 5  ┌──────┬───┴───┬──────┬──────┬───────┐
@@ -242,7 +247,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                                     │
                 Level 6  ┌──────────┴──────────┐
                          │      gateway/        │  ← Server orchestrator
-                         │    (282 files)        │
+                         │    (310 files)        │
                          └──────────┬───────────┘
                                     │
                 Level 7  ┌──────┬───┴───┬──────┐
@@ -304,7 +309,7 @@ Step 9: auto-reply/reply/agent-runner-execution.ts → runAgentTurnWithFallback(
         └─ agents/pi-embedded-runner/run.ts → runEmbeddedPiAgent()
             ├─ 9a. system-prompt.ts → Build system prompt (identity, skills, tools, memory, time)
             ├─ 9b. model-selection.ts → Resolve model + auth profile
-            ├─ 9c. pi-tools.ts → Register 40+ tools (exec, browser, web, memory, etc.)
+            ├─ 9c. pi-tools.ts → Register 40+ tools (exec, browser, web, memory, etc.) + plugin tools
             ├─ 9d. pi-ai API call → LLM provider (streaming SSE)
             ├─ 9e. pi-embedded-subscribe.ts → Process stream chunks
             │       ├─ Tool calls → Tool execution (see §7) → LLM continuation
@@ -370,8 +375,9 @@ Step 1: LLM decides to call a tool (during streaming response)
 
 Step 2: agents/pi-tools.ts → Tool registry lookup
         ├─ SDK tools (from @mariozechner/pi-coding-agent): read, write, edit, exec, process
-        └─ OpenClaw tools (from openclaw-tools.ts): browser, canvas, cron, message,
-           nodes, web_search, web_fetch, image, memory, tts, sessions, subagents
+        ├─ OpenClaw tools (from openclaw-tools.ts): browser, canvas, cron, message,
+        │    nodes, web_search, web_fetch, image, memory, tts, sessions, subagents
+        └─ Plugin tools (from extensions): diffs (read-only diff viewer with gateway URLs)
 
 Step 3: agents/pi-tools.before-tool-call.ts → Pre-tool-call hooks
         └─ Typing indicator, tool tracking
@@ -422,7 +428,7 @@ Step 8: agents/tool-display.ts → Format tool result for user display
 | Section | Purpose | Key Fields |
 |---------|---------|------------|
 | `agents` | Agent definitions | `list[]` (agentId, model, skills, tools, workspace, identity, sandbox), `defaults.*` |
-| `agents.defaults` | Default agent settings | `model`, `provider`, `heartbeat.*`, `compaction.*`, `memorySearch.*`, `allowedModels`, `modelFallbacks`, `typingIntervalSeconds`, `envelopeTimezone` |
+| `agents.defaults` | Default agent settings | `model`, `provider`, `heartbeat.*` (incl. `lightContext`), `compaction.*`, `memorySearch.*`, `allowedModels`, `modelFallbacks`, `typingIntervalSeconds`, `envelopeTimezone` |
 | `bindings[]` | Channel→agent routing | `agentId`, `channel`, `account`, `peer`, `guild`, `roles`, `team` |
 | `session` | Session behavior | `dmScope`, `identityLinks`, `resetTriggers`, `sendPolicy`, `store`, `mainKey` |
 | `gateway` | Server config | `port`, `auth`, `tls`, `discovery`, `tailscale`, `lanes`, `nodes`, `browser` |
@@ -432,7 +438,7 @@ Step 8: agents/tool-display.ts → Format tool result for user display
 | `hooks` | Hook system | `enabled`, `internal.*`, `gmail.*`, `path`, `token`, `presets` |
 | `cron` | Cron jobs | `enabled`, `storePath`, `sessionRetention` |
 | `messages` | Message handling | `tts.*`, `inbound.debounceMs`, `inbound.byChannel` |
-| `tools` | Tool config | `media.*` (image/audio/video), `links.*`, `exec.*` |
+| `tools` | Tool config | `media.*` (image/audio/video, files with `pdf.*` sub-config for `maxPages`/`maxPixels`/`minTextChars`), `links.*`, `exec.*` |
 | `sandbox` | Sandbox config | Docker image, mount paths, env, network |
 | `memory` | Memory backend | `backend` (builtin/qmd), `citations`, `qmd.*` |
 | `plugins` | Plugin config | Plugin entries, allow/deny, slots |
@@ -501,6 +507,21 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 - **Config redaction:** `config/redact-snapshot.ts` strips sensitive fields from config snapshots
 - **Log redaction:** `logging/redact.ts` → regex patterns for API keys, tokens, PEM blocks
 - **Auth profiles:** Stored in `~/.openclaw/auth/` with filesystem permission hardening
+
+### Shell Environment Markers
+
+- **Marker:** `OPENCLAW_SHELL` is set across shell-like runtimes (`exec`, `acp`, `acp-client`, `tui-local`) so shell startup/config rules can detect and adapt to OpenClaw-spawned contexts
+- **Module:** `agents/bash-tools.exec-runtime.ts` (sets `OPENCLAW_SHELL=exec`), `acp/client.ts` (sets `OPENCLAW_SHELL=acp-client`)
+
+### WS Transport Security
+
+- **Plaintext ws:// loopback-only** — WebSocket connections over plaintext `ws://` are blocked to non-loopback addresses (CWE-319); applies to both `gateway/call.ts` (outbound self-connect) and `gateway/client.ts` (CLI/TUI client connect)
+- **Enforcement:** `gateway/net.ts` classifies addresses and rejects non-loopback `ws://`; only `127.x.x.x`, `::1`, and `localhost` are permitted without TLS
+
+### Node Exec Security (v2026.3.1 Breaking)
+
+- **`systemRunPlan` required** — Node (`host=node`) exec approval payloads must include a `systemRunPlan` object; requests without it are rejected. See `agents/bash-tools.exec-approval-request.ts` and `gateway/node-invoke-system-run-approval.ts`
+- **`system.run` realpath pinning** — Path-token commands on nodes are pinned to the canonical executable path via `realpath` in both allowlist and approval execution flows. For example, `tr` resolves to `/usr/bin/tr`; integrations must accept canonical paths. See `node-host/invoke-system-run`
 
 ### Audit & Remediation
 
@@ -671,7 +692,7 @@ Parsed by `plugins/manifest.ts`.
 |------|-------|---------|
 | **Channel plugins** | 21 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams, nostr, twitch, zalo |
 | **Provider plugins** | 4 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, qwen-portal-auth |
-| **Tool/Feature plugins** | 10 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership |
+| **Tool/Feature plugins** | 11 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership, diffs |
 
 ---
 
@@ -793,14 +814,15 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Channel | Framework | Special Features |
 |---------|-----------|------------------|
-| Telegram | grammY | Forum topics, inline buttons, draft streaming, reactions, proxy support |
-| Discord | @buape/carbon | Guilds, threads, polls, PluralKit, presence, admin actions, Component v2 UI (`components.ts`, `components-registry.ts`, `send.components.ts`) |
+| Telegram | grammY | Forum topics, per-DM topic routing/authorization, inline buttons, draft streaming, reactions, proxy support |
+| Discord | @buape/carbon | Guilds, threads (with inactivity lifecycle: `idleHours` default 24h, `maxAgeHours`), polls, PluralKit, presence, admin actions, Component v2 UI (`components.ts`, `components-registry.ts`, `send.components.ts`) |
 | Slack | @slack/web-api | Socket Mode, slash commands, file uploads, pins |
 | Signal | signal-cli REST | JSON-RPC + SSE, groups, reactions, daemon management |
 | LINE | @line/bot-sdk | Flex Messages, Rich Menus, markdown→flex conversion |
 | iMessage | imsg CLI | JSON-RPC over stdin/stdout, macOS native |
 | BlueBubbles | BlueBubbles server (HTTP/WS) | iMessage via BlueBubbles, macOS server required |
 | WhatsApp | Baileys | QR login, media conversion, broadcast groups |
+| Feishu | Feishu Open Platform SDK | Docx tables/uploads, reactions, chat tools, reply-in-thread, group session scopes (`group`/`group_sender`/`group_topic`/`group_topic_sender`), multi-account with `defaultAccount` routing, typing backoff |
 | Synology Chat | Webhook (HTTP) | Webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls |
 
 ---
@@ -860,10 +882,10 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Value |
 |--------|-------|
-| **Total src/ modules** | 68 directories |
-| **Total source files** | 2,432 `.ts` files (non-test) |
-| **Total test files** | 1,501 `.test.ts` files |
-| **Total src lines** | 722,790 (`src/**/*.ts`) |
+| **Total src/ modules** | 70 directories |
+| **Total source files** | 2,600+ `.ts` files (non-test) |
+| **Total test files** | 1,600+ `.test.ts` files |
+| **Total src lines** | 780,000+ (`src/**/*.ts`) |
 | **External framework** | @mariozechner/pi-ai, pi-agent-core, pi-coding-agent |
 | **Language** | TypeScript (Node.js) |
 | **Test framework** | Vitest |
@@ -873,16 +895,16 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Rank | Module | Source Files | Test Files |
 |------|--------|-------------|------------|
-| 1 | `agents/` | 348 | 335 |
-| 2 | `commands/` | 214 | 105 |
-| 3 | `infra/` | 199 | 126 |
-| 4 | `gateway/` | 187 | 107 |
-| 5 | `auto-reply/` | 179 | 69 |
-| 6 | `cli/` | 174 | 84 |
-| 7 | `config/` | 120 | 78 |
-| 8 | `channels/` | 98 | 47 |
-| 9 | `discord/` | 78 | 50 |
-| 10 | `browser/` | 77 | 45 |
+| 1 | `agents/` | 370 | 350 |
+| 2 | `commands/` | 220 | 110 |
+| 3 | `infra/` | 205 | 130 |
+| 4 | `gateway/` | 200 | 110 |
+| 5 | `auto-reply/` | 185 | 75 |
+| 6 | `cli/` | 180 | 88 |
+| 7 | `config/` | 125 | 80 |
+| 8 | `channels/` | 100 | 50 |
+| 9 | `discord/` | 80 | 52 |
+| 10 | `browser/` | 78 | 46 |
 
 ### Most-Imported Modules
 
@@ -903,11 +925,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 39 |
-| Extension packages (`extensions/*/package.json`) | 32 |
+| Extension directories (`extensions/*`) | 40 |
+| Extension packages (`extensions/*/package.json`) | 33 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current analyzed source package: `2026.2.26` (tag `v2026.2.26`). Counts measured from that released tag snapshot.
+> Current analyzed source package: `2026.3.1` (tag `v2026.3.1`). Counts measured from that released tag snapshot.
 
 ### Key External Dependencies
 
@@ -1151,5 +1173,55 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - Browser control reliability, relay port derivation
 - Isolated cron full prompt mode
 - Plugin config schema fallback
+
+---
+
+## v2026.3.1 Changes (2026-03-02)
+
+### New Tools & Plugins
+
+- **Diffs plugin** (`extensions/diffs/`) — Read-only diff viewer and image renderer for agents; renders before/after text or unified patches, with gateway viewer URLs for canvas and PNG image output. Configurable defaults for theme, layout, font, line numbers, word wrap, and diff indicators. Registered as an optional plugin tool.
+- **Browser `pdf` action** — The browser tool now includes a `pdf` action for saving the current page as a PDF file, with proxy request support for node-hosted browsers.
+
+### New Gateway Features
+
+- **Container health probes** — Built-in HTTP liveness/readiness endpoints at `/health`, `/healthz`, `/ready`, `/readyz` for Docker/Kubernetes health checks. Returns `{ ok: true, status: "live"|"ready" }`. Supports GET and HEAD methods. Fallback routing preserves existing handlers on those paths. Implemented in `gateway/server-http.ts` with `GATEWAY_PROBE_STATUS_BY_PATH` map.
+- **Health RPC handlers** — `gateway/server-methods/health.ts` provides cached health snapshots with configurable refresh intervals and probe-on-demand support.
+
+### New CLI Commands
+
+- **`openclaw config file`** — Print the active config file path resolved from `OPENCLAW_CONFIG_PATH` or the default location. Implemented in `cli/config-cli.ts`.
+
+### Transport Changes
+
+- **OpenAI Responses WebSocket-first** — OpenAI Responses API transport defaults to `"auto"` (WebSocket-first with SSE fallback). Shared OpenAI WS stream/connection runtime with per-session cleanup. Server-side compaction payload mutation (`store` + `context_management`) preserved on the WS path. Implemented in `agents/openai-ws-connection.ts` and `agents/openai-ws-stream.ts`.
+- **OpenAI WS warm-up** — Optional `response.create` with `generate:false` pre-loads connections without generating output. Enabled by default for `openai/*` models. Controllable via `params.openaiWsWarmup` per model.
+
+### Channel Changes
+
+- **Telegram DM topics** — Per-DM `direct` + topic config with allowlists, `dmPolicy`, `skills`, `systemPrompt`, and `requireTopic`. DM topics route as distinct inbound/outbound sessions with topic-aware authorization and debounce.
+- **Discord thread bindings lifecycle** — Replaced fixed TTL with inactivity-based lifecycle: `idleHours` (default 24h) plus optional hard `maxAgeHours` cap. Added `/session idle` and `/session max-age` commands for focused thread-bound sessions. Legacy `ttlHours` key auto-migrated to `idleHours`.
+- **Feishu enhancements** — Docx table creation/cell writing (`create_table`, `write_table_cells`, `create_table_with_values`) and file uploads (`upload_image`, `upload_file`). Inbound reaction handling with configurable `reactionNotifications` (`off|own|all`). Chat tools (`feishu_chat` for chat info/member queries). Reply-in-thread config (`disabled|enabled`). Group session scopes (`group`, `group_sender`, `group_topic`, `group_topic_sender`). Multi-account with `defaultAccount` routing.
+- **Android nodes** — New node-tool actions: `camera.list`, `device.permissions`, `device.health`, `notifications.actions` (`open`/`dismiss`/`reply`), `system.notify`, `photos.latest`, `contacts.search`/`contacts.add`, `calendar.events`/`calendar.add`, `motion.activity`/`motion.pedometer`, and voice TTS via ElevenLabs WebSocket in Talk Mode.
+- **Cross-channel multi-account** — `defaultAccount` routing via `channels/<channel>.defaultAccount` config with per-channel account helpers (`channels/plugins/account-helpers.ts`). Inbound metadata includes `account_id` for session disambiguation.
+
+### Agent System
+
+- **Subagent runtime events** — Ad-hoc subagent completion handoff replaced with typed internal completion events (`task_completion`). Events rendered consistently across direct and queued announce paths. Gateway/CLI plumbing for structured `internalEvents`. Implemented in `agents/internal-events.ts` and `agents/subagent-announce.ts`.
+- **Thinking defaults** — Claude 4.6 models (including Bedrock Claude 4.6 refs) default to `adaptive` thinking level; other reasoning-capable models default to `low` unless explicitly configured.
+- **Cron/heartbeat light bootstrap context** — Opt-in lightweight bootstrap mode for automation runs: `--light-context` for cron agent turns and `agents.*.heartbeat.lightContext` for heartbeat. Heartbeat runs keep only `HEARTBEAT.md`; cron lightweight runs skip bootstrap-file injection.
+
+### Security
+
+- **Shell env markers** — `OPENCLAW_SHELL` set across shell-like runtimes (`exec`, `acp`, `acp-client`, `tui-local`) so shell startup/config rules can detect OpenClaw-spawned contexts.
+- **Node exec `systemRunPlan` required (BREAKING)** — `host=node` approval requests without `systemRunPlan` are rejected. See `agents/bash-tools.exec-approval-request.ts`.
+- **Node `system.run` realpath pinning (BREAKING)** — Path-token commands on nodes are pinned to canonical executable paths via `realpath` in both allowlist and approval execution flows. For example, `tr` resolves to `/usr/bin/tr`.
+- **WS plaintext loopback-only** — Plaintext `ws://` connections blocked to non-loopback addresses (CWE-319, CVSS 9.8). Enforced in `gateway/call.ts`, `gateway/client.ts`, and `gateway/net.ts`.
+
+### Stats Update
+
+- **5,102 TypeScript files** (was 4,875 at v2026.2.26)
+- **938,374 lines** (was 887,472)
+- **40 extension directories** (was 39), **33 packages** (was 32), **52 skills** (same)
 
 ---

@@ -1,8 +1,8 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-02-27 | Version: v2026.2.26 | Cluster: CHANNELS & MESSAGING
-> Modules analyzed: `src/telegram` (102 files), `src/discord` (128 files), `src/signal` (32 files), `src/slack` (92 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (145 files)
+> Updated: 2026-03-02 | Version: v2026.3.1 | Cluster: CHANNELS & MESSAGING
+> Modules analyzed: `src/telegram` (108 files), `src/discord` (136 files), `src/signal` (32 files), `src/slack` (103 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (147 files), `extensions/feishu` (77 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — `channels.<channel>.streaming` now uses enum `off | partial | block | progress`. Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 
@@ -901,7 +901,7 @@ Agent tool call: message(action="send", target="...", message="...")
 | Media | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Slash Commands | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | Streaming | ✅ (draft edit) | ✅ (block) | ✅ (block) | ✅ (block) | ❌ | ❌ | ❌ |
-| Voice Messages | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Voice Messages | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Rich Templates | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ (Flex) |
 | Rich Menus | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Inline Buttons | ✅ | ✅ (components) | ❌ | ❌ | ❌ | ❌ | ✅ (quick reply) |
@@ -1117,4 +1117,123 @@ Agent tool call: message(action="send", target="...", message="...")
 
 ---
 
-*End of analysis. Total files analyzed: ~451 across 8 modules.*
+## v2026.3.1 Changes (2026-03-02)
+
+### Telegram
+
+- **DM topics** (#30579, thanks @kesor): Per-DM topic configuration with allowlists, `dmPolicy`, skills, `systemPrompt`, and `requireTopic`. Topic-aware session routing scopes sessions by `chatId:threadId` for full isolation. New test file `bot-message-context.dm-topic-threadid.test.ts` validates `updateLastRoute` carries `threadId` for DM topics.
+- **DM topic session isolation** (#31064): Session keys for DM topic threads are now scoped by `chatId:threadId`, preventing cross-topic session bleed in private chats with multiple topics.
+- **Reply media context** (#28488): Replied-to media files are now included in the inbound message context, giving the agent access to images/documents from the message being replied to.
+- **Voice fallback reply chunking** (#31067, #31077, thanks @xdanger): When voice send fails and falls back to text, the reply-to reference is applied only to the first chunk. Prevents duplicate reply-to references on subsequent chunks.
+- **Outbound chunking**: Oversize outbound messages now route through the shared chunking pipeline. Escaped HTML that exceeds limits triggers a retry with re-chunked payloads.
+- **Empty final replies** (#30969, thanks @haosenwang1018): Null/undefined final text payloads are now skipped rather than sent as empty messages.
+- **Proxy dispatcher preservation** (#29940): The HTTP proxy-aware global dispatcher is preserved across fetch paths, fixing proxy bypass regressions introduced by Node.js Happy Eyeballs workarounds.
+- **Media fetch IPv4 fallback** (#30554): Media fetches now retry with explicit IPv4 when initial connect errors occur, fixing downloads on hosts with broken IPv6 routing.
+- **Group allowlist ordering**: Chat-level allowlist is now evaluated before sender-level allowlist in group policy checks, ensuring group-scoped rules take precedence. New test file `group-access.policy-access.test.ts`.
+- **Multi-account group isolation**: Channel-level `groups` config no longer leaks across accounts in multi-account setups. Each account's group config is now strictly scoped.
+- **sendVoice caption overflow**: When `sendVoice` fails due to caption exceeding limits, the bot resends without caption instead of failing.
+- **sendChatAction 401 backoff** (#27415, thanks @widingmarcus-cyber): Typing indicator sends now back off after 401 errors instead of retrying indefinitely.
+- **Inline button callbacks in groups** (#27309): Inline button callback queries in groups are now processed when the command was previously authorized, rather than being silently dropped.
+
+### Discord
+
+- **Thread bindings lifecycle** (#27845, thanks @osolmaz): Thread bindings now use an inactivity-based lifecycle (`idleHours`/`maxAgeHours`) instead of fixed TTL. Config at `channels.discord.accounts.<id>.threadBindings.{idleHours, maxAgeHours}` with session-level fallback from `session.threadBindings.*`. New files: `thread-bindings.config.ts`, `thread-bindings.lifecycle.test.ts`, `thread-bindings.persona.ts`.
+- **Components wildcard handlers** (#29459, thanks @Sid-Qin): Wildcard component registration now uses distinct sentinel IDs per component type (select/user/role/channel/modal) to prevent registration collisions.
+- **Forum thread tags**: `applied_tags` parameter is now supported when creating forum threads via channel-edit actions.
+- **Application ID fallback**: When the application info endpoint is unavailable, the application ID is parsed from the bot token prefix. New test file `probe.parse-token.test.ts`.
+- **EventQueue timeout config** (#24458): The `listenerTimeout` on the gateway EventQueue is now exposed as a configurable option.
+- **Allowlist diagnostics**: Debug-level logs now emit when messages are dropped due to guild/channel allowlist filtering, aiding troubleshooting of silent message drops.
+- **Ack reactions scope override** (#28268): `ackReactionScope` can now be overridden at the account level, and explicit `off`/`none` values are supported to disable ack reactions per account.
+- **Inbound media fallback** (#28906, thanks @Sid-Qin): When CDN media fetch fails, attachment metadata (filename, content type, size) is preserved in the message context rather than being dropped entirely.
+- **Agent component interactions** (#29013, thanks @Jacky1n7): Components v2 `cid` payloads are now accepted and decoded in agent interaction handlers. URI decoding is guarded against malformed payloads.
+- **Reconnect watchdog** (#31025, #30530): Gateway reconnect uses a unified watchdog that prevents duplicate reconnect attempts and preserves message delivery during recovery.
+
+### Feishu (Lark)
+
+- **Docx tables + uploads** (#20304): New `feishu_doc` tool actions: `create_table`, `write_table_cells`, `upload_image`, `upload_file`. Markdown tables and positional insert are also supported. New files: `docx-table-ops.ts`, `docx-batch-insert.ts`, `docx-color-text.ts`.
+- **Reactions** (#16716, thanks @schumilin): Inbound `im.message.reaction.created_v1` events are now handled. New file: `monitor.reaction.test.ts`. Reaction notifications configurable via `reactionNotifications` (`off`/`own`/`all`).
+- **Chat tooling** (#14674): New `feishu_chat` tool provides chat info and member listing.
+- **Doc permissions** (#28295, thanks @zhoulongchao77): Document creation can optionally grant owner-level permission to the requesting user. Permission grants are now bound to trusted requester context (#31184).
+- **Reply-in-thread routing** (#27325, thanks @kcinzgg): New `replyInThread` config controls whether replies target the parent thread. Streaming cards pass `rootId` for topic groups (#28346, thanks @Sid-Qin).
+- **Group session scopes** (#17798, thanks @yfge): Four session scope modes: `group`, `group_sender`, `group_topic`, `group_topic_sender`. Honors `dm:`/`group:` prefixes in outbound session routing.
+- **Multi-account + reply reliability**: `defaultAccount` support for outbound routing. Reply dispatcher has hardened fallback for target routing and dedup.
+- **Post markdown parsing** (#12755): Rich text posts are now rendered as markdown via a shared markdown-aware parser. Code blocks (`code`/`code_block`/`pre` tags) are properly handled (#28591, thanks @kevinWangSheng).
+- **Probe status caching** (#28907, thanks @Glucksberg): `probeFeishu()` results are cached with a 10-minute TTL to reduce API calls.
+- **Opus media send type** (#28269, thanks @Glucksberg): Opus audio files are sent with `msg_type` `"audio"` instead of `"media"`, enabling voice bubble playback.
+- **Mobile video media type** (#25502, thanks @4ier): `message_type` `"media"` is now handled for video downloads from mobile clients.
+- **Inbound sender fallback** (#26703, thanks @NewdlDewdl): Falls back to `user_id` for sender identity when open_id is unavailable.
+- **Reply context metadata** (#18529): `parent_id` and `root_id` from quoted messages are now included in inbound context for quote support.
+- **Post embedded media** (#21786): Video and audio elements are extracted from post (rich text) messages.
+- **Local media sends** (#27884, #27928, thanks @joelnishanth): `mediaLocalRoots` is propagated for local file path sends.
+- **Group wildcard policy fallback** (#29456): Wildcard group config is honored for reply policy when no explicit group match exists.
+- **Inbound media regression coverage** (#16311, thanks @Yaxuan42): Test regression for audio download with `resource type=file`.
+- **Typing backoff** (#28494, thanks @guoqunabc): Rate-limit and quota errors in typing indicator sends now re-throw instead of retrying infinitely.
+- **Group sender allowlist fallback** (#29174, thanks @1MoreBuild): Global `groupSenderAllowFrom` provides sender-level group access control.
+- **Docx append/write ordering** (#26022, #26172, thanks @echoVic): Document blocks are inserted sequentially to preserve intended order.
+- **Docx convert fallback chunking** (#14402): Large documents are chunked for write/append to avoid API 400 errors.
+- **API quota controls** (#10513, thanks @BigUncle): `typingIndicator` and `resolveSenderNames` flags allow disabling API-heavy operations to stay within quota.
+- **System preview prompt leakage fix** (#31209, thanks @stakeswky): System preview text no longer leaks into agent-visible prompt context.
+- **Typing replay suppression** (#30709, thanks @arkyu2077; #30418): Typing indicators are suppressed for stale replay messages and old messages after context compaction.
+- **Merge forward parsing** (#28707, thanks @tsu-builds): `merge_forward` message type is now parsed for inbound context.
+- **Card action callbacks** (#17863): `card.action.trigger` callbacks are handled.
+- **Streaming card headers** (#22826): Optional header support in streaming cards.
+
+### Slack
+
+- **User-token resolution normalization** (#28103, thanks @Glucksberg): `SLACK_USER_TOKEN` is now used when connecting to Slack, normalizing user-token resolution across bot and user token sources.
+- **Native commands** (#29032, thanks @maloqab): `/agentstatus` is now registered as a native Slack slash command alias.
+- **Announce target account routing** (#31105): Subagent completion announces to Slack no longer fail with invalid `thread_ts` on bound targets.
+- **Per-thread session isolation** (#26849): DM auto-threading now isolates sessions per thread.
+- **Thread participation tracking** (#29165): Auto-reply without @mention when bot has participated in the thread.
+- **Stale socket detection** (#30153): Stale Slack sockets are detected and auto-restarted.
+- **Socket Mode reconnect** (#27232): Socket Mode connections reconnect after disconnect events.
+- **Download-file action** (#24723): New `download-file` action for on-demand file attachment access.
+- **3-step upload flow** (#17558): `files.uploadV2` replaced with 3-step upload flow to fix `missing_scope` errors.
+- **replyToMode per-message** (#24717): `replyToMode` is resolved per-message using chat type context.
+- **replyToModeByChatType with ThreadLabel** (#26251): Configured `replyToModeByChatType` is now honored when `ThreadLabel` exists.
+- **Agent identity in reply path** (#27134, thanks @hou-rong): Agent identity is threaded through the channel reply path.
+- **Disabled account guard** (#30592, thanks @liuxiaopai-ai): Monitor startup is skipped for disabled accounts.
+- **Slash/interactions ingress hardening** (#29091, thanks @Solvely-Colin): Slash command and interactions ingress checks are hardened.
+- **Socket Mode startup guard** (#28702, thanks @Glucksberg): Socket Mode listeners access is guarded during startup.
+- **Legacy streaming=false mapping** (#26020, thanks @chilu18): Legacy `streaming=false` is mapped to `off`.
+- **Bot message attachment text** (#27616, #27642): Attachment text is extracted for bot messages with empty text.
+
+### LINE
+
+- **Voice transcription M4A detection** (#31151, thanks @scoootscooob): M4A files (MPEG-4 Audio with `ftyp`/`M4A ` brand) are now classified as `audio/mp4` with `.m4a` extension, enabling correct voice transcription pipeline routing.
+
+### Signal
+
+- **Sync message null-handling** (#31138, #31093, thanks @Sid-Qin): `syncMessage` presence is treated as a sync envelope even when its value is `null`. The check uses property existence (`"syncMessage" in envelope`) rather than truthiness, preventing the bot from replaying its own sent messages on daemon restart.
+
+### Google Chat
+
+- **Thread replies** (#30965, thanks @novan): Thread sends now include `messageReplyOption=REPLY_MESSAGE_FALLBACK_TO_NEW_THREAD`, allowing replies to existing threads to fall back to a new thread if the original thread is no longer available.
+
+### Mattermost
+
+- **Private channel policy routing** (#30891, thanks @BlueBirdBack): Mattermost channel type `P` (private) is now mapped to group chat policy, ensuring private channels receive group-level authorization and tool policy rather than being treated as public channels.
+
+### Matrix
+
+- **Directory room IDs** (#31201, thanks @williamos-dev): Room IDs from the Matrix directory now preserve original casing, fixing lookup failures on case-sensitive homeservers.
+
+### BlueBubbles
+
+- **Message metadata** (#23970): Send response ID extraction is hardened — message GUIDs are reliably extracted from API responses for reply threading and dedup.
+
+### WhatsApp
+
+- **TTS voice bubbles** (#27366): WhatsApp now receives opus-encoded TTS output with `audioAsVoice=true`, enabling voice bubble playback. WhatsApp is added to the `VOICE_BUBBLE_CHANNELS` set alongside Telegram and Feishu.
+
+### Cross-Channel
+
+- **Multi-account default routing**: `channels.<channel>.defaultAccount` is now supported across all channels for outbound routing when no explicit account is specified. Verified for Mattermost, Google Chat, and others.
+- **TTS voice bubbles**: Voice bubble support expanded to Feishu and WhatsApp (previously Telegram only). Opus output format is used for all voice-bubble channels.
+- **Unified webhook security guardrails**: Webhook memory guards and rate-limit state are hardened across all webhook-based channels.
+- **Unified typing lifecycle**: Typing dispatch lifecycle and policy boundaries are unified across channels, with stale typing suppression.
+- **Account-scoped pairing APIs**: Pairing request/approval APIs are enforced at the account scope, preventing DM pairing allowlists from leaking into group auth.
+
+---
+
+*End of analysis. Total files analyzed: ~528 across 9 modules (including extensions/feishu).*

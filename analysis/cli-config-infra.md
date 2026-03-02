@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-02-27 | Version: v2026.2.26 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-02 | Version: v2026.3.1 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -31,7 +31,7 @@ The CLI module is the **entry point and command registration layer** for the `op
 - `program.ts` → re-exports `buildProgram()` from `program/build-program.ts`
 - `route.ts` → `tryRouteCli()` — fast-path routing before Commander
 
-### File Inventory (258 files)
+### File Inventory (261 files)
 
 #### Core CLI Bootstrap
 | File | Description |
@@ -153,7 +153,7 @@ The CLI module is the **entry point and command registration layer** for the `op
 | `node-cli/register.ts` | Node subcommand registration |
 | `node-cli/daemon.ts` | Node daemon management |
 | `models-cli.ts` | `openclaw models` — model configuration |
-| `config-cli.ts` | `openclaw config` — config get/set/edit |
+| `config-cli.ts` | `openclaw config` — config get/set/edit/unset/file |
 | `channels-cli.ts` | `openclaw channels` — channel management |
 | `logs-cli.ts` | `openclaw logs` — log viewing |
 | `memory-cli.ts` | `openclaw memory` — memory management |
@@ -259,7 +259,7 @@ type RouteSpec = {
 | `openclaw setup` | Setup helpers |
 | `openclaw onboard` | Onboarding wizard |
 | `openclaw configure` | Configuration wizard |
-| `openclaw config` | Config get/set/edit/path |
+| `openclaw config` | Config get/set/edit/unset/file |
 | `openclaw doctor` | Health checks + quick fixes |
 | `openclaw dashboard` | Open Control UI |
 | `openclaw reset` | Reset local config/state |
@@ -377,7 +377,7 @@ The commands module contains **business logic implementations** for all CLI comm
 
 **Entry Points:** Each file exports one or more command functions invoked by `src/cli` registrars.
 
-### File Inventory (319 files)
+### File Inventory (322 files)
 
 #### Agent Commands
 | File | Description |
@@ -618,7 +618,7 @@ The config module is the **central configuration system** for OpenClaw. It defin
 - `schema.ts` — JSON Schema generation from Zod
 - `zod-schema.ts` — Zod schema definition
 
-### File Inventory (198 files)
+### File Inventory (202 files)
 
 #### Core
 | File | Description |
@@ -639,7 +639,7 @@ The config module is the **central configuration system** for OpenClaw. It defin
 | `schema.hints.ts` | UI hints for config fields (sensitive, labels, etc.) |
 | `schema.irc.ts` | IRC-specific schema additions |
 | `schema.labels.ts` | Human-readable labels for config paths |
-| `zod-schema.ts` | **Main Zod schema definition** (~666 lines) |
+| `zod-schema.ts` | **Main Zod schema definition** (~846 lines) |
 | `zod-schema.agents.ts` | Agent config Zod schemas |
 | `zod-schema.agent-defaults.ts` | Agent defaults Zod schema |
 | `zod-schema.agent-runtime.ts` | Agent runtime (tools) Zod schema |
@@ -729,7 +729,7 @@ The config module is the **central configuration system** for OpenClaw. It defin
 | File | Description |
 |------|-------------|
 | `agent-dirs.ts` | Agent directory validation (duplicate detection) |
-| `agent-limits.ts` | Agent concurrency limits (DEFAULT_AGENT_MAX_CONCURRENT=3, DEFAULT_SUBAGENT_MAX_CONCURRENT=5) |
+| `agent-limits.ts` | Agent concurrency limits (DEFAULT_AGENT_MAX_CONCURRENT=4, DEFAULT_SUBAGENT_MAX_CONCURRENT=8) |
 | `backup-rotation.ts` | Config backup rotation |
 | `cache-utils.ts` | Config caching utilities |
 | `channel-capabilities.ts` | Channel capability resolution |
@@ -934,7 +934,7 @@ The infra module provides **cross-cutting infrastructure utilities** used throug
 
 **Architecture Pattern:** Utility library with functional modules. No central entry point — each file is imported independently.
 
-### File Inventory (326 files, grouped by domain)
+### File Inventory (327 files, grouped by domain)
 
 #### Environment & Runtime
 | File | Description |
@@ -1495,6 +1495,7 @@ User types: openclaw <command> [args]
 | `OPENCLAW_PROFILE` | CLI profile name | — |
 | `OPENCLAW_OAUTH_DIR` | OAuth credentials directory | `$STATE_DIR/credentials` |
 | `OPENCLAW_NIX_MODE` | Nix integration mode | — |
+| `OPENCLAW_SHELL` | Shell runtime marker (exec, acp, acp-client, tui-local) | — |
 | `OPENCLAW_DISABLE_LAZY_SUBCOMMANDS` | Force eager command loading | — |
 | `OPENCLAW_DISABLE_ROUTE_FIRST` | Disable fast-path routing | — |
 | `OPENCLAW_LAUNCHD_LABEL` | Override macOS service label | `com.openclaw.gateway` |
@@ -1511,7 +1512,7 @@ User types: openclaw <command> [args]
 
 ---
 
-*Analysis complete. 1,216 TypeScript files across 8 modules analyzed.*
+*Analysis complete. 1,228 TypeScript files across 8 modules analyzed.*
 
 ---
 
@@ -1638,3 +1639,61 @@ User types: openclaw <command> [args]
 ### Config <!-- v2026.2.24 -->
 
 - **Meta timestamp coercion** (#25491): numeric `meta.lastTouchedAt` timestamps (e.g. `Date.now()` values) are now accepted and coerced to ISO strings, preserving compatibility with agent edits. Contributor: @mcaxtr. <!-- v2026.2.24 -->
+
+## v2026.3.1 Changes <!-- v2026.3.1 -->
+
+### CLI <!-- v2026.3.1 -->
+
+- **`openclaw config file` subcommand** (#26256): new `config file` subcommand prints the active config file path resolved from `OPENCLAW_CONFIG_PATH` or the default location (`~/.openclaw/openclaw.json`). Implementation adds `runConfigFile()` to `config-cli.ts` and registers the subcommand under `config`. Contributor: @cyb1278588254. <!-- v2026.3.1 -->
+
+- **Cron list: rename Agent to Agent ID, add Model column** (#26259): `cron list` output now labels the agent column as `Agent ID` (showing the actual `agentId`, not the model) and adds a separate `Model` column for isolated `agentTurn` jobs. Missing agent IDs display `-` instead of `default`. Implementation in `cron-cli/shared.ts` (`printCronList`). Contributor: @openperf. <!-- v2026.3.1 -->
+
+- **Cron run exit code** (#31121): `cron run` now returns exit code `0` only when the gateway reports `{ ok: true, ran: true }`, and `1` for non-run/error outcomes. Allows scripting/debugging to detect actual execution status. Implementation in `cron-cli/register.cron-simple.ts`. Contributor: @Sid-Qin. <!-- v2026.3.1 -->
+
+- **JSON preflight output** (#24368): `--json` command stdout is now kept machine-readable by suppressing doctor preflight note output while still running legacy migration/config doctor flow. Contributor: @altaywtf. <!-- v2026.3.1 -->
+
+- **Ollama config: allow `config set` for apiKey without predeclared provider** (#29299): `config set models.providers.ollama.apiKey <key>` now auto-scaffolds the Ollama provider block (`baseUrl: "http://127.0.0.1:11434"`, `api: "ollama"`, `models: []`) when no provider config exists. Implementation adds `ensureValidOllamaProviderForApiKeySet()` with `OLLAMA_API_KEY_PATH`/`OLLAMA_PROVIDER_PATH`/`OLLAMA_DEFAULT_BASE_URL` constants. Contributor: @vincentkoc. <!-- v2026.3.1 -->
+
+- **CLI install: npm-link fallback for Permission denied** (#17151): Docker builds use a root CLI symlink (`ln -sf /app/openclaw.mjs /usr/local/bin/openclaw`) instead of `npm link` to fix CLI startup `exit 127` failures on affected installs. Contributors: @sskyu, @vincentkoc. <!-- v2026.3.1 -->
+
+- **Install/npm: fix global install deprecation warnings** (#28318): resolved npm global install deprecation warnings. Contributor: @vincentkoc. <!-- v2026.3.1 -->
+
+- **Update/Global npm: fallback to `--omit=optional`** (#24896): when global `npm update` fails, the update flow now retries with `--omit=optional` so optional dependency install failures no longer abort update flows. Implementation adds `globalInstallFallbackArgs()` with `NPM_GLOBAL_INSTALL_OMIT_OPTIONAL_FLAGS` in `update-global.ts`. Contributor: @xinhuagu. <!-- v2026.3.1 -->
+
+### Config <!-- v2026.3.1 -->
+
+- **Gateway bind host alias normalization during migration** (#30855): legacy migration now normalizes host-style `gateway.bind` values (`0.0.0.0`, `::`, `127.0.0.1`, `localhost`) to supported bind modes (`lan`, `loopback`) so older configs recover without manual edits. Migration id: `gateway.controlUi.allowedOrigins-seed-for-non-loopback`. Also seeds `gateway.controlUi.allowedOrigins` for existing non-loopback installs that upgraded past v2026.2.26. Implementation in `legacy.migrations.part-3.ts`. Contributor: @liuxiaopai-ai. <!-- v2026.3.1 -->
+
+- **Shell env markers: `OPENCLAW_SHELL`** (#31271): `OPENCLAW_SHELL` env var is now injected into child processes across all shell-like runtimes: `exec`, `acp`, `acp-client`, and `tui-local`. Allows shell startup/config rules (e.g. `.bashrc`, `.zshrc`) to detect OpenClaw contexts and adjust behavior. Documented in env/exec/acp/TUI docs. Contributor: @vincentkoc. <!-- v2026.3.1 -->
+
+### Infra <!-- v2026.3.1 -->
+
+- **Docker image health checks** (#31272): the gateway now exposes built-in HTTP liveness/readiness probe endpoints (`/health`, `/healthz`, `/ready`, `/readyz`) for Docker/Kubernetes health checks, with fallback routing so existing handlers are not shadowed. `docker-compose.yml` includes a `healthcheck` directive fetching `http://127.0.0.1:18789/healthz`. Contributor: @vincentkoc. <!-- v2026.3.1 -->
+
+- **Docker image OCI labels** (#31196): `Dockerfile` now includes `org.opencontainers.image.*` base-image annotations (base name, digest, source, URL, docs, license, title, description) for downstream image consumers. Contributor: @vincentkoc. <!-- v2026.3.1 -->
+
+- **Docker image permissions** (#30191): `extensions/`, `.agent/`, `.agents/` directories are normalized to `755` for directories and `644` for files to harden permission consistency. Contributor: @vincentkoc. <!-- v2026.3.1 -->
+
+- **Docker/Sandbox browser: `OPENCLAW_BROWSER_NO_SANDBOX=1`** (#29879): sandbox browser creation now sets the `--no-sandbox` Chromium flag inside Docker containers to prevent Chromium namespace clone failures in unprivileged environments. Contributor: @Lukavyi. <!-- v2026.3.1 -->
+
+- **macOS supervised restart: `launchctl kickstart -k`** (#29078): intentional supervised gateway restarts now actively use `launchctl kickstart -k` to bypass the LaunchAgent `ThrottleInterval` delay. Additionally, `LAUNCH_AGENT_THROTTLE_INTERVAL_SECONDS` is reduced from 60 to 1 second to further reduce restart latency. Falls back to in-process restart when kickstart fails. Contributor: @cathrynlavery. <!-- v2026.3.1 -->
+
+- **macOS TLS certs: default `NODE_EXTRA_CA_CERTS`** (#27915): LaunchAgent and Node service environments now default `NODE_EXTRA_CA_CERTS` to `/etc/ssl/cert.pem` on macOS (respecting explicit overrides) so HTTPS clients no longer fail with local-issuer errors under launchd. Implementation in `service-env.ts` (`buildServiceEnvironment` and `buildNodeServiceEnvironment`). Contributor: @Lukavyi. <!-- v2026.3.1 -->
+
+- **fs-safe: sanitize directory-read failures (EISDIR)** (#31186): `fs-safe.ts` now rejects directory paths before `open()` and defensively catches any `EISDIR` race so the raw error code never leaks to messaging or tool output. Also adds `outside-workspace` error code to `SafeOpenErrorCode`. <!-- v2026.3.1 -->
+
+- **Sandbox mkdirp boundary checks** (#30610): sandbox `mkdirp` operations now enforce tighter directory boundary checks to prevent path escapes. Contributor: @glitch418x. <!-- v2026.3.1 -->
+
+- **Plugins npm spec install: detect new `.tgz`** (#21039): when `npm pack` output is empty, the plugin install flow now detects newly created `.tgz` archives in the pack directory. Contributors: @graysurf, @vincentkoc. <!-- v2026.3.1 -->
+
+- **Plugins install: clear stale install errors** (#25073): follow-up plugin install attempts now report current state correctly after clearing stale errors from previously failed npm package lookups. Contributor: @dalefrieswthat. <!-- v2026.3.1 -->
+
+- **Windows plugin install: resolve to node + npm CLI scripts** (#31147): avoids `spawn EINVAL` on Windows npm/npx invocations by resolving to `node` + npm CLI scripts instead of spawning `.cmd` directly. Contributor: @codertony. <!-- v2026.3.1 -->
+
+- **Onboarding custom providers: improved verification** (#27380): increased verification timeout and reduced `max_tokens` for custom provider probes during setup, improving reliability for slower local endpoints (e.g. Ollama). Contributor: @Sid-Qin. <!-- v2026.3.1 -->
+
+### Breaking <!-- v2026.3.1 -->
+
+- **Node exec `systemRunPlan` required**: `host=node` exec approval payloads now require `systemRunPlan`. Requests without it are rejected. This is a **breaking change** for integrations that construct Node exec approval requests manually.
+
+- **Node `system.run` realpath pinning**: `system.run` execution now pins path-token commands to the canonical executable path (`realpath`) in both allowlist and approval execution flows. Integrations/tests that asserted token-form argv (e.g. `tr`) must now accept canonical paths (e.g. `/usr/bin/tr`). This is a **breaking change** for approval flow consumers.

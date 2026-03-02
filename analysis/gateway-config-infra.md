@@ -1,7 +1,7 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-02-27 | **Version:** v2026.2.26
+**Updated:** 2026-03-02 | **Version:** v2026.3.1
 **Codebase:** /path/to/openclaw
 **Total lines (6 modules):** ~169,861
 
@@ -81,6 +81,46 @@
 
 **Gateway / `/api/channels` auth enforcement** (#25753, @bmendonca3): gateway auth is enforced for the exact `/api/channels` plugin root path (plus `/api/channels/` descendants), with regression coverage for query/trailing-slash variants and near-miss paths that must remain plugin-owned.
 
+### v2026.3.1 Changes <!-- v2026.3.1 -->
+
+**Gateway HTTP / Health Probes:**
+- **Built-in liveness/readiness endpoints** (#31272): gateway now registers `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) via a path→status map in `server-http.ts`. These are unauthenticated and suitable for Docker `HEALTHCHECK`, Kubernetes `livenessProbe`/`readinessProbe`, and external uptime monitors. The Dockerfile documents these endpoints; container health checks should probe `/healthz` or `/readyz`.
+- **Control UI method guard for non-UI routes**: plugin-owned HTTP routes under `/plugins` and `/api` are excluded from the Control UI SPA fallback, preventing untrusted plugins from claiming arbitrary UI paths. POST is allowed for non-UI routes via extracted `server/http-auth.ts`.
+- **Control UI CSP: Google Fonts origins**: `style-src` includes `https://fonts.googleapis.com`, `font-src` includes `https://fonts.gstatic.com` for deployments loading external Google Fonts.
+- **Control UI origins wildcard handling**: `origin-check.ts` now accepts `"*"` in `gateway.controlUi.allowedOrigins` (values are trimmed and lowercased via a `Set` for O(1) lookup).
+- **Control UI debug log**: full-width payload rendering in the debug event log via `debug-event-log__payload` CSS class.
+
+**Gateway WS / Security:**
+- **Plaintext ws:// loopback-only**: `isSecureWebSocketUrl()` in `net.ts` allows `ws://` only for loopback addresses (`localhost`, `127.x.x.x`, `::1`). All non-loopback `ws://` connections are rejected (CWE-319). This was established in v2026.2.19 and remains enforced; v2026.3.1 quiets noisy loopback WS close logs.
+- **WS flood protection: post-handshake role requests**: repeated unauthorized role escalation requests on an already-authenticated connection are closed. This extends the v2026.2.23 per-connection flood protection.
+
+**Gateway Auth / Pairing:**
+- **Subagent TLS pairing skip**: authenticated local gateway-client connections (Docker/LAN) can skip device pairing for subagent sessions. Auth logic refactored into new `server/http-auth.ts` module.
+- **Device-auth v2 migration diagnostics** (#28305, @vincentkoc): `connect-error-details.ts` now emits specific detail codes for device-auth failures (`DEVICE_AUTH_INVALID`, `DEVICE_AUTH_DEVICE_ID_MISMATCH`, `DEVICE_AUTH_SIGNATURE_EXPIRED`, etc.). `normalizeDeviceMetadataForAuth()` extracted to `device-metadata-normalization.ts` for cross-module reuse.
+
+**Gateway Infra:**
+- **Health-monitor restart cap raised**: `DEFAULT_MAX_RESTARTS_PER_HOUR` increased from 3 to 10 in `channel-health-monitor.ts`, with a new `staleEventThresholdMs` parameter.
+- **macOS supervised restart**: `launchd.ts` uses `launchctl kickstart -k` for in-place service restarts without full unload/reload.
+- **Node browser proxy routing**: browser bridge server hardened with `Cache-Control: no-store` on noVNC token endpoint and token-based observer URL construction.
+- **Control UI origin seeding**: new `startup-control-ui-origins.ts` auto-seeds `gateway.controlUi.allowedOrigins` for non-loopback bind modes at startup, preventing crash loops on upgrade (issue #29385).
+
+**Docker / Container:**
+- **OCI labels/annotations**: Dockerfile includes `org.opencontainers.image.source`, `.url`, `.documentation`, `.licenses`, `.title`, `.description`, and base image digest annotations.
+- **Image permissions normalization**: copied extension/agent directories get `chmod 755` (dirs) and `chmod 644` (files) to prevent plugin safety check rejections from world-writable source modes.
+- **Browser sandbox**: `OPENCLAW_BROWSER_NO_SANDBOX=1` env var passed into sandbox browser containers since Chromium's setuid/namespace sandbox cannot work inside Docker without elevated privileges.
+- **Docker bridge networking docs**: Dockerfile comments document loopback bind unreachability with `docker -p` and recommend `--network host` or `--bind lan`.
+- **GHCR image source**: OCI label `org.opencontainers.image.source` points to `https://github.com/openclaw/openclaw`.
+- **Sandbox bootstrap hardening**: opt-in parsing, custom socket paths, rollback support in `agents/bootstrap-files.ts` and `agents/sandbox/` modules.
+
+**Cron UI:**
+- **i18n: localized cron page**: all cron labels, filters, error messages, and status options use `t()` translation function. Locales updated: `en`, `zh-CN`, `de` (new), `pt-BR`, `zh-TW`.
+- **German (de) locale**: new `ui/src/i18n/locales/de.ts` with full Control UI translation.
+- **Model suggestions**: cron model field includes configured agent model defaults via `agents.list[].heartbeat` and `agents.defaults.heartbeat` merge.
+- **Delivery mode none**: `"None (internal)"` option explicitly available in cron editor delivery mode dropdown.
+- **Cron editor viewport**: `.cron-workspace-form` is sticky with `max-height: calc(100vh - 74px - 32px)` and `overflow-y: auto` for scrollable form panels.
+- **New filters**: schedule kind filter (`all|at|every|cron`) and last status filter (`all|ok|error|skipped`) added to cron jobs list.
+- **Failure alerts**: cron jobs support `failureAlertAfter` and `failureAlertCooldownSeconds` fields with `sendCronFailureAlert()` delivery.
+
 ### Key Files & Roles
 
 | File | Role |
@@ -140,6 +180,10 @@
 | `http-auth-helpers.ts` | HTTP auth utilities |
 | `origin-check.ts` | Origin validation |
 | `probe-auth.ts` / `probe.ts` | Health probes |
+| `server/http-auth.ts` | HTTP auth enforcement (canvas, plugin routes) — extracted in v2026.3.1 |
+| `security-path.ts` | Protected plugin route path matching |
+| `startup-control-ui-origins.ts` | Auto-seed Control UI allowedOrigins for non-loopback bind |
+| `device-metadata-normalization.ts` | Device metadata normalization for auth payloads |
 | **OpenAI Compatibility** | |
 | `openai-http.ts` | OpenAI-compatible HTTP API (`/v1/chat/completions`) |
 | `openresponses-http.ts` | Open Responses API |
@@ -276,6 +320,8 @@ HTTP:     Client → openai-http.ts or server/plugins-http → server-chat → s
 | `runtime-overrides.ts` | Runtime config overrides |
 | `talk.ts` | Talk mode config |
 | `version.ts` | Config version tracking |
+| `gateway-control-ui-origins.ts` | Control UI allowedOrigins seeding/validation for non-loopback bind |
+| `byte-size.ts` | Byte-size parsing utilities |
 
 ### Key Exports
 - `loadConfig(opts?): OpenClawConfig` — load and validate config
@@ -315,6 +361,7 @@ openclaw.json → io.ts (read) → parseConfigJson5 → merge-config (includes) 
 
 - **v2026.2.22:** `channels.modelByChannel` allowlisted in config validation (previously caused "unknown channel id" errors). `bindings[].comment` field now optional in strict validation. Array-valued config paths compared structurally during diffing (fixes false restart-required reloads for QMD paths).
 - **v2026.2.23:** Config write operations apply `unsetPaths` with immutable path-copy updates. Path traversal hardening for `config get/set/unset` rejects prototype-key segments.
+- **v2026.3.1:** Gateway bind host alias normalization migration (`gateway.bind.host-alias->bind-mode`) maps raw bind values like `0.0.0.0`, `::`, `[::]`, `*` to `"lan"` and `127.0.0.1`, `localhost`, `::1` to `"loopback"`. New `gateway-control-ui-origins.ts` module handles `allowedOrigins` seeding for non-loopback bind and startup guard. Legacy migration in `part-3` auto-seeds `gateway.controlUi.allowedOrigins` for existing non-loopback installs to prevent crash loops on upgrade (#29385).
 
 ---
 

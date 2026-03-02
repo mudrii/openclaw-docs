@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-02-27 | Codebase: /path/to/openclaw | Version: v2026.2.26
+> Updated: 2026-03-02 | Codebase: /path/to/openclaw | Version: v2026.3.1
 
 ---
 
@@ -19,7 +19,7 @@
 ## src/memory
 
 ### Module Overview
-The memory module provides **semantic search over markdown files and session transcripts** using vector embeddings. It supports multiple embedding providers (OpenAI, Gemini, Voyage, local llama.cpp), stores chunks in SQLite with optional sqlite-vec for native vector search, and implements hybrid search (vector + BM25 full-text). An alternative backend (`qmd`) delegates to an external QMD binary for indexing/search.
+The memory module provides **semantic search over markdown files and session transcripts** using vector embeddings. It supports multiple embedding providers (OpenAI, Gemini, Voyage, Mistral, local llama.cpp), stores chunks in SQLite with optional sqlite-vec for native vector search, and implements hybrid search (vector + BM25 full-text). An alternative backend (`qmd`) delegates to an external QMD binary for indexing/search.
 
 **Architecture Pattern:** Manager singleton with lazy initialization, file watcher for live reindexing, mixin-style ops classes (`manager-embedding-ops.ts`, `manager-sync-ops.ts` mixed into `MemoryIndexManager`).
 
@@ -73,7 +73,19 @@ The memory module provides **semantic search over markdown files and session tra
 
 - **Config / Meta timestamp coercion** (#25491): numeric `meta.lastTouchedAt` timestamps (written by agent edits using `Date.now()`) are now accepted and coerced to ISO strings. Contributor: @mcaxtr. <!-- v2026.2.24 -->
 
-### File Inventory (84 files)
+### v2026.3.1 Changes <!-- v2026.3.1 -->
+
+- **Hybrid keyword-only hit preservation** — When hybrid search yields keyword-only matches whose maximum score equals `textWeight` (e.g. 0.3) but `minScore` is higher (e.g. 0.35), those exact lexical hits were previously discarded. The search now relaxes `minScore` to `min(minScore, textWeight)` for keyword-matched entries so they are retained when no vector results exist.
+
+- **SQLite readonly sync recovery** (#25799) — If `sync()` encounters a `SQLITE_READONLY` error (e.g. stale WAL after crash or NFS mount), the manager now reopens the SQLite connection and retries once. Recovery statistics (`readonlyRecovery.attempts/successes/failures/lastError`) are exposed in `status().custom`. Contributor: @rodrigouroz.
+
+- **Manager cache hydration deduplication** — Concurrent calls to `MemoryIndexManager.get()` with the same cache key now share a single pending `createEmbeddingProvider` promise via `INDEX_CACHE_PENDING`, preventing redundant provider creation during parallel startup.
+
+- **QMD discard-output mode** (#28900) — `qmd update` and `qmd embed` commands now run with `discardOutput: true`, draining stdout without accumulation. Prevents "produced too much output" failures on large indexes (>200K chars). Contributor: @Glucksberg.
+
+- **LanceDB extension: custom OpenAI baseUrl and dimensions** (#17874) — The `memory-lancedb` extension (`extensions/memory-lancedb/`) now supports `embedding.baseUrl` and `embedding.dimensions` configuration fields, enabling use of OpenAI-compatible endpoints (e.g. Ollama at `http://localhost:11434/v1`) and custom vector dimensions for non-standard models. When `dimensions` is specified, the built-in model-dimension lookup is bypassed.
+
+### File Inventory (86 files)
 
 | File | Description |
 |------|-------------|
@@ -95,6 +107,8 @@ The memory module provides **semantic search over markdown files and session tra
 | `embeddings-openai.ts` | OpenAI embedding provider |
 | `embeddings-gemini.ts` | Google Gemini embedding provider |
 | `embeddings-voyage.ts` | Voyage AI embedding provider |
+| `embeddings-mistral.ts` | Mistral embedding provider |
+| `embeddings-remote-provider.ts` | Shared factory for remote embedding providers (OpenAI, Voyage, Gemini, Mistral) |
 | `node-llama.ts` | Dynamic import wrapper for node-llama-cpp |
 | `batch-http.ts` | Generic HTTP POST with retry for batch APIs |
 | `batch-output.ts` | Shared batch output line parser |
@@ -125,6 +139,8 @@ The memory module provides **semantic search over markdown files and session tra
 | `backend-config.test.ts` | Tests for backend config resolution |
 | `embeddings.test.ts` | Tests for embedding provider creation |
 | `embeddings-voyage.test.ts` | Tests for Voyage provider |
+| `embeddings-mistral.test.ts` | Tests for Mistral provider |
+| `manager.mistral-provider.test.ts` | Tests for Mistral provider integration in manager |
 | `batch-voyage.test.ts` | Tests for Voyage batch API |
 | `hybrid.test.ts` | Tests for hybrid search |
 | `internal.test.ts` | Tests for chunking, file listing |
@@ -141,6 +157,8 @@ The memory module provides **semantic search over markdown files and session tra
 | `manager.sync-errors-do-not-crash.test.ts` | Tests graceful sync failure |
 | `manager.vector-dedupe.test.ts` | Tests vector row deduplication |
 | `manager.watcher-config.test.ts` | Tests chokidar watcher configuration |
+| `manager.get-concurrency.test.ts` | Tests concurrent manager creation deduplication |
+| `manager.readonly-recovery.test.ts` | Tests SQLite readonly sync recovery |
 
 ### Key Types & Interfaces
 
@@ -163,7 +181,7 @@ interface MemorySearchManager {
 
 // embeddings.ts
 type EmbeddingProvider = { id, model, maxInputTokens?, embedQuery, embedBatch };
-type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage";
+type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage" | "mistral";
 type EmbeddingProviderRequest = EmbeddingProviderId | "auto";
 
 // internal.ts
@@ -246,7 +264,7 @@ type SessionFileEntry = { path, absPath, mtimeMs, size, hash, content, lineMap }
 - `agents.defaults.memorySearch.remote.batch.*` — batch embedding config
 
 ### Test Coverage
-18 test files covering: backend config resolution, embedding chunk limits, embedding providers (OpenAI, Voyage, Gemini), batch APIs, hybrid search, chunking/file listing, session entry parsing, QMD manager/parser/scope, search manager factory, async search, atomic reindex, batch splitting, token limits, sync error handling, vector deduplication, watcher configuration.
+20 test files covering: backend config resolution, embedding chunk limits, embedding providers (OpenAI, Voyage, Gemini), batch APIs, hybrid search, chunking/file listing, session entry parsing, QMD manager/parser/scope, search manager factory, async search, atomic reindex, batch splitting, token limits, sync error handling, vector deduplication, watcher configuration, concurrent manager creation deduplication, SQLite readonly sync recovery.
 
 ---
 
@@ -299,7 +317,63 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - **Sessions maintenance hardening** — `openclaw sessions cleanup` CLI command added with per-agent store targeting and disk-budget controls (`session.maintenance.maxDiskBytes` / `session.maintenance.highWaterBytes`). Provides safer transcript/archive cleanup with run-log retention behavior. (#24753)
 - **Isolated cron full prompt mode** — Isolated cron sessions now use full prompt mode so skills/extensions are available during cron execution. (#24944)
 
-### File Inventory (75 files)
+### v2026.3.1 Changes <!-- v2026.3.1 -->
+
+#### Scheduling & Execution
+
+- **Year-rollback guard in croner nextRun** (#30777) — Some timezone/date combinations (e.g. `Asia/Shanghai`) cause `croner.nextRun()` to return a timestamp in a past year. When `nextRun` returns a value at or before `nowMs`, the scheduler now retries from the next whole second and, if still stale, from midnight-tomorrow UTC before giving up. Contributor: @Sid-Qin.
+
+- **One-shot reschedule re-arm** (#28915) — Completed `at`-scheduled (one-shot) jobs can now run again when rescheduled. Previously, a finished one-shot job with `deleteAfterRun: false` could not be re-armed to a new timestamp. Contributor: @Glucksberg.
+
+- **Cron run exit code** — `cron.run` CLI now returns exit code 0 only when both `ok: true` and `ran: true`. All other outcomes (skipped, error, timeout) return non-zero, enabling shell-level success/failure detection.
+
+- **armTimer tight-loop prevention** (#29853) — When a job has a stuck `runningAtMs` (e.g. process crashed mid-run), `armTimer` no longer enters a tight re-fire loop. Contributor: @FlamesCN.
+
+- **1/3 timeout fix for fresh isolated CLI runs** (#30140) — Fresh isolated cron sessions no longer silently inherit a reduced (1/3) timeout from the CLI runner defaults. Contributor: @ningding97.
+
+#### Delivery & Messaging
+
+- **Delivery mode `none`: disable messaging tool** (#21808) — When `delivery.mode` is `"none"`, the messaging tool is now disabled in isolated cron sessions, preventing accidental message delivery from agent turns.
+
+- **Delivery mode `none` from cron editor** — The `"none"` delivery mode is now explicitly selectable from the Web UI cron editor when adding or updating jobs.
+
+- **Completion direct send for text-only announce** (#29151) — Text-only announce delivery jobs with explicit targets now send via direct outbound delivery at completion.
+
+- **`--account` flag for multi-account routing** (#26284) — Cron jobs can now specify an explicit channel account ID for delivery routing in multi-account setups.
+
+#### Light Bootstrap Context
+
+- **Heartbeat light bootstrap context** (#26064) — Opt-in `--light-context` CLI flag for cron agent turns and `agents.*.heartbeat.lightContext` config for heartbeat runs. When enabled, bootstrap files (`AGENTS.md`, `MEMORY.md`) are loaded with reduced context to lower token usage. Contributor: @jose-velez.
+
+#### Reliability & Resilience
+
+- **Configurable failure alerts** (#24789) — Repeated job failures now trigger user-facing alerts after a configurable threshold (`failureAlert.after`, default 2 consecutive errors) with a cooldown period (`failureAlert.cooldownMs`, default 1 hour). Contributor: @0xbrak.
+
+- **Retry policy for one-shot transient errors** (#24435) — One-shot `at`-jobs now support a retry policy for transient errors, re-arming the job for a later attempt instead of permanently failing. Contributor: @hugenshen.
+
+- **Auto-disable on repeated errors** (#29098) — Jobs are auto-disabled after repeated consecutive errors, with a user notification explaining why. Contributor: @ningding97.
+
+- **Reject `sessionTarget: "main"` for non-default agents** (#30217) — Creating a cron job with `sessionTarget: "main"` for a non-default agent now fails at creation time instead of silently misbehaving at runtime. Contributor: @liaosvcaf.
+
+#### Model & Payload
+
+- **Payload fallbacks** (#26304) — Per-job `payload.fallbacks` array enables model fallback override at the job level, independent of the agent's global fallback chain.
+
+- **Respect `subagents.model` in isolated cron** (#11474) — Isolated cron sessions now correctly propagate the `subagents.model` configuration.
+
+- **Handle cron model override in sessions list** (#21279) — The sessions list CLI now displays the model override when a cron job specifies one. Contributor: @altaywtf.
+
+#### Store & Persistence
+
+- **Store backup churn reduction** (#19484) — Cron store backup (`.bak`) files are no longer rewritten on every persist; backups are only created when the store content has actually changed.
+
+- **Drain pending writes before run log read** (#25416) — Run log reads now drain pending write queue entries first, ensuring consistent state.
+
+- **Legacy schedule field migration** (#28889) — Legacy `schedule.cron` fields in stored jobs are migrated to the current `schedule.expr` format on load.
+
+- **List sort guard** (#28896) — `cron list` sorting now guards against malformed legacy jobs that lack required fields.
+
+### File Inventory (83 files)
 
 | File | Description |
 |------|-------------|
@@ -333,7 +407,15 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 | `isolated-agent.test-harness.ts` | Test harness for isolated agent |
 | `service.test-harness.ts` | Test harness for cron service |
 | `isolated-agent/run.skill-filter.test.ts` | Tests for skill filter passing in isolated runs |
+| `isolated-agent/run.cron-model-override.test.ts` | Tests for cron model override in isolated runs |
+| `isolated-agent/run.payload-fallbacks.test.ts` | Tests for per-job payload fallback overrides |
+| `isolated-agent.subagent-model.test.ts` | Tests for subagents.model propagation in cron |
 | `isolated-agent/session.test.ts` | Tests for cron session resolution |
+| `service.armtimer-tight-loop.test.ts` | Tests for armTimer tight-loop prevention |
+| `service.failure-alert.test.ts` | Tests for configurable failure alerts |
+| `service.issue-19676-at-reschedule.test.ts` | Tests for one-shot reschedule re-arm |
+| `service.list-page-sort-guards.test.ts` | Tests for list sorting with malformed jobs |
+| `service.main-job-passes-heartbeat-target-last.test.ts` | Tests heartbeat target=last for main jobs |
 | + 24 test files | Various regression, integration, and unit tests |
 
 ### Key Types & Interfaces
@@ -345,7 +427,8 @@ type CronSessionTarget = "main" | "isolated";
 type CronPayload = { kind: "systemEvent"; text } | { kind: "agentTurn"; message, model?, thinking?, timeoutSeconds?, deliver?, channel?, to?, ... };
 type CronDelivery = { mode: "none" | "announce"; channel?; to?; bestEffort? };
 type CronJobState = { nextRunAtMs?, runningAtMs?, lastRunAtMs?, lastStatus?, lastError?, lastDurationMs?, consecutiveErrors?, scheduleErrorCount? };
-type CronJob = { id, agentId?, name, description?, enabled, deleteAfterRun?, schedule, sessionTarget, wakeMode, payload, delivery?, state, createdAtMs, updatedAtMs };
+type CronFailureAlert = { after?; channel?; to?; cooldownMs? };
+type CronJob = { id, agentId?, name, description?, enabled, deleteAfterRun?, schedule, sessionTarget, wakeMode, payload, delivery?, failureAlert?, state, createdAtMs, updatedAtMs };
 type CronStoreFile = { version: 1; jobs: CronJob[] };
 type CronJobCreate = Omit<CronJob, "id" | "createdAtMs" | "updatedAtMs" | "state"> & { state? };
 type CronJobPatch = Partial<...> & { payload?: CronPayloadPatch; delivery?: CronDeliveryPatch; state? };
@@ -417,7 +500,7 @@ type CronRunLogEntry = { ts, jobId, action, status?, error?, summary?, sessionId
 - Jobs configured via API (add/update/remove), not static config
 
 ### Test Coverage
-26+ test files: delivery plan resolution, every-job firing, regression tests (#13992, #16156, general regressions), job CRUD, duplicate timer prevention, read-ops non-blocking, rearm timer, restart catchup, one-shot execution, empty payload handling, store migration (2 files), schedule error isolation, session management, protocol conformance, skill-filter in isolated runs, cron session resolution.
+33+ test files: delivery plan resolution, every-job firing, regression tests (#13992, #16156, general regressions), job CRUD, duplicate timer prevention, read-ops non-blocking, rearm timer, restart catchup, one-shot execution, empty payload handling, store migration (2 files), schedule error isolation, session management, protocol conformance, skill-filter in isolated runs, cron session resolution, cron model override, payload fallbacks, subagent model propagation, armTimer tight-loop prevention, failure alerts, one-shot reschedule re-arm, list sort guards, heartbeat target for main jobs.
 
 ---
 
@@ -442,7 +525,19 @@ Low-level **media file handling**: MIME detection, file fetching with size limit
 - **Share response size limiter** — `read-response-with-limit.ts` shared for consistent enforcement
 - **New `local-roots.ts`** — resolve local media root directories (workspace, state, home)
 
-### File Inventory (30 files)
+### v2026.3.1 Changes <!-- v2026.3.1 -->
+
+- **Outbound media load-options helper** — New `load-options.ts` provides `buildOutboundMediaLoadOptions()` and `resolveOutboundMediaLocalRoots()` to centralize outbound media load parameter assembly. `outbound-attachment.ts` now uses this helper for consistent `localRoots` propagation.
+
+- **JavaScript MIME mapping** — `.js` files now resolve to `text/javascript` in the MIME extension mapping, fixing assets served with an incorrect content type.
+
+- **Media server `readFileWithinRoot`** — `server.ts` now uses `readFileWithinRoot` (buffer-returning) instead of `openFileWithinRoot` (handle-returning), eliminating the open-then-close pattern and consolidating the size-limit check inside the safe-read call.
+
+- **Outside-workspace error handling** — Media store and server now explicitly handle `SafeOpenError` with code `"outside-workspace"`, returning a 400 status with a descriptive "file is outside workspace root" message instead of a generic 404.
+
+- **Sandbox TOCTOU hardening** — Sandbox media reads are hardened against time-of-check-to-time-of-use (TOCTOU) path escapes.
+
+### File Inventory (34 files)
 
 | File | Description |
 |------|-------------|
@@ -460,9 +555,13 @@ Low-level **media file handling**: MIME detection, file fetching with size limit
 | `input-files.ts` | PDF text/image extraction, document content loading |
 | `local-roots.ts` | Resolve local media root directories (workspace, state, home) for safe file access |
 | `outbound-attachment.ts` | Resolve outbound media URL → local file (shared across channels) |
+| `load-options.ts` | `buildOutboundMediaLoadOptions()`, `resolveOutboundMediaLocalRoots()` — centralized outbound media load params |
 | `png-encode.ts` | Minimal PNG encoder (CRC32, chunks, RGBA) |
 | `read-response-with-limit.ts` | Stream response body with byte limit |
 | `sniff-mime-from-base64.ts` | Detect MIME from base64 header bytes (shared helper) |
+| `load-options.test.ts` | Tests for outbound media load options |
+| `server.outside-workspace.test.ts` | Tests for outside-workspace error in media server |
+| `store.outside-workspace.test.ts` | Tests for outside-workspace error in media store |
 | + 9 test files | Tests for audio, constants, fetch, fetch-guard, host, mime, parse, store, store-redirect |
 
 ### Key Types & Interfaces
@@ -485,6 +584,10 @@ type InputFileLimits = { allowUrl; urlAllowlist?; allowedMimes; maxBytes; ... };
 
 // store.ts
 const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
+
+// load-options.ts
+type OutboundMediaLoadParams = { maxBytes?; mediaLocalRoots?: readonly string[] };
+type OutboundMediaLoadOptions = { maxBytes?; localRoots?: readonly string[] };
 ```
 
 ### Key Functions & Classes
@@ -509,10 +612,12 @@ const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 | `readResponseWithLimit` | `(res, maxBytes) → Promise<Buffer>` | Stream with byte limit |
 | `estimateBase64DecodedBytes` | `(base64) → number` | Zero-alloc size estimation |
 | `encodePng` | `(width, height, rgba) → Buffer` | Minimal PNG encoding |
+| `buildOutboundMediaLoadOptions` | `(params?) → OutboundMediaLoadOptions` | Build load options for outbound media |
+| `resolveOutboundMediaLocalRoots` | `(roots?) → readonly string[] \| undefined` | Resolve local roots for media loading |
 
 ### Internal Dependencies
 - `src/infra/net/ssrf.ts`, `src/infra/net/fetch-guard.ts` — SSRF protection
-- `src/infra/fs-safe.ts` — safe file open within root
+- `src/infra/fs-safe.ts` — safe file read within root
 - `src/infra/ports.ts`, `src/infra/tailscale.ts` — port checking, Tailscale hostname
 - `src/globals.ts` — danger flags
 - `src/runtime.ts` — runtime environment
@@ -545,7 +650,7 @@ const MEDIA_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 - `OPENCLAW_IMAGE_BACKEND` env var — `"sharp"` | `"sips"`
 
 ### Test Coverage
-9 test files: audio compatibility, media constants, fetch with SSRF, input-files fetch guard, media hosting, MIME detection, MEDIA token parsing, store operations (headers, general), store redirects.
+12 test files: audio compatibility, media constants, fetch with SSRF, input-files fetch guard, media hosting, MIME detection, MEDIA token parsing, store operations (headers, general), store redirects, outbound media load options, outside-workspace error (server + store).
 
 ---
 
@@ -739,13 +844,17 @@ type LinkUnderstandingResult = { urls: string[]; outputs: string[] };
 ## src/tts
 
 ### Module Overview
-**Text-to-speech** with three providers: OpenAI, ElevenLabs, and Microsoft Edge TTS. Supports auto-TTS modes (off/always/inbound/tagged), text summarization for long content, markdown stripping, inline `[[tts:...]]` directives for voice/model control, user preferences, and channel-specific output formats (Opus for Telegram).
+**Text-to-speech** with three providers: OpenAI, ElevenLabs, and Microsoft Edge TTS. Supports auto-TTS modes (off/always/inbound/tagged), text summarization for long content, markdown stripping, inline `[[tts:...]]` directives for voice/model control, user preferences, and channel-specific output formats (Opus for voice-bubble channels: Telegram, Feishu, WhatsApp).
 
 **Architecture Pattern:** Config-driven with user preference overlay, provider fallback chain, directive parsing.
 
 **Entry Points:**
 - `tts.ts` — all public API (config resolution, TTS execution, auto-apply)
 - `tts-core.ts` — provider implementations (OpenAI, ElevenLabs, Edge, summarization)
+
+### v2026.3.1 Changes <!-- v2026.3.1 -->
+
+- **TTS voice bubbles for Feishu and WhatsApp** (#27366) — `resolveOutputFormat()` now checks against a `VOICE_BUBBLE_CHANNELS` set (`"telegram"`, `"feishu"`, `"whatsapp"`) instead of a hardcoded `channelId === "telegram"` comparison. Opus output and `voiceCompatible` tagging are applied for all three channels. `maybeApplyTtsToPayload()` similarly uses the set for voice-bubble detection.
 
 ### File Inventory (4 files)
 
@@ -811,7 +920,7 @@ type TtsDirectiveParseResult = { cleanedText; ttsText?; hasDirective; overrides;
 ### Data Flow
 1. `maybeApplyTtsToPayload()` → check auto mode → parse directives → optionally summarize → strip markdown → call provider → save audio file → attach to payload
 2. Provider chain: try primary → fallback to others (openai → elevenlabs → edge)
-3. Output: Opus for Telegram (voice-compatible), MP3 for others
+3. Output: Opus for voice-bubble channels (Telegram, Feishu, WhatsApp), MP3 for others
 
 ### Storage
 - **User preferences:** `~/.openclaw/settings/tts.json` (or configurable path)
