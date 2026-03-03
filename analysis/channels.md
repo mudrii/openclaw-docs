@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-02 | Version: v2026.3.1 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-03-03 | Version: v2026.3.2 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (108 files), `src/discord` (136 files), `src/signal` (32 files), `src/slack` (103 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (147 files), `extensions/feishu` (77 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.

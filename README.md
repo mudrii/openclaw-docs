@@ -2,8 +2,8 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Latest upstream stable release: v2026.3.1 (published 2026-03-02 UTC).**
-**Current validated docs snapshot: v2026.3.1 (released 2026-03-02, validated against tag `v2026.3.1`).**
+**Latest upstream stable release: v2026.3.2 (published 2026-03-03 UTC).**
+**Current validated docs snapshot: v2026.3.2 (released 2026-03-03, validated against tag `v2026.3.2`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -17,7 +17,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [AGENT_README.md](AGENT_README.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.3.1); tracks released upstream tags and synthesis status. |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.3.2); tracks released upstream tags and synthesis status. |
 | [AGENTS.md](AGENTS.md) | AI agent guidelines for working with the OpenClaw codebase — repo structure, build commands, testing, PR workflow, security practices. |
 
 ### Detailed Analysis
@@ -56,7 +56,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each release is tagged to match the OpenClaw version it documents:
-- `v2026.3.1` (2026-03-02, released) — Updated for v2026.2.26 → v2026.3.1 (588 commits, 1,081 files): gateway health probes for Docker/K8s, OpenAI WebSocket-first transport, Telegram per-DM topics, Discord thread inactivity lifecycle, massive Feishu hardening (20+ changes including docx tables, reactions, chat tools, multi-account routing), Android nodes expansion (camera, device, notifications, motion sensors), prompt spoofing hardening, subagent typed completion events, 2 breaking changes (node exec systemRunPlan required, system.run realpath pinning), and broad channel/security reliability fixes.
+- `v2026.3.2` (2026-03-03, released) — Updated for v2026.3.1 → v2026.3.2 (862 commits, 2,119 files): SecretRef and `openclaw secrets` planning/apply/audit expansion (64 runtime targets), first-class `pdf` tool + diffs PDF rendering support, `openclaw config validate` + invalid-key reporting, sessions/attachments support in `sessions_spawn`, Telegram streaming default `partial` + DM draft reliability fixes, plugin runtime/runtime-events/context enrichments (`session_start`, `session_end`, message hook phases), and high-signal security/reliability fixes across Feishu, LINE, browser, gateway, voice-call, and cron/message paths.
 - `v2026.2.26` (2026-02-27, released) — Updated for v2026.2.25 → v2026.2.26 (340 commits, 856 files): external secrets management workflow (`openclaw secrets`), ACP thread-bound agents, new agent binding CLI, Codex WebSocket-first transport defaults, plugin-owned onboarding hooks, and multiple reliability fixes (DM allowlist inheritance, delivery-queue backoff, temp-dir safety, and Google Chat lifecycle stability).
 - `v2026.2.25` (2026-02-26, released) — Updated for v2026.2.24 → v2026.2.25 (159 commits, 376 files): heartbeat direct-delivery policy is now explicit via `agents.defaults.heartbeat.directPolicy` (default `allow`), major security hardening across channel non-message ingress/auth paths and gateway/browser auth boundaries, improved subagent announce/delivery reliability, webhook/polling robustness improvements (especially Telegram), and model/fallback reliability fixes across OpenRouter and other providers.
 - `v2026.2.24` (2026-02-25, released) — Updated for v2026.2.23 → v2026.2.24 (228 commits, 458 files): major heartbeat safety changes (DM target blocking + default target `none`), cross-channel shared-session routing fail-closed hardening, expanded multilingual stop/abort phrase matching, sandbox security hardening (container namespace join blocked by default, tmp/media/path guard tightening, hardlink protections), channel reliability fixes (typing keepalive, Discord voice DAVE recovery, WhatsApp 440 reconnect handling), provider/model fixes (OpenRouter cooldown bypass, allowlisted models despite stale catalog), and extensive security patch set across exec approvals, workspace boundaries, hooks normalization, and ingress authorization.
@@ -72,8 +72,8 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **5,102 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `vendor/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.1` tag)
-- **938,374 lines of TypeScript** covered (same scope as above)
+- **5,414 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `vendor/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.2` tag)
+- **997,106 lines of TypeScript** covered (same scope as above)
 - **49 modules** documented, **40 extension directories** (**33 extension packages**), **52 bundled skills**
 - **~830KB** of documentation (5 core MD files + 10 analysis files)
 

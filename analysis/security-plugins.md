@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-02 | Version: v2026.3.1
+> Updated: 2026-03-03 | Version: v2026.3.2
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 

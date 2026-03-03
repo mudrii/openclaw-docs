@@ -62,7 +62,7 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, `imessage/`, `web/`) are leaf modules with 🟢 risk.
 
-**v2026.2.21 additions:**
+**v2026.2.21 additions (historical):**
 
 | Level | Module | Imports From | Imported By | Risk |
 | ----- | ------ | ------------ | ----------- | ---- |
@@ -70,6 +70,10 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 | 2 | `channels/status-reactions` | `channels/`, `config/`, `infra/` | `telegram/`, `discord/` | 🟡 |
 | leaf | `discord/monitor/thread-bindings.*` | `discord/`, `sessions/`, `config/` | — | 🟢 |
 | 2 | `node-host/invoke-system-run` | `node-host/`, `config/`, `process/` | `node-host/invoke.ts` | 🟡 |
+
+**v2026.3.2 additions (behavioral):**
+
+- No new top-level modules were added in this release window; feature and security changes are in existing modules, including `cli/`, `channels/`, `agents/`, `gateway/`, `security/`, `plugins/`, and `extensions/`.
 
 ### High-Blast-Radius Files
 

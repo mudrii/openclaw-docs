@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-02 (source package: 2026.3.1) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-03 (source package: 2026.3.2) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -929,7 +929,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Extension packages (`extensions/*/package.json`) | 33 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current analyzed source package: `2026.3.1` (tag `v2026.3.1`). Counts measured from that released tag snapshot.
+> Current analyzed source package: `2026.3.2` (tag `v2026.3.2`). Counts measured from that released tag snapshot.
 
 ### Key External Dependencies
 

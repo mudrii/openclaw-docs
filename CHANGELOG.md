@@ -6,10 +6,86 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.1 — Latest Documented Release Summary
+## OpenClaw v2026.3.2 — Latest Documented Release Summary
 
-> **Released:** 2026-03-02 | **Policy note:** latest *documented* released section stays at top.
-> **Window analyzed:** `v2026.2.26..v2026.3.1` | **Scan stats:** 588 commits, 1,081 files changed, +67,443 / -8,115 lines
+> **Released:** 2026-03-03 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.1..v2026.3.2` | **Scan stats:** 862 commits, 2,119 files changed, +121,000 / -55,228 lines
+
+## Highlights
+
+- **SecretRef and credential surface unification:** `openclaw secrets` runtime flow now covers 64 supported credential targets and enforces fail-fast only on active surfaces; inactive surfaces remain non-blocking. Onboarding and CLI flows receive explicit Surface planning visibility.
+- **PDF and diff enhancements:** new first-class `pdf` tool plus `tools/pdf` integration for Anthropic/Google extract paths, plus diffs plugin PDF renderer and quality controls (`fileQuality`, `fileScale`, `fileMaxWidth`) for generated artifact outputs.
+- **Config quality gates:** `openclaw config validate` with `--json` is added, with invalid-key path reporting and stricter runtime startup diagnostics.
+- **Channel and runtime control improvements:** `channelRuntime` is exposed in plugin context, plus outbound `sendPayload` support across direct-text-media, Discord/Slack/WhatsApp/Zalo/Zalouser with chunk-aware fallback behavior.
+- **Session/session-spawn evolution:** `sessions_spawn` now accepts base64/utf8 attachments with per-run redaction and lifecycle cleanup controls; delivery-mode behavior now enforces disabled messaging when `mode: "none"` is configured.
+- **Telegram reliability:** default streaming for `channels.telegram.streaming` is now `partial`; DM streaming uses `sendMessageDraft` with separation of reasoning/answer preview lanes.
+- **Gateway reliability and security:** ws route and auth hardening, TLS pairing/runtime pairing bypass safety, plugin webhook auth/route canonicalization fixes, and startup/reporting improvements including runtime self-version preference.
+- **Feishu/LINE/Voice-call reliability:** Feishu/LINE inbound/outbound routing and metadata handling improvements, safer replay and webhook processing, Twilio verification compatibility updates, and improved voice-call/notification reliability.
+- **Plugin and hooks hardening:** stricter plugin command normalization and lifecycle hooks, including `session_start`, `session_end`, `message:transcribed`, and `message:preprocessed`/`message:sent` contexts for downstream integrations.
+- **Model/streaming robustness:** additional model/provider compatibility checks, failover tuning, and usage-window presentation improvements.
+
+For full detail, see the v2026.3.2 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.2`).
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | 1,371 |
+| `extensions/` | 326 |
+| `docs/` | 98 |
+| `ui/` | 41 |
+| `apps/` | 201 |
+| `scripts/` | 35 |
+| `test/` | 9 |
+
+*Note: This distribution is a sampled breakdown; additional files in generated, tooling, or misc paths (`.github`, `.pi`, root config/workflow files, release assets) make up the remaining count to match the stated total.*
+
+## Breaking / Behavior Shifts
+
+1. **`openclaw` credential flow defaults changed for new installs:** tooling defaults now default `tools.profile` to `messaging` and ACP dispatch is enabled by default; explicit disablement is required for non-dispatch behavior.
+2. **Zalo Personal plugin runtime changed to native JS path:** `@openclaw/zalouser` no longer depends on external CLI transports for login/send/listen; operators should refresh sessions with `openclaw channels login --channel zalouser`.
+3. **Plugin SDK HTTP route registration API changed:** `api.registerHttpHandler` was removed in favor of explicit route registration.
+
+## Major Features
+
+- **SecretRef surface expansion:** 64 active credential targets covered by onboarding/secret planning and validation pipelines.
+- **PDF support:** native `tools/pdf` support with provider selection and extraction fallbacks.
+- **`openclaw config validate`:** command-level validation for config and config-key diagnostics.
+- **Plugin runtime extensions:** session and message lifecycle hooks now expose richer contexts for event consumers.
+- **Attachments in subagent sessions:** `sessions_spawn` accepts encoded attachments with retention and cleanup controls.
+- **Shared send payload pipeline:** cross-channel outbound send path receives shared `sendPayload` handling, including chunked and media-first fallback behavior.
+
+## High-Signal Runtime Fixes
+
+- Telegram draft finalization reliability and DM topic routing defaults tightened for ambiguous multi-account setups.
+- Plugin command validation hardened for malformed registrations.
+- Gateway startup and restart diagnostics improved with explicit runtime version reporting and safer TLS pairing behavior.
+- Feishu, LINE, and Telegram ingress/egress edge-cases hardened for session metadata consistency and webhook safety.
+- Browser/CDP startup error paths expose better Chromium diagnostics and safer fallback handling.
+- Health and version reporting in status output updated to prefer runtime-reported version metadata.
+
+## Security Hardening
+
+- **Webhook auth-before-body:** pre-auth body limits now apply consistently to BlueBubbles/GoogleChat/LINE webhook paths.
+- **Gateway/Plugin route authorization:** stricter route ownership, path canonicalization, and auth checks for plugin handlers reduce alternate-path bypass opportunities.
+- **Secrets + runtime surfaces:** stricter execution around secret provider retries, secret surface resolution, and session-context propagation.
+- **Runtime execution boundaries:** additional sandbox/workspace boundary checks and startup guardrails for filesystem and process paths.
+- **Browser security hardening:** CDP/profile and output handling protections against transient/failure-state edge cases.
+
+## Maintainer Upgrade Checklist (v2026.3.2)
+
+1. **Validate `openclaw secrets` migration behavior:** confirm active surfaces fail fast and inactive surfaces only emit non-blocking diagnostics.
+2. **Review `tools.profile` and ACP dispatch defaults:** align with expected local/operator defaults after upgrade.
+3. **Refresh Zalo Personal sessions:** run `openclaw channels login --channel zalouser` to migrate from external CLI transport dependency.
+4. **Audit plugin route registrations:** update any custom plugins using removed `api.registerHttpHandler`.
+5. **Run `openclaw config validate` once post-upgrade:** catch invalid-key paths and schema migrations before gateway restart.
+6. **Test Telegram streaming defaults:** verify partial mode meets operator UX expectations.
+7. **Verify webhook auth for BlueBubbles/GoogleChat/LINE paths:** confirm no unintended 202 responses remain on missing auth and large unauthenticated bodies are bounded.
+8. **Enable plugin/session hook telemetry:** validate downstream integrations expecting `session_start`, `message:sent`, and `message:preprocessed` still receive full context.
+
+---
+
+## OpenClaw v2026.3.1 — Historical Release Summary
 
 ## Highlights
 

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-02 | Version: v2026.3.1
+> Updated: 2026-03-03 | Version: v2026.3.2
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 

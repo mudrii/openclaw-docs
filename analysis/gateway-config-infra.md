@@ -1,7 +1,7 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-02 | **Version:** v2026.3.1
+**Updated:** 2026-03-03 | **Version:** v2026.3.2
 **Codebase:** /path/to/openclaw
 **Total lines (6 modules):** ~169,861
 
