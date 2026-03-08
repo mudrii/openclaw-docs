@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-03 | Version: v2026.3.2 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-08 | Version: v2026.3.7 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1695,5 +1695,18 @@ User types: openclaw <command> [args]
 ### Breaking <!-- v2026.3.1 -->
 
 - **Node exec `systemRunPlan` required**: `host=node` exec approval payloads now require `systemRunPlan`. Requests without it are rejected. This is a **breaking change** for integrations that construct Node exec approval requests manually.
+
+## v2026.3.7 Delta Notes
+
+- **BREAKING**: Gateway auth mode requirement — explicit `gateway.auth.mode` is now required when both token and password are configured; ambiguous dual-credential setups are rejected at startup.
+- Heartbeat legacy-path auto-migration: old heartbeat config paths are automatically migrated to the new schema on startup.
+- Config schema cache key stability: cache keys for config schema validation are now stable across restarts, reducing unnecessary schema re-computation.
+- Provider apiKey persistence hardening: API key writes are now atomic and survive partial-write failures.
+- Env substitution degraded mode: missing env vars in config substitution now enter a degraded mode with a clear warning rather than silently dropping values.
+- Invalid-load fail-closed behavior: configs that fail schema validation during load now fail closed rather than proceeding with partially-loaded state.
+- Docker multi-stage slim build: Dockerfile restructured to multi-stage build for smaller production images.
+- Podman support: container lifecycle scripts now detect and support Podman as an alternative container runtime.
+- systemd WSL2 hardening: systemd service files set correct file permissions (0600 for secrets, 0700 for dirs) and handle WSL2 cgroup constraints.
+- Windows Scheduled Task management: task creation and removal are now locale-invariant, fixing failures on non-English Windows installs.
 
 - **Node `system.run` realpath pinning**: `system.run` execution now pins path-token commands to the canonical executable path (`realpath`) in both allowlist and approval execution flows. Integrations/tests that asserted token-form argv (e.g. `tr`) must now accept canonical paths (e.g. `/usr/bin/tr`). This is a **breaking change** for approval flow consumers.

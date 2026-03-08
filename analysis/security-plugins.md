@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-03 | Version: v2026.3.2
+> Updated: 2026-03-08 | Version: v2026.3.7
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -844,4 +844,16 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
               │  shared/ + utils/ +     │
               │  compat/ + terminal/    │
               └─────────────────────────┘
+
+## v2026.3.7 Delta Notes
+
+- Config validation fail-closed on errors: config validation errors now cause the load to fail closed rather than proceeding with a partially valid config.
+- ZIP archive path traversal hardening: archive extraction now enforces same-directory containment, blocking `../` path traversal in ZIP entries (PR context: `src/infra/install-safe-path.ts`).
+- SecretRef models.json persistence hardening (PR #38955): `models.json` writes for SecretRef entries are now atomic, preventing corruption on interrupted writes.
+- Password-file input hardening (PR #39067): password-file reading validates file permissions and rejects world-readable files before consuming credentials.
+- Control UI device auth token signing alignment: device auth token signing now uses a consistent algorithm across Control UI and gateway paths.
+- Auth token/key snippet removal from status output: API keys and auth tokens are fully redacted from `openclaw status` and gateway status snapshots.
+- Plugin hook policy validation: hook policies are validated against the plugin manifest at load time, rejecting hooks that claim permissions not declared in the manifest.
+- Nodes system.run approval enforcement: `system.run` commands invoked through the nodes subsystem now go through the same approval enforcement as host exec, closing a bypass path.
+- Plugin SDK subpath scoping: plugin SDK imports are restricted to declared subpath exports, preventing plugins from importing internal engine modules directly.
 ```

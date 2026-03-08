@@ -75,6 +75,14 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 
 - No new top-level modules were added in this release window; feature and security changes are in existing modules, including `cli/`, `channels/`, `agents/`, `gateway/`, `security/`, `plugins/`, and `extensions/`.
 
+**v2026.3.7 additions (new module):**
+
+| Level | Module | Imports From | Imported By | Risk |
+| ----- | ------ | ------------ | ----------- | ---- |
+| 3 | `context-engine/` | `config/`, `agents/` | `agents/pi-embedded-runner/`, `gateway/` | 🟡 LOW-MEDIUM |
+
+- `context-engine/` is a new plugin slot for custom context management strategies. Key files: `types.ts`, `registry.ts`, `legacy.ts`, `index.ts`, `init.ts`. Lifecycle hooks: `bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`. When you change this module, test compaction behavior and any plugin implementing the `ContextEnginePlugin` interface.
+
 ### High-Blast-Radius Files
 
 | File                                | What It Exports                                                    |
@@ -233,6 +241,7 @@ gateway/server-plugins.ts
 | `security/external-content.ts`   | Prompt injection defense, web_fetch, link understanding                                                                                        |
 | `logging/subsystem.ts`           | Every module that creates loggers                                                                                                              |
 | Any `index.ts` barrel            | All consumers of that module's exports                                                                                                         |
+| `context-engine/registry.ts` or `context-engine/types.ts` | All plugins implementing `ContextEnginePlugin`, compaction behavior, subagent spawn/end hooks |
 
 ### Cross-Module Side Effects (Non-Obvious)
 
@@ -363,6 +372,12 @@ Conditional checks:
 pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
+
+### Release-window Workflow Additions (v2026.3.7)
+
+- **`gateway.auth.mode` is now required when both auth methods are configured:** if both `gateway.auth.token` and `gateway.auth.password` are set, you must explicitly declare `gateway.auth.mode: "token"` or `gateway.auth.mode: "password"`. Omitting it causes a startup error. Run `openclaw doctor --fix` to migrate automatically.
+- **`src/context-engine/` is a new module:** plugin slot for custom context management. When touching compaction, session assembly, or subagent spawn/end, check whether a `ContextEnginePlugin` is registered; the default is `legacy.ts`. Test lifecycle hooks (`bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`) when modifying context paths.
+- **Extension count increased to 42:** two new extension directories were added (`bindings` extension and others). If iterating over `extensions/*` in scripts, expect 42 directories.
 
 ### Release-window Workflow Additions (v2026.2.24)
 
@@ -560,6 +575,7 @@ src/<module>/
 - **Provider/Model:** #59, #68, #69, #71, #72, #94, #95
 - **Breaking Changes (v2026.2.22):** #59, #60, #61, #62, #63
 - **Breaking Changes (v2026.3.1):** #92, #93
+- **Breaking Changes (v2026.3.7):** #106
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
 - **Feishu:** #101
 
@@ -841,6 +857,12 @@ src/<module>/
 104. **Telegram multi-account fallback is fail-closed for non-default accounts** — when route resolution for a non-default Telegram account (`accountId !== DEFAULT_ACCOUNT_ID`) falls back to `matchedBy=default`, the message is now dropped with reason `"non-default account requires explicit binding"`. This prevents cross-account DM/session contamination. Non-default Telegram accounts must have explicit route bindings configured to receive messages.
 
 105. **Sessions lock recovery detects stale gateway PIDs via port liveness** — gateway lock recovery uses port-reachability as a primary stale-lock liveness signal (via `findGatewayPidsOnPortSync`). Stale locks from crashed processes are reclaimed by detecting dead PIDs and unreachable ports. On Linux, process start time comparison (from `/proc/<pid>/stat`) prevents PID-recycling false positives in containerized environments. The `restart-stale-pids.ts` module handles SIGTERM/SIGKILL cleanup with bounded timeouts.
+
+### v2026.3.7 Specific
+
+**BREAKING CHANGES (v2026.3.7):**
+
+106. **`gateway.auth.mode` is now required when both token and password are configured** — If `gateway.auth.token` and `gateway.auth.password` are both set, `gateway.auth.mode` must be explicitly declared (`"token"` or `"password"`). Omitting `gateway.auth.mode` in this configuration causes a startup validation error (introduced v2026.3.7). Run `openclaw doctor --fix` to detect and auto-migrate. Configs with only one auth method configured are unaffected.
 
 ---
 

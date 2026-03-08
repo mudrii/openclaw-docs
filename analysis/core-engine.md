@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-03 | Version: v2026.3.2 | Codebase: /path/to/openclaw
-> Modules: agents (690 files), gateway (298 files), sessions (9 files), routing (10 files), providers (11 files), hooks (38 files)
+> Updated: 2026-03-08 | Version: v2026.3.7 | Codebase: /path/to/openclaw
+> Modules: agents (690 files), gateway (298 files), sessions (9 files), routing (10 files), providers (11 files), hooks (38 files), context-engine (5 files)
 
 ---
 
@@ -1251,5 +1251,21 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 ### Breaking Changes
 - **Node exec approval payloads** — `systemRunPlanV2` renamed to `systemRunPlan`; `systemRunBindingV1` renamed to `systemRunBinding`. Old node clients sending `V2`/`V1`-suffixed payloads will fail approval matching. (`155118751`)
 - **Node `system.run` pins to canonical `realpath`** — `resolveCommandResolution()` resolves `resolvedRealPath` via `fs.realpathSync()` for symlink-resistant command identity in approval bindings.
+
+## v2026.3.7 Delta Notes
+
+- **New `src/context-engine/` module** (5 files, now tracked in module inventory):
+  - `types.ts` (167 lines) — ContextEngine lifecycle hook type definitions.
+  - `registry.ts` (67 lines) — slot-based plugin registry for context engine plugins.
+  - `legacy.ts` (115 lines) — LegacyContextEngine wrapper for backward compatibility.
+  - `index.ts` (19 lines) — public API barrel export.
+  - `init.ts` (23 lines) — initialization entry point.
+- Compaction post-context configurability (PR #34556): compaction behavior after context window use is now configurable per-agent.
+- Compaction safeguard pre-check additions: pre-compaction checks added to `pi-extensions/compaction-safeguard.ts` to block unsafe compaction conditions earlier.
+- Bootstrap truncation warning handling: oversized bootstrap files now produce a structured warning rather than silently truncating context.
+- Session startup date grounding: agent sessions inject the current date into the system prompt at startup for temporal grounding.
+- Tool-result truncation with head+tail strategy: large tool results truncated using a head+tail window preserving both ends of output.
+- Tool-result cleanup timeout hardening: cleanup jobs for tool results apply bounded timeouts preventing stalled cleanup from blocking shutdown.
+- Failover overload vs rate-limit classification: attempt logic in `pi-embedded-runner/run/attempt.ts` now classifies provider overload vs rate-limit for smarter failover target selection.
 
 ---

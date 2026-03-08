@@ -6,7 +6,81 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.2 — Latest Documented Release Summary
+## OpenClaw v2026.3.7 — Latest Documented Release Summary
+
+> **Released:** 2026-03-08 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.2..v2026.3.7` | **Scan stats:** 893 commits, 2,412 files changed, +127,093 / -22,412 lines
+
+## Highlights
+
+- **ContextEngine plugin interface:** New `ContextEngine` plugin slot with full lifecycle hooks (`bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`), slot-based registry with config-driven resolution, `LegacyContextEngine` wrapper preserving existing compaction behavior. Enables plugins like `lossless-claw` to provide alternative context management strategies. Zero behavior change when no context engine plugin is configured.
+- **ACP persistent channel bindings:** Durable Discord channel and Telegram topic binding storage survives restarts; routing resolution and CLI/docs support added so ACP thread targets can be managed consistently.
+- **Telegram topic agent routing:** Per-topic `agentId` overrides in forum groups and DM topics; topic thread binding (`--thread here|auto`); actionable approval buttons; successful bind confirmations pinned in-topic.
+- **Spanish locale:** Control UI now supports Spanish (`es`) with locale detection, lazy loading, and language picker.
+- **Mattermost interactive model picker:** Telegram-style interactive model selection and slash command integration.
+- **Discord native slash commands:** Schema validation for `agentComponents` config with parity enforcement.
+- **New model support:** Google Gemini 3.1 Flash-Lite (first-class), GPT-5.4 for OpenAI API and Codex OAuth; Venice default updated to `kimi-k2-5`; MiniMax Lightning removed.
+- **Docker slim variant + Podman support:** Multi-stage Docker build with slim image; Podman as alternative runtime.
+- **systemd WSL2 hardening:** File permission enforcement (0600/0700), Windows Scheduled Task management (locale-invariant detection), WSL2 systemd support.
+- **Config and secret hardening:** SecretRef models.json persistence hardening prevents API keys from being written to disk when managed via SecretRef; config validation now fail-closed on errors.
+- **Security:** ZIP archive path traversal hardening, password-file input hardening, auth token snippet removal from status output, plugin hook policy validation, Nodes `system.run` approval enforcement.
+
+For full detail, see the v2026.3.7 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.7`).
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | ~1,450 |
+| `extensions/` | ~580 |
+| `ui/` | ~95 |
+| `apps/` | ~115 |
+| `scripts/` | ~42 |
+| `test/` | ~75 |
+
+*Note: This distribution is a sampled breakdown; additional files in generated, tooling, or misc paths (`.github`, `.pi`, root config/workflow files, release assets) make up the remaining count to match the stated total.*
+
+## Breaking / Behavior Shifts
+
+1. **Gateway auth mode requirement:** When both `gateway.auth.token` and `gateway.auth.password` are configured (including via SecretRef), an explicit `gateway.auth.mode` must now be set; failing to do so causes a startup error.
+
+## Major Features
+
+- ContextEngine plugin interface (PR #22201)
+- ACP persistent channel bindings (PR #34873)
+- Telegram topic agent routing (PR #33647)
+- Spanish locale in Control UI (PR #35038)
+- Mattermost interactive model picker (PR #38767)
+- Discord native slash commands (PR #39378)
+- Gemini 3.1 Flash-Lite + GPT-5.4 model support
+- Docker slim variant + Podman support
+- systemd WSL2 hardening + Windows Scheduled Task management
+- Compaction post-context configurability (PR #34556)
+- Gateway channel-backed readiness probes (PR #38285)
+
+## Security Hardening
+
+- Config validation fail-closed on errors
+- ZIP archive path traversal hardening
+- SecretRef models.json persistence hardening (PR #38955)
+- Password-file input hardening (PR #39067)
+- Control UI device auth token signing alignment
+- Plugin hook policy validation
+- Nodes system.run approval enforcement
+- Auth token/key snippet removal from status output
+
+## Maintainer Upgrade Checklist (v2026.3.7)
+
+1. **Check gateway auth mode:** If you configure both `gateway.auth.token` and `gateway.auth.password` (or SecretRefs), add an explicit `gateway.auth.mode` value before upgrading.
+2. **Review ContextEngine plugin config:** If you operate third-party plugins like `lossless-claw`, confirm plugin slot config is correct; no config = no behavior change.
+3. **Update model catalog references:** Remove any references to `minimax-lightning`; update Venice references to use `kimi-k2-5` default.
+4. **Refresh SecretRef configurations:** Verify API keys are stored in SecretRef and not in `models.json`; run `openclaw secrets audit` to confirm.
+5. **Test Discord agentComponents config:** If using Discord with `agentComponents`, validate config against updated schema.
+6. **Verify ZIP-based plugin assets:** Confirm no plugin asset extraction depends on paths outside the intended directory.
+
+---
+
+## OpenClaw v2026.3.2 — Historical Release Summary
 
 > **Released:** 2026-03-03 | **Policy note:** latest *documented* released section stays at top.
 > **Window analyzed:** `v2026.3.1..v2026.3.2` | **Scan stats:** 862 commits, 2,119 files changed, +121,000 / -55,228 lines

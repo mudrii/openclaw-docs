@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-03 | Version: v2026.3.2 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-08 | Version: v2026.3.7 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1081,3 +1081,11 @@ canvas-host → (minimal, mostly standalone)
 | plugins | ~30 | ~16 | ~25 | ~40 |
 | plugin-sdk | 29 | 15 | 3 | 6 |
 | acp | 10 | 4 | 8 | 13 |
+
+## v2026.3.7 Delta Notes
+
+- ZIP archive path traversal hardening: archive extraction enforces same-directory containment, blocking `../` traversal in ZIP entries. Relevant to `src/security/` and plugin install paths.
+- Auth token/key snippet removal from status output: API keys and auth tokens fully redacted from all status surfaces; no browser CDP session tokens are included in diagnostic output.
+- Plugin hook policy validation: hook policies validated against plugin manifest at load time; malformed or over-privileged hooks are rejected before any CDP or browser session is established.
+- Plugin SDK subpath scoping: plugin SDK imports restricted to declared subpath exports, reducing the attack surface for malicious plugins attempting to reach browser or CDP internals.
+- No browser/CDP-specific security changes were introduced in v2026.3.7 beyond the above cross-cutting hardening. Existing CDP hardening (MV3 worker, relay state guards, remote CDP stale-target recovery) from prior releases remains in effect.

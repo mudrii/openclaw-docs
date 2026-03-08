@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-03 | Version: v2026.3.2 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-03-08 | Version: v2026.3.7 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (108 files), `src/discord` (136 files), `src/signal` (32 files), `src/slack` (103 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (147 files), `extensions/feishu` (77 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
@@ -1235,5 +1235,18 @@ Agent tool call: message(action="send", target="...", message="...")
 - **Account-scoped pairing APIs**: Pairing request/approval APIs are enforced at the account scope, preventing DM pairing allowlists from leaking into group auth.
 
 ---
+
+## v2026.3.7 Delta Notes
+
+- **Telegram**: persistent topic bindings; per-topic agentId routing; DM draft streaming restored; polling offset safety hardened; webhook-mode health probes survive restarts.
+- **Discord**: native slash commands added; agentComponents schema validation enforced; model picker selection now persisted across sessions.
+- **Mattermost**: interactive model picker (PR #38767, ~572 LOC slash commands, ~641 LOC interaction handlers).
+- **Slack**: reaction thread context routing; `app_mention` race condition deduplicated.
+- **LINE**: comprehensive auth boundary synthesis; media download fixes.
+- **Feishu**: video media send support; group mention detection added.
+- **iMessage/BlueBubbles**: echo loop hardening; reply routing fixes; monitoring pipeline refactored.
+- **WhatsApp**: media upload caps enforced.
+- **Google Chat**: multi-account webhook authentication.
+- **ACP**: persistent channel bindings added as new extension (~639 LOC).
 
 *End of analysis. Total files analyzed: ~528 across 9 modules (including extensions/feishu).*

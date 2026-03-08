@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-03 | **Version:** v2026.3.2
+**Updated:** 2026-03-08 | **Version:** v2026.3.7
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~423 TypeScript files + 313 Swift files across 14 modules
 
@@ -951,3 +951,12 @@ Shared test utilities and mock factories.
 - **macOS TLS certs: `NODE_EXTRA_CA_CERTS` default** (#22856) — `src/daemon/service-env.ts` sets `NODE_EXTRA_CA_CERTS` to `/etc/ssl/cert.pem` on macOS in both `buildServiceEnvironment` and `buildNodeServiceEnvironment` when not already set. Fixes TLS verification failures for HTTPS requests (Telegram, webhooks) when running as a LaunchAgent, since launchd does not inherit the shell environment.
 - **npm install fallback and global update** (#28318, #21039) — `src/process/exec.ts` adds `resolveNpmArgvForWindows()` to resolve npm/npx to `node + cli-script` instead of spawning `.cmd` directly, avoiding EINVAL on Windows (CVE-2024-27980). npm/npx are removed from the `.cmd` resolution list. Plugin install spawn now falls back correctly when `npm pack` output is empty.
 - **Gateway healthz/readyz probe endpoints** (#31272) — New HTTP probe endpoints for container health checks.
+
+## v2026.3.7 Delta Notes
+
+- Models: Gemini 3.1 Flash-Lite and GPT-5.4 added to the supported model list; Venice kimi-k2-5 set as the default Venice model; MiniMax Lightning removed.
+- Ollama remote provider auth fallback: Ollama remote provider now falls back to unauthenticated mode when no API key is configured, rather than rejecting the connection.
+- xAI web-search collision guard: xAI provider no longer collides with web-search tool parameter names when both are active in the same session.
+- Venice completion-token limit alignment: Venice provider completion token limits are aligned with the model's declared context window to prevent over-requesting.
+- OpenAI completions streaming compatibility: OpenAI completions endpoint streaming now handles provider-specific delta formats that differ from the chat completions streaming format.
+- Cache-trace circular-reference stability: cache-trace diagnostic output no longer crashes on circular object references in provider response metadata.

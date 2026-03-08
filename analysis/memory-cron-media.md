@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-03 | Codebase: /path/to/openclaw | Version: v2026.3.2
+> Updated: 2026-03-08 | Codebase: /path/to/openclaw | Version: v2026.3.7
 
 ---
 
@@ -1016,4 +1016,12 @@ type ParsedFrontmatter = Record<string, string>;
 - `yaml` — YAML frontmatter parsing
 
 ### Test Coverage
+
+## v2026.3.7 Delta Notes
+
+- SQLite contention resilience: the memory SQLite backend now retries operations on `SQLITE_BUSY` contention, reducing dropped writes during concurrent agent activity.
+- Memory hybrid search BM25 ordering: BM25 keyword hit ordering in hybrid vector+keyword search is now stable and consistent with relevance ranking.
+- Memory flush daily file canonicalization: daily memory flush output files are canonicalized (resolved to absolute real paths) before write, preventing creation of duplicate flush artifacts from symlinked directories.
+- QMD collection-name conflict recovery: collection-name conflicts detected at startup are resolved automatically without data loss.
+- QMD search result decoding: search results with `qmd://` scheme URIs are decoded correctly, fixing blank results in some QMD-backed memory setups.
 7 test files: frontmatter parsing, WhatsApp conversion, IR blockquote/HR/list spacing, nested lists, table → bullets conversion, table with code.

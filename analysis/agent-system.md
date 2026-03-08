@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-03 | Version: v2026.3.2
+> Updated: 2026-03-08 | Version: v2026.3.7
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1071,5 +1071,18 @@ When event fires:
 ### Cron Tool
 
 - **Flat-params recovery for `patch` action** — `cron-tool.ts` now accepts `additionalProperties: true` in the tool schema and recovers flat patch parameters (`name`, `schedule`, `payload`, `delivery`, `enabled`, etc.) into a synthetic `patch` object when the LLM passes them at the top level instead of nested.
+
+## v2026.3.7 Delta Notes
+
+- Heartbeat requests-in-flight scheduling: heartbeat runs now gate on in-flight request counts to avoid overloading busy agents.
+- Memory QMD collection safety: QMD collection management hardened against race conditions during collection access.
+- SQLite contention resilience: agent-side SQLite operations now retry on contention, complementing memory-layer fixes.
+- QMD search result decoding with `qmd://` URIs: search results carrying `qmd://` scheme URIs are decoded correctly in agent tool responses.
+- Memory hybrid search BM25 ordering: BM25 keyword ranking order is now stable in hybrid search results surfaced by the memory tool.
+- Memory flush daily file canonicalization: daily flush files are canonicalized before write, preventing duplicate flush artifacts.
+- QMD collection-name conflict recovery: startup detects and recovers from conflicting QMD collection names without requiring manual intervention.
+- Tool-result truncation with head+tail strategy (PR context): large tool results are now truncated using a head+tail window rather than hard-cutoff, preserving both the start and end of output.
+- Tool-result cleanup timeout hardening: tool-result cleanup jobs apply a bounded timeout to prevent stalled cleanup blocking agent shutdown.
+- Failover overload vs rate-limit classification: the agent runner now distinguishes provider overload errors from rate-limit errors when selecting failover targets.
 
 ---

@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-03 (source package: 2026.3.2) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-08 (source package: 2026.3.7) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -209,6 +209,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `extensions/` | ~40 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including new `diffs` diff-viewer plugin) | plugin-sdk |
 | `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
+| `context-engine/` | — | — | Plugin slot for custom context management strategies; wraps core context assembly, compaction, and subagent spawn hooks | config, agents |
 
 ---
 
@@ -853,6 +854,9 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 ### 8. Guard / Circuit Breaker
 **Where:** `agents/context-window-guard.ts` (context overflow), `agents/session-tool-result-guard.ts` (oversized results), `agents/pi-extensions/compaction-safeguard.ts` (infinite compaction loops), `auto-reply/reply/agent-runner-execution.ts` (error recovery with session reset).
 
+### 16. Plugin Slot / Registry Pattern (v2026.3.7)
+**Where:** `context-engine/` — `registry.ts` defines the `ContextEnginePlugin` interface; `init.ts` bootstraps the active strategy at gateway start; `legacy.ts` wraps the built-in context assembly as the default plugin. Lifecycle hooks (`bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`) allow full replacement of context management behavior without touching core agent code.
+
 ### 9. Barrel / Re-export Pattern
 **Where:** Extensively used for public API surfaces: `agents/pi-embedded.ts` → `pi-embedded-runner.ts` → individual modules. `auto-reply/reply.ts`, `hooks/hooks.ts`, `config/config.ts`, etc.
 
@@ -925,11 +929,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 40 |
+| Extension directories (`extensions/*`) | 42 |
 | Extension packages (`extensions/*/package.json`) | 33 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current analyzed source package: `2026.3.2` (tag `v2026.3.2`). Counts measured from that released tag snapshot.
+> Current analyzed source package: `2026.3.7` (tag `v2026.3.7`). Counts measured from that released tag snapshot.
 
 ### Key External Dependencies
 
@@ -1223,5 +1227,37 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - **5,102 TypeScript files** (was 4,875 at v2026.2.26)
 - **938,374 lines** (was 887,472)
 - **40 extension directories** (was 39), **33 packages** (was 32), **52 skills** (same)
+
+---
+
+## v2026.3.7 Changes (2026-03-08)
+
+### New Module
+
+- **`context-engine/`** — Plugin slot for custom context management strategies. Defines the `ContextEnginePlugin` interface with lifecycle hooks: `bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`. Key files: `types.ts`, `registry.ts`, `legacy.ts` (built-in default), `index.ts`, `init.ts`. Low-medium blast radius; changes require testing compaction behavior and any plugins that implement the interface.
+
+### New Channels & Features
+
+- **ACP persistent bindings** — Agent Client Protocol now supports persistent session bindings across reconnects
+- **Telegram topic routing** — Enhanced per-topic routing with fine-grained `requireTopic` and per-topic skills/system prompts
+- **Spanish locale** — i18n pipeline extended with `es` locale support
+- **Mattermost model picker** — Model selection UI added to Mattermost channel extension
+- **Discord slash commands** — Native slash command registration via the `commands` adapter slot
+- **Docker slim / Podman** — Sandbox image support extended to slim Docker images and Podman runtimes
+- **systemd WSL2 hardening** — Daemon installer hardens systemd unit files for WSL2 environments
+
+### New Providers
+
+- **Gemini 3.1 Flash-Lite** — Added to the Google provider family; accessible via `google/gemini-3.1-flash-lite`
+- **Venice kimi-k2-5** — `venice/kimi-k2-5` added to Venice.ai provider
+
+### Breaking Changes
+
+- **`gateway.auth.mode` required when both token and password are configured** — If both `gateway.auth.token` and `gateway.auth.password` are set, `gateway.auth.mode` must be explicitly declared (`"token"` or `"password"`). Omitting it causes a startup validation error. Run `openclaw doctor --fix` to detect and migrate.
+
+### Stats Update
+
+- **5,634 TypeScript files** (was 5,414 at v2026.3.2; +220 files, 893 commits this window)
+- **42 extension directories** (was 40), new: bindings extension and context-engine
 
 ---

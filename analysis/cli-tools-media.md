@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-03 | Version: v2026.3.2
+> Updated: 2026-03-08 | Version: v2026.3.7
 
 ## Overview
 
@@ -876,5 +876,13 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Usage <!-- v2026.3.1 -->
 
 - **Clamp negative prompt/input token values** (#30765) — `normalizeUsage()` in `src/agents/usage.ts` now clamps `rawInput` to zero. Some OpenAI-format providers pre-subtract `cached_tokens` from `prompt_tokens` upstream; when `cached_tokens` exceeds `prompt_tokens` the subtraction produces negative values that flowed through to the TUI status bar and `/usage` dashboard. <!-- v2026.3.1 -->
+
+## v2026.3.7 Delta Notes
+
+- Web search: provider selection added to onboarding wizard (PR #34009); Perplexity backend migrated to Search API with filter support.
+- OpenAI-compatible TTS endpoint: TTS module now accepts any OpenAI-compatible TTS endpoint in addition to the native OpenAI endpoint.
+- Diffs tool: system-prompt hints added so the agent better understands when to invoke the diffs tool.
+- Markdown image hardening: markdown image tag handling hardened against malformed URLs and path traversal in rendered output.
+- Tool-capability probe budget: increased from 32 to 256 tokens, allowing richer capability probing without exhausting the budget on complex tool schemas.
 
 - **Codex weekly usage window label** (#26267) — The secondary window label in `src/infra/provider-usage.fetch.codex.ts` now labels windows >= 168 hours as "Week" instead of "Day". Codex plans can have a weekly (604800s) quota window; the label previously always showed "Day" for any window >= 24h. Contributor: @Sid-Qin. <!-- v2026.3.1 -->

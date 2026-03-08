@@ -1,7 +1,7 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-03 | **Version:** v2026.3.2
+**Updated:** 2026-03-08 | **Version:** v2026.3.7
 **Codebase:** /path/to/openclaw
 **Total lines (6 modules):** ~169,861
 
@@ -708,5 +708,15 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
               │  daemon/  │  ← Manages gateway as OS service
               └──────────┘
 ```
+
+## v2026.3.7 Delta Notes
+
+- Gateway channel-backed readiness probes (PR #38285): `/ready` and `/readyz` readiness endpoints now verify that channel listeners are active before reporting ready, preventing premature traffic routing after restart.
+- Webchat route safety: cross-channel leakage in webchat route resolution fixed; webchat sessions are strictly scoped to their originating channel.
+- Outbound delivery replay safety: two-phase ACK pattern added to outbound delivery, preventing duplicate message delivery on transient failures.
+- Session duplicate suppression synthesis: duplicate session creation race conditions resolved with synthesized suppression logic at the gateway routing layer.
+- Legacy session route inheritance: legacy session keys now correctly inherit route bindings from their parent session entries.
+- Route binding scalability improvements: route binding lookup performance improved for configurations with large numbers of bindings.
+- TLS multi-arch Docker base digest pinning: TLS base image digests are pinned per-architecture (arm64/amd64) in the Dockerfile for reproducible multi-arch builds.
 
 **Key insight:** `config/` is the foundation — nearly every module depends on it. `infra/` is the utility belt. `gateway/` is the orchestrator that consumes both. `routing/` is small but critical for message dispatch. `daemon/` is isolated, only consumed by CLI commands. `types/` is compile-time only.
