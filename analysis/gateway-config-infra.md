@@ -711,7 +711,7 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 
 ## v2026.3.7 Delta Notes
 
-- Gateway channel-backed readiness probes (PR #38285): `/ready` and `/readyz` readiness endpoints now verify that channel listeners are active before reporting ready, preventing premature traffic routing after restart.
+- Gateway channel-backed readiness probes (PR #18446, @vibecodooor, @mahsumaktas, @vincentkoc): `/ready` and `/readyz` readiness endpoints now verify that channel listeners are active before reporting ready, preventing premature traffic routing after restart.
 - Webchat route safety: cross-channel leakage in webchat route resolution fixed; webchat sessions are strictly scoped to their originating channel.
 - Outbound delivery replay safety: two-phase ACK pattern added to outbound delivery, preventing duplicate message delivery on transient failures.
 - Session duplicate suppression synthesis: duplicate session creation race conditions resolved with synthesized suppression logic at the gateway routing layer.

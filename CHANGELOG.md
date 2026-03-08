@@ -56,7 +56,7 @@ For full detail, see the v2026.3.7 notes in the upstream release changelog (`ope
 - Docker slim variant + Podman support
 - systemd WSL2 hardening + Windows Scheduled Task management
 - Compaction post-context configurability (PR #34556)
-- Gateway channel-backed readiness probes (PR #38285)
+- Gateway channel-backed readiness probes (PR #18446, @vibecodooor, @mahsumaktas, @vincentkoc)
 
 ## Security Hardening
 

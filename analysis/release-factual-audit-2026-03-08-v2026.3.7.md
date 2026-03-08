@@ -30,7 +30,7 @@ Keep `openclaw-docs` aligned to the latest stable OpenClaw tag `v2026.3.7` with 
 - Top-level changed-file distribution from tag diff:
   - `src: ~1,450`, `extensions: ~580`, `apps: ~115`, `ui: ~95`, `test: ~75`, `scripts: ~42`, `other (CI, docs, config): ~55`.
 - Tag-scoped source metrics for `v2026.3.7` (`src/extensions/ui/vendor/test/scripts`):
-  - TypeScript files: `5,634`
+  - TypeScript files: `5,864`
   - Extensions directories: `42` (was 40 at v2026.3.2)
 
 ## Major Features
@@ -52,7 +52,7 @@ Keep `openclaw-docs` aligned to the latest stable OpenClaw tag `v2026.3.7` with 
 15. **Windows Scheduled Task management** (locale-invariant detection)
 16. **Web search provider selection in onboarding** (PR #34009, @kesku/@thewilloftheshadow)
 17. **Compaction post-context configurability** (PR #34556)
-18. **Gateway channel-backed readiness probes** (PR #38285)
+18. **Gateway channel-backed readiness probes** (PR #18446, @vibecodooor, @mahsumaktas, @vincentkoc)
 19. **Model tool-capability probe budget**: 32→256 tokens
 20. **CLI**: update restart failure fixes without listener attribution (PR #39508)
 

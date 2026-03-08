@@ -1257,7 +1257,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ### Stats Update
 
-- **5,634 TypeScript files** (was 5,414 at v2026.3.2; +220 files, 893 commits this window)
+- **5,864 TypeScript files** (was 5,414 at v2026.3.2; +450 files, 893 commits this window)
 - **42 extension directories** (was 40), new: bindings extension and context-engine
 
 ---
