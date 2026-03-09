@@ -2,8 +2,8 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Latest upstream stable release: v2026.3.7 (published 2026-03-08 UTC).**
-**Current validated docs snapshot: v2026.3.7 (released 2026-03-08, validated against tag `v2026.3.7`).**
+**Latest upstream stable release: v2026.3.8 (published 2026-03-09 UTC).**
+**Current validated docs snapshot: v2026.3.8 (released 2026-03-09, validated against tag `v2026.3.8`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -17,7 +17,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [AGENT_README.md](AGENT_README.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.3.7); tracks released upstream tags and synthesis status. |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.3.8); tracks released upstream tags and synthesis status. |
 | [AGENTS.md](AGENTS.md) | AI agent guidelines for working with the OpenClaw codebase — repo structure, build commands, testing, PR workflow, security practices. |
 
 ### Detailed Analysis
@@ -56,6 +56,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each release is tagged to match the OpenClaw version it documents:
+- `v2026.3.8` (2026-03-09, released) — Updated for v2026.3.7 → v2026.3.8 (260 commits, 769 files): `openclaw backup create|verify` with manifest validation and recovery-focused flags, ACP provenance metadata/receipts, top-level `talk.silenceTimeoutMs`, direct WebSocket CDP support with WSL2/remote relay fixes, Brave `llm-context` web search mode, Perplexity native-search vs OpenRouter compatibility split, bundled-channel plugin precedence during onboarding/update sync, launchd restart/repair hardening, and Android Play policy cutbacks (no self-update/background location/screen recording background capture). No new stable-tag breaking config was introduced, but restart semantics and Android/macOS operator workflows changed materially.
 - `v2026.3.7` (2026-03-08, released) — Updated for v2026.3.2 → v2026.3.7 (893 commits, 2,412 files): ContextEngine plugin interface with full lifecycle hooks enabling alternative context management strategies (zero behavior change without config), durable ACP channel bindings surviving restarts, Telegram per-topic agent routing, Spanish locale in Control UI, Mattermost interactive model picker, Discord native slash commands, Gemini 3.1 Flash-Lite + GPT-5.4 support, Venice default `kimi-k2-5`, Docker slim/Podman support, systemd WSL2 hardening, config validation fail-closed, ZIP path traversal hardening, and SecretRef models.json persistence hardening. **Breaking:** explicit `gateway.auth.mode` required when both `gateway.auth.token` and `gateway.auth.password` are set.
 - `v2026.3.2` (2026-03-03, released) — Updated for v2026.3.1 → v2026.3.2 (862 commits, 2,119 files): SecretRef and `openclaw secrets` planning/apply/audit expansion (64 runtime targets), first-class `pdf` tool + diffs PDF rendering support, `openclaw config validate` + invalid-key reporting, sessions/attachments support in `sessions_spawn`, Telegram streaming default `partial` + DM draft reliability fixes, plugin runtime/runtime-events/context enrichments (`session_start`, `session_end`, message hook phases), and high-signal security/reliability fixes across Feishu, LINE, browser, gateway, voice-call, and cron/message paths.
 - `v2026.2.26` (2026-02-27, released) — Updated for v2026.2.25 → v2026.2.26 (340 commits, 856 files): external secrets management workflow (`openclaw secrets`), ACP thread-bound agents, new agent binding CLI, Codex WebSocket-first transport defaults, plugin-owned onboarding hooks, and multiple reliability fixes (DM allowlist inheritance, delivery-queue backoff, temp-dir safety, and Google Chat lifecycle stability).
@@ -73,10 +74,10 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **5,864 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `vendor/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.7` tag)
-- **~1,094,000 lines of TypeScript** covered (same scope as above)
-- **49 modules** documented, **42 extension directories** (**33 extension packages**), **52 bundled skills**
-- **~900KB** of documentation (5 core MD files + 10 analysis files)
+- **5,769 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.8` tag)
+- **1,094,719 lines of TypeScript** covered (same scope as above)
+- **49 modules** documented, **40 extension directories** (**33 extension packages**), **52 bundled skills**
+- **~1.0MB** of documentation (5 core MD files + 10 analysis files)
 
 ## Contributing
 

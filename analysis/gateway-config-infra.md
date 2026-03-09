@@ -1,9 +1,9 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-08 | **Version:** v2026.3.7
+**Updated:** 2026-03-09 | **Version:** v2026.3.8
 **Codebase:** /path/to/openclaw
-**Total lines (6 modules):** ~169,861
+**Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
 
@@ -100,7 +100,7 @@
 
 **Gateway Infra:**
 - **Health-monitor restart cap raised**: `DEFAULT_MAX_RESTARTS_PER_HOUR` increased from 3 to 10 in `channel-health-monitor.ts`, with a new `staleEventThresholdMs` parameter.
-- **macOS supervised restart**: `launchd.ts` uses `launchctl kickstart -k` for in-place service restarts without full unload/reload.
+- **macOS supervised restart**: current `v2026.3.8` launchd repair/restart runs `bootout` -> `enable` -> `bootstrap` -> `kickstart`, while supervised respawn exits and relies on launchd `KeepAlive` rather than in-process self-kickstart.
 - **Node browser proxy routing**: browser bridge server hardened with `Cache-Control: no-store` on noVNC token endpoint and token-based observer URL construction.
 - **Control UI origin seeding**: new `startup-control-ui-origins.ts` auto-seeds `gateway.controlUi.allowedOrigins` for non-loopback bind modes at startup, preventing crash loops on upgrade (issue #29385).
 
@@ -720,3 +720,10 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 - TLS multi-arch Docker base digest pinning: TLS base image digests are pinned per-architecture (arm64/amd64) in the Dockerfile for reproducible multi-arch builds.
 
 **Key insight:** `config/` is the foundation — nearly every module depends on it. `infra/` is the utility belt. `gateway/` is the orchestrator that consumes both. `routing/` is small but critical for message dispatch. `daemon/` is isolated, only consumed by CLI commands. `types/` is compile-time only.
+
+## v2026.3.8 Delta Notes
+
+- Control UI bundled assets can now be served from symlinked global wrappers and auto-detected package-proven roots while configured/custom roots stay on the strict hardlink boundary.
+- Daemon start/restart now pre-validates config before handoff, and invalid restart-triggered shutdown drains exit non-zero so launchd/systemd retry instead of treating the stop as clean.
+- launchd supervision detection now includes `XPC_SERVICE_NAME`, and LaunchAgent repair/restart paths `enable` services before `bootstrap`.
+- Gateway config RPC replies now surface the live config path from the active IO layer, matching runtime-resolved config state.

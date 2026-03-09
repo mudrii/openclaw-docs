@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-08 | Version: v2026.3.7 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-09 | Version: v2026.3.8 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -637,7 +637,7 @@ Browser automation module providing a local HTTP control server for Playwright a
 - **CSRF protection**: Mutation requests require matching token
 - **Loopback detection**: CDP connections validated as loopback
 - **Bridge auth registry**: Per-port auth for bridge connections
-- **Evaluate gating**: JS evaluation can be disabled via config (`browser.evaluate: false`)
+- **Evaluate gating**: JS evaluation can be disabled via config (`browser.evaluateEnabled: false`)
 - **Path containment**: File operations restricted to workspace root
 - **Non-network navigation schemes blocked** <!-- v2026.2.21 -->: `file://`, `javascript:`, and `data:` URI navigation blocked in browser module
 - **noVNC observer auth** <!-- v2026.2.21 -->: noVNC observer sessions require one-time tokens plus mandatory password auth
@@ -652,10 +652,10 @@ Browser automation module providing a local HTTP control server for Playwright a
 
 ### Configuration
 - `browser.enabled` — Enable/disable browser control (default: true)
-- `browser.evaluate` — Enable/disable JS evaluation (default: true)
-- `browser.profiles.*` — Profile definitions (cdpUrl, color, managed)
+- `browser.evaluateEnabled` — Enable/disable JS evaluation (default: true)
+- `browser.profiles.*` — Profile definitions (`cdpUrl`, color, managed)
 - `browser.defaultProfile` — Default profile name (default: "chrome")
-- `browser.baseUrl` — Base URL for control server
+- `browser.relayBindHost` — Optional non-loopback bind host for the extension relay in WSL2/cross-namespace setups
 - Browser control auth token stored in state dir
 
 ### Test Coverage (47 test files)
@@ -1089,3 +1089,11 @@ canvas-host → (minimal, mostly standalone)
 - Plugin hook policy validation: hook policies validated against plugin manifest at load time; malformed or over-privileged hooks are rejected before any CDP or browser session is established.
 - Plugin SDK subpath scoping: plugin SDK imports restricted to declared subpath exports, reducing the attack surface for malicious plugins attempting to reach browser or CDP internals.
 - No browser/CDP-specific security changes were introduced in v2026.3.7 beyond the above cross-cutting hardening. Existing CDP hardening (MV3 worker, relay state guards, remote CDP stale-target recovery) from prior releases remains in effect.
+
+## v2026.3.8 Delta Notes
+
+- Direct `ws://` / `wss://` CDP endpoints are now supported as first-class browser profiles, with loopback WS endpoints normalized back to HTTP(S) for `/json/*` tab operations.
+- Remote `/json/version` debugger URLs like `ws://0.0.0.0` and `ws://[::]` are rewritten back to the externally reachable host/port, fixing Browserless-style container endpoints.
+- `browser.relayBindHost` allows the extension relay to bind non-loopback addresses for WSL2 and other cross-namespace setups while keeping loopback-only defaults.
+- Strict browser navigation now validates redirect hops and fails closed when remote tab-open flows cannot inspect the chain.
+- Control UI bundled/package-proven static roots may use hardlinked assets in auto-detected installs, while configured/custom roots remain on the strict hardlink boundary.

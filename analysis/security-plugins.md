@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-08 | Version: v2026.3.7
+> Updated: 2026-03-09 | Version: v2026.3.8
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -857,3 +857,12 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 - Nodes system.run approval enforcement: `system.run` commands invoked through the nodes subsystem now go through the same approval enforcement as host exec, closing a bypass path.
 - Plugin SDK subpath scoping: plugin SDK imports are restricted to declared subpath exports, preventing plugins from importing internal engine modules directly.
 ```
+
+## v2026.3.8 Delta Notes
+
+- ACP provenance now carries `originSessionId`, optional receipt text, and reserved gateway fields for ACP-only provenance transport.
+- Plugin onboarding clears discovery cache after installs, and bundled channel plugins now outrank duplicate npm-installed copies during onboarding/update sync unless the operator intentionally overrides via explicit config paths.
+- Release-check now validates bundled-extension manifest/root-dependency mirrors so bundled runtime dependencies do not silently drift from the root package.
+- `system.run` approvals for `bun` / `deno run` now bind script operands to on-disk file snapshots, blocking post-approval rewrites.
+- Skill download installs pin the validated per-skill tools root before writing archives, preventing lexical-path rebinding from redirecting writes.
+- Feishu's bundled runtime dependency mirror is now enforced at the root-package level so bundled installs do not miss required SDK runtime bits.

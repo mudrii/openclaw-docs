@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-08 | Codebase: /path/to/openclaw | Version: v2026.3.7
+> Updated: 2026-03-09 | Codebase: /path/to/openclaw | Version: v2026.3.8
 
 ---
 
@@ -1025,3 +1025,10 @@ type ParsedFrontmatter = Record<string, string>;
 - QMD collection-name conflict recovery: collection-name conflicts detected at startup are resolved automatically without data loss.
 - QMD search result decoding: search results with `qmd://` scheme URIs are decoded correctly, fixing blank results in some QMD-backed memory setups.
 7 test files: frontmatter parsing, WhatsApp conversion, IR blockquote/HR/list spacing, nested lists, table → bullets conversion, table with code.
+
+## v2026.3.8 Delta Notes
+
+- **Cron restart catch-up staggering:** missed-job replay on startup is now limited and rescheduled from the post-catch-up clock so restart bursts do not starve the gateway or silently skip overdue recurring jobs.
+- **Cron/Telegram announce delivery:** text-only announce jobs now route through the real outbound adapters after descendant finalization, fixing false-positive `delivered: true` results for plain Telegram targets.
+- **Cron owner-context recovery:** trusted isolated cron runs once again receive owner context so `cron` / `gateway` tooling remains available after earlier owner-auth hardening.
+- **Telegram media download recovery:** stalled body reads now time out without aborting slow-but-still-streaming downloads, preventing hung file downloads from wedging the polling loop.

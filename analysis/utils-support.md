@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-08 | **Version:** v2026.3.7
+**Updated:** 2026-03-09 | **Version:** v2026.3.8
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~423 TypeScript files + 313 Swift files across 14 modules
 
@@ -947,7 +947,7 @@ Shared test utilities and mock factories.
 ### Infra/Support <!-- v2026.3.1 -->
 
 - **Daemon systemd checks in containers** (#26089, #26699) — `src/daemon/systemd.ts` handles missing `systemctl` in containers by catching spawn failures and treating the service as unavailable rather than crashing. Unknown `is-enabled` errors fail closed.
-- **macOS supervised restart via `launchctl kickstart`** — `src/infra/process-respawn.ts` now issues an explicit `launchctl kickstart -k` before exiting on supervised restart, ensuring immediate respawn regardless of `ThrottleInterval`. Falls back to in-process restart if kickstart fails.
+- **macOS supervised restart via supervisor handoff** — current `v2026.3.8` supervised restart exits and relies on launchd `KeepAlive` instead of self-kickstart, while LaunchAgent repair/restart paths `enable` before `bootstrap` and detect supervision through `XPC_SERVICE_NAME`.
 - **macOS TLS certs: `NODE_EXTRA_CA_CERTS` default** (#22856) — `src/daemon/service-env.ts` sets `NODE_EXTRA_CA_CERTS` to `/etc/ssl/cert.pem` on macOS in both `buildServiceEnvironment` and `buildNodeServiceEnvironment` when not already set. Fixes TLS verification failures for HTTPS requests (Telegram, webhooks) when running as a LaunchAgent, since launchd does not inherit the shell environment.
 - **npm install fallback and global update** (#28318, #21039) — `src/process/exec.ts` adds `resolveNpmArgvForWindows()` to resolve npm/npx to `node + cli-script` instead of spawning `.cmd` directly, avoiding EINVAL on Windows (CVE-2024-27980). npm/npx are removed from the `.cmd` resolution list. Plugin install spawn now falls back correctly when `npm pack` output is empty.
 - **Gateway healthz/readyz probe endpoints** (#31272) — New HTTP probe endpoints for container health checks.
@@ -960,3 +960,11 @@ Shared test utilities and mock factories.
 - Venice completion-token limit alignment: Venice provider completion token limits are aligned with the model's declared context window to prevent over-requesting.
 - OpenAI completions streaming compatibility: OpenAI completions endpoint streaming now handles provider-specific delta formats that differ from the chat completions streaming format.
 - Cache-trace circular-reference stability: cache-trace diagnostic output no longer crashes on circular object references in provider response metadata.
+
+## v2026.3.8 Delta Notes
+
+- Talk config is now provider-based rather than ElevenLabs-only in practice: top-level `talk.silenceTimeoutMs` landed with defaults of `700 ms` on macOS/Android and `900 ms` on iOS, Talk config responses expose a normalized `resolved` payload, and SecretRef-shaped Talk API keys are accepted.
+- Config writes now preserve/refresh runtime snapshots after disk writes so secret-resolved follow-up reads do not silently regress to stale state.
+- macOS remote mode now exposes `gateway.remote.token`, preserves unsupported non-plaintext token shapes until explicitly replaced, and warns when the app cannot consume the loaded token directly.
+- iOS/macOS node and canvas flows were hardened: queued foreground actions replay safely after resume, and scoped gateway canvas loading/capability refresh has safer fallback behavior.
+- Android Play-distributed builds are now foreground-only for Voice-tab capture and no longer ship self-update, background-location “always”, screen-record, or background-mic capture behavior.

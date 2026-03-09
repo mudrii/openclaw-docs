@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-08 | Version: v2026.3.7 | Codebase: /path/to/openclaw
-> Modules: agents (690 files), gateway (298 files), sessions (9 files), routing (10 files), providers (11 files), hooks (38 files), context-engine (5 files)
+> Updated: 2026-03-09 | Version: v2026.3.8 | Codebase: /path/to/openclaw
+> Modules: agents (822 files), gateway (347 files), sessions (12 files), routing (11 files), providers (11 files), hooks (43 files), context-engine (6 files)
 
 ---
 
@@ -40,7 +40,7 @@ Lightweight utility module for session metadata, key parsing, transcript events,
 | Type | File | Description |
 |------|------|-------------|
 | `InputProvenanceKind` | input-provenance.ts | `"external_user" \| "inter_session" \| "internal_system"` |
-| `InputProvenance` | input-provenance.ts | `{ kind, sourceSessionKey?, sourceChannel?, sourceTool? }` |
+| `InputProvenance` | input-provenance.ts | `{ kind, sourceSessionKey?, sourceChannel?, sourceTool?, originSessionId? }` |
 | `ModelOverrideSelection` | model-overrides.ts | `{ provider, model, isDefault? }` |
 | `SessionSendPolicyDecision` | send-policy.ts | `"allow" \| "deny"` |
 | `ParsedAgentSessionKey` | session-key-utils.ts | `{ agentId, rest }` |
@@ -959,7 +959,7 @@ Channel (Telegram/Discord/...)
 
 ### Recent Changes
 
-- **v2026.3.1:** Health probes: `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) endpoints added to `server-http.ts` via `GATEWAY_PROBE_STATUS_BY_PATH` map and `handleGatewayProbeRequest()` for container health checks (Kubernetes, Docker, Fly.io). Control UI method guard: POST requests to `/plugins/*` and `/api/*` paths fall through to their respective handlers instead of being caught by the SPA fallback, preventing untrusted plugins from claiming arbitrary UI paths. WS security: origin allowlist in `origin-check.ts` upgraded from array `includes` to `Set.has`; wildcard `["*"]` in `gateway.controlUi.allowedOrigins` now explicitly accepted. Control UI CSP: `style-src` includes `https://fonts.googleapis.com` and `font-src` includes `https://fonts.gstatic.com` for Google Fonts support. Control UI origins: `startup-control-ui-origins.ts` seeds `gateway.controlUi.allowedOrigins` for non-loopback installs upgrading to v2026.2.26+ at startup. macOS supervised restart: `restartGatewayProcessWithFreshPid()` uses `launchctl kickstart -k` (via `triggerOpenClawRestart()`) on macOS under launchd to bypass ThrottleInterval delays. macOS TLS certs: `NODE_EXTRA_CA_CERTS` added to LaunchAgent environment for custom CA certificate support. Node exec approval: `systemRunPlanV2` renamed to `systemRunPlan` (breaking: old node clients sending `systemRunPlanV2` payloads will fail approval matching). `system.run` pins to canonical `realpath`: `resolveCommandResolution()` now resolves `resolvedRealPath` via `fs.realpathSync`, used in approval binding for symlink-resistant command identity. `node.canvas.capability.refresh` added to `NODE_ROLE_METHODS` in method-scopes. Canvas auth helpers extracted from `server-http.ts` into `server/http-auth.ts`.
+- **v2026.3.1:** Health probes: `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) endpoints added to `server-http.ts` via `GATEWAY_PROBE_STATUS_BY_PATH` map and `handleGatewayProbeRequest()` for container health checks (Kubernetes, Docker, Fly.io). Control UI method guard: POST requests to `/plugins/*` and `/api/*` paths fall through to their respective handlers instead of being caught by the SPA fallback, preventing untrusted plugins from claiming arbitrary UI paths. WS security: origin allowlist in `origin-check.ts` upgraded from array `includes` to `Set.has`; wildcard `["*"]` in `gateway.controlUi.allowedOrigins` now explicitly accepted. Control UI CSP: `style-src` includes `https://fonts.googleapis.com` and `font-src` includes `https://fonts.gstatic.com` for Google Fonts support. Control UI origins: `startup-control-ui-origins.ts` seeds `gateway.controlUi.allowedOrigins` for non-loopback installs upgrading to v2026.2.26+ at startup. Historical note: `v2026.3.1` introduced `launchctl kickstart -k` restart assistance under launchd, but current `v2026.3.8` supervised restart now exits and relies on supervisor restart instead. macOS TLS certs: `NODE_EXTRA_CA_CERTS` added to LaunchAgent environment for custom CA certificate support. Node exec approval: `systemRunPlanV2` renamed to `systemRunPlan` (breaking: old node clients sending `systemRunPlanV2` payloads will fail approval matching). `system.run` pins to canonical `realpath`: `resolveCommandResolution()` now resolves `resolvedRealPath` via `fs.realpathSync`, used in approval binding for symlink-resistant command identity. `node.canvas.capability.refresh` added to `NODE_ROLE_METHODS` in method-scopes. Canvas auth helpers extracted from `server-http.ts` into `server/http-auth.ts`.
 - **v2026.2.23:** WS: repeated unauthorized request floods closed per-connection with sampled rejection logging. Config Write: `unsetPaths` applied with immutable path-copy updates; prototype-key traversal rejected in `config get/set/unset`.
 - **v2026.2.22:** Auth: unified credential-source precedence via shared resolver helpers. Pairing: `operator.admin` satisfies `operator.*` scope checks; loopback scope-upgrade auto-approved; default scope bundles include `operator.read`/`operator.write`.
 
@@ -1180,7 +1180,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ### Providers
 - **Kilocode provider** — First-class `kilocode` provider: auth, onboarding, implicit provider detection, model defaults (`kilocode/anthropic/claude-opus-4.6`), transcript/cache-ttl handling. (#20212)
-- **Vercel AI Gateway** — Normalizes `vercel-ai-gateway/claude-*` shorthand refs to canonical Anthropic-routed IDs.
+- **Vercel AI Gateway** — Normalizes shorthand refs, performs implicit provider synthesis, and can fall back to discovered/static catalog entries (including GPT-5.4-compatible rows).
 - **Anthropic OAuth tokens** — `sk-ant-oat-*` tokens skip `context-1m-*` beta injection.
 - **OpenRouter reasoning_effort** — Conflicting top-level `reasoning_effort` removed when injecting `reasoning.effort`.
 - **Groq TPM limit** — TPM limit errors no longer classified as context overflow.
@@ -1235,7 +1235,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **WS security** — Origin allowlist in `origin-check.ts` upgraded from array `includes()` to `Set.has()`; wildcard `["*"]` in `gateway.controlUi.allowedOrigins` now explicitly accepted.
 - **Control UI CSP** — `style-src` includes `https://fonts.googleapis.com` and `font-src` includes `https://fonts.gstatic.com` for Google Fonts support.
 - **Control UI origins** — New `startup-control-ui-origins.ts` seeds `gateway.controlUi.allowedOrigins` for non-loopback installs upgrading to v2026.2.26+ at startup. Persists to config file on success.
-- **macOS supervised restart** — `restartGatewayProcessWithFreshPid()` uses `launchctl kickstart -k` via `triggerOpenClawRestart()` on macOS under launchd (`OPENCLAW_LAUNCHD_LABEL` env) to bypass ThrottleInterval delays for intentional restarts. (`process-respawn.ts`)
+- **macOS supervised restart (historical v2026.3.1 behavior)** — `restartGatewayProcessWithFreshPid()` previously used `launchctl kickstart -k` via `triggerOpenClawRestart()` on macOS under launchd. In `v2026.3.8`, supervised restart instead exits and relies on launchd `KeepAlive`, while LaunchAgent repair/restart paths `enable` before `bootstrap`. (`process-respawn.ts`)
 - **macOS TLS certs** — `NODE_EXTRA_CA_CERTS` added to LaunchAgent environment for custom CA certificate support. (`d33f24c4e`)
 - **Canvas auth refactor** — `authorizeCanvasRequest()`, `enforcePluginRouteGatewayAuth()`, and `isCanvasPath()` extracted from `server-http.ts` into `server/http-auth.ts`.
 - **Node method scopes** — `node.canvas.capability.refresh` added to `NODE_ROLE_METHODS` in `method-scopes.ts`.
@@ -1267,5 +1267,13 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - Tool-result truncation with head+tail strategy: large tool results truncated using a head+tail window preserving both ends of output.
 - Tool-result cleanup timeout hardening: cleanup jobs for tool results apply bounded timeouts preventing stalled cleanup from blocking shutdown.
 - Failover overload vs rate-limit classification: attempt logic in `pi-embedded-runner/run/attempt.ts` now classifies provider overload vs rate-limit for smarter failover target selection.
+
+## v2026.3.8 Delta Notes
+
+- **Context-engine runtime bootstrap widened:** plugin-provided context engines now load from the active workspace before compaction and subagent lifecycle resolution, and the registry is shared across duplicated bundled chunks through a process-global singleton.
+- **ACP provenance and lineage:** `InputProvenance` now includes `originSessionId`, ACP can inject visible provenance receipts, and ACP-spawned sessions persist `spawnedBy` lineage plus best-effort transcript/session metadata.
+- **Session model switches clear stale token budgets:** model override handling now clears cached `contextTokens` as well as stale runtime model/fallback fields.
+- **Codex/OpenAI forward-compat:** `openai-codex/gpt-5.4` now resolves with a 1,050,000-token context window and 128,000 max tokens, and stale implicit Codex configs are repaired back to `chatgpt.com/backend-api` with `openai-codex-responses`.
+- **Control UI asset serving refined:** bundled/package-proven auto-detected roots now allow hardlinked assets, while configured/custom roots remain on the strict hardlink boundary.
 
 ---

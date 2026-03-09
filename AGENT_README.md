@@ -75,6 +75,13 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 
 - No new top-level modules were added in this release window; feature and security changes are in existing modules, including `cli/`, `channels/`, `agents/`, `gateway/`, `security/`, `plugins/`, and `extensions/`.
 
+**v2026.3.8 additions (runtime/ops):**
+
+- `openclaw backup create|verify` is now part of the top-level CLI. Use it before destructive flows or restart/debugging work that may touch local state.
+- launchd-supervised restart no longer depends on in-process `launchctl kickstart -k`; the process exits and relies on supervisor restart, with `XPC_SERVICE_NAME` now treated as a supervision marker.
+- `talk.silenceTimeoutMs` is a top-level runtime knob with current defaults of `700 ms` on macOS/Android and `900 ms` on iOS.
+- ACP provenance now carries `originSessionId` and optional receipt text; spawned ACP child sessions persist lineage/transcript metadata more reliably.
+
 **v2026.3.7 additions (new module):**
 
 | Level | Module | Imports From | Imported By | Risk |
@@ -201,7 +208,7 @@ gateway/server-startup.ts → loadInternalHooks()
 ```
 gateway/server-plugins.ts
 → plugins/discovery.ts → discoverOpenClawPlugins()
-  └─ Scan: extensions/ → ~/.openclaw/plugins/ → workspace plugins/ → config paths
+  └─ Scan: config paths → workspace .openclaw/extensions → bundled extensions/ → ~/.openclaw/extensions
 → plugins/manifest.ts → parse openclaw.plugin.json
 → plugins/loader.ts → loadOpenClawPlugins()
   └─ jiti dynamic import for each plugin module
@@ -373,11 +380,18 @@ pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
 
+### Release-window Workflow Additions (v2026.3.8)
+
+- **Back up before destructive maintenance:** `openclaw backup create` / `openclaw backup verify` now exist specifically for state recovery. Use them before `reset`, uninstall, or risky config surgery.
+- **launchd restart semantics changed:** supervised macOS restart now exits and relies on launchd `KeepAlive`; LaunchAgent repair/restart also `enable`s before `bootstrap`, and `XPC_SERVICE_NAME` now counts as a supervision hint.
+- **Bundled channel plugins outrank duplicate npm installs during onboarding/update sync:** if a bundled plugin and an npm-installed plugin share the same ID, the bundled channel plugin now wins unless the operator intentionally overrides via explicit config paths.
+- **Browser remote relay / WSL2 support changed:** `browser.relayBindHost` can expose the extension relay off-loopback for cross-namespace setups; direct WS CDP profiles and wildcard-host rewrites are now part of the supported remote-browser path.
+
 ### Release-window Workflow Additions (v2026.3.7)
 
 - **`gateway.auth.mode` is now required when both auth methods are configured:** if both `gateway.auth.token` and `gateway.auth.password` are set, you must explicitly declare `gateway.auth.mode: "token"` or `gateway.auth.mode: "password"`. Omitting it causes a startup error. Run `openclaw doctor --fix` to migrate automatically.
 - **`src/context-engine/` is a new module:** plugin slot for custom context management. When touching compaction, session assembly, or subagent spawn/end, check whether a `ContextEnginePlugin` is registered; the default is `legacy.ts`. Test lifecycle hooks (`bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`) when modifying context paths.
-- **Extension count increased to 42:** two new extension directories were added (`bindings` extension and others). If iterating over `extensions/*` in scripts, expect 42 directories.
+- **Stable-tag extension inventory is 40 directories / 33 packages:** do not assume prior ad hoc counts or treat `context-engine/` as an extension directory.
 
 ### Release-window Workflow Additions (v2026.2.24)
 

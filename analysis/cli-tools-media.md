@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-08 | Version: v2026.3.7
+> Updated: 2026-03-09 | Version: v2026.3.8
 
 ## Overview
 
@@ -886,3 +886,11 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 - Tool-capability probe budget: increased from 32 to 256 tokens, allowing richer capability probing without exhausting the budget on complex tool schemas.
 
 - **Codex weekly usage window label** (#26267) — The secondary window label in `src/infra/provider-usage.fetch.codex.ts` now labels windows >= 168 hours as "Week" instead of "Day". Codex plans can have a weekly (604800s) quota window; the label previously always showed "Day" for any window >= 24h. Contributor: @Sid-Qin. <!-- v2026.3.1 -->
+
+## v2026.3.8 Delta Notes
+
+- **CLI/backups:** the CLI now has first-class backup creation and verification commands, and recovery-oriented flows (`reset`, uninstall) point users at them before destructive actions.
+- **Web search routing:** Brave can now run in `llm-context` mode with source-grounded snippets, while Perplexity uses the native Search API for direct Perplexity auth but preserves the Sonar/OpenRouter path for legacy OpenRouter or explicit `baseUrl` / `model` setups.
+- **Browser/CDP remote tooling:** direct `ws://` / `wss://` CDP endpoints are supported as primary profiles, wildcard debugger URLs are rewritten back to the external host/port, and `browser.relayBindHost` supports WSL2/cross-namespace relay exposure.
+- **TUI/runtime UX:** the TUI can infer the active agent from the current workspace, and the light-terminal palette now auto-detects `COLORFGBG` with an `OPENCLAW_THEME=light|dark` override.
+- **Talk/platform behavior:** top-level `talk.silenceTimeoutMs` now controls pause-to-send thresholds, and Android Play-distributed builds drop self-update, background-location, screen-record, and background-mic capture behavior.

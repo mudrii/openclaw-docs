@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-08 (source package: 2026.3.7) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-09 (source package: 2026.3.8) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -641,10 +641,10 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 
 Plugins are discovered from multiple directories in order:
 
-1. **Bundled** — `extensions/` shipped with OpenClaw (bundled-by-default: `device-pair`, `phone-control`, `talk-voice`)
-2. **Global** — `~/.openclaw/plugins/` (user-installed)
-3. **Workspace** — Agent workspace `plugins/` directory
-4. **Config paths** — Explicit paths in `plugins` config section
+1. **Config paths** — Explicit paths in `plugins.load.paths`
+2. **Workspace** — Agent workspace `.openclaw/extensions/` directory
+3. **Bundled** — `extensions/` shipped with OpenClaw (bundled-by-default: `device-pair`, `phone-control`, `talk-voice`)
+4. **Global** — `~/.openclaw/extensions/` (auto-discovered user-installed extensions, kept behind bundled entries unless explicitly configured)
 
 Discovery is handled by `plugins/discovery.ts` → `discoverOpenClawPlugins()`.
 
@@ -754,12 +754,12 @@ Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. 
 | Gemini CLI | OAuth (plugin) | `extensions/google-gemini-cli-auth/` |
 | MiniMax Portal | OAuth (plugin) | `extensions/minimax-portal-auth/` |
 | Mistral | API key | auth profiles |
-| Vercel AI Gateway | API key + shorthand normalization | auth profiles, `agents/models-config.providers.ts` |
+| Vercel AI Gateway | API key, shorthand normalization, implicit provider synthesis, and catalog/static fallback | auth profiles, `agents/models-config.providers.ts` |
 | Google Vertex AI | OAuth / service account | auth profiles |
 
 ### Provider Auto-Detection and Normalization
 
-- **Vercel AI Gateway Claude shorthand normalization** — Model refs of the form `vercel-ai-gateway/claude-*` are automatically normalized to the full Anthropic model ID before the API call, allowing short aliases like `vercel-ai-gateway/claude-opus-4` to resolve correctly without manual config.
+- **Vercel AI Gateway provider synthesis** — Model refs of the form `vercel-ai-gateway/claude-*` still normalize to the canonical Anthropic ID, but the provider path now also performs implicit provider synthesis, catalog discovery, and static fallback modeling (including GPT-5.4) rather than acting as shorthand-only sugar.
 - **Google Vertex AI routing for Claude** — Claude models can be routed through Google Vertex AI by selecting the `vertex` provider in auth profiles; model IDs are translated to Vertex-compatible publisher/model paths automatically.
 - **Grounded Gemini web search support** — Google Gemini models accessed via Vertex AI or the standard Gemini API support grounded web search responses; OpenClaw surfaces the grounding metadata in tool results.
 - **Mistral embeddings and voice support** — Mistral models are available for both text generation and embeddings (via `memory/embeddings.ts` provider selection); Mistral voice/audio models are accessible through the standard TTS pipeline.
@@ -854,8 +854,8 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 ### 8. Guard / Circuit Breaker
 **Where:** `agents/context-window-guard.ts` (context overflow), `agents/session-tool-result-guard.ts` (oversized results), `agents/pi-extensions/compaction-safeguard.ts` (infinite compaction loops), `auto-reply/reply/agent-runner-execution.ts` (error recovery with session reset).
 
-### 16. Plugin Slot / Registry Pattern (v2026.3.7)
-**Where:** `context-engine/` — `registry.ts` defines the `ContextEnginePlugin` interface; `init.ts` bootstraps the active strategy at gateway start; `legacy.ts` wraps the built-in context assembly as the default plugin. Lifecycle hooks (`bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`) allow full replacement of context management behavior without touching core agent code.
+### 16. Plugin Slot / Registry Pattern (v2026.3.7+)
+**Where:** `context-engine/` — `registry.ts` defines the `ContextEnginePlugin` interface; `legacy.ts` wraps the built-in context assembly as the default plugin. In `v2026.3.8`, runtime plugin loading was widened so context-engine plugins are resolved before compaction and subagent lifecycle boundaries, and the registry is shared across duplicated bundled chunks via a process-global singleton. Lifecycle hooks (`bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`) allow full replacement of context management behavior without touching core agent code.
 
 ### 9. Barrel / Re-export Pattern
 **Where:** Extensively used for public API surfaces: `agents/pi-embedded.ts` → `pi-embedded-runner.ts` → individual modules. `auto-reply/reply.ts`, `hooks/hooks.ts`, `config/config.ts`, etc.
@@ -933,7 +933,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Extension packages (`extensions/*/package.json`) | 33 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current analyzed source package: `2026.3.7` (tag `v2026.3.7`). Counts measured from that released tag snapshot.
+> Current analyzed source package: `2026.3.8` (tag `v2026.3.8`). Counts measured from that released tag snapshot.
 
 ### Key External Dependencies
 
@@ -1145,7 +1145,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 ### New Providers
 
 - **Kilo Gateway** — `kilocode` provider with auth, onboarding, implicit detection; default model `kilocode/anthropic/claude-opus-4.6`
-- **Vercel AI Gateway Claude Shorthand** — `vercel-ai-gateway/claude-*` normalizes to canonical Anthropic IDs
+- **Vercel AI Gateway provider synthesis** — shorthand normalization remains, but provider discovery/static fallback now synthesize richer model entries including GPT-5.4-compatible catalog behavior
 
 ### Major Features
 
@@ -1258,6 +1258,29 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 ### Stats Update
 
 - **5,864 TypeScript files** (was 5,414 at v2026.3.2; +450 files, 893 commits this window)
-- **42 extension directories** (was 40), new: bindings extension and context-engine
+- **40 extension directories** (stable-tag count), **33 packages**, **52 skills**
+
+---
+
+## v2026.3.8 Changes (2026-03-09)
+
+### Core Runtime
+
+- **Context-engine runtime loading widened** — context-engine plugins are now bootstrapped from the active runtime workspace before compaction and subagent lifecycle resolution, not just at gateway startup. The registry is also shared across duplicated bundled chunks via a process-global singleton so plugin-provided engines resolve consistently.
+- **ACP provenance and lineage** — provenance now includes `originSessionId`, ACP can inject visible receipt text, and ACP-spawned sessions persist `spawnedBy` lineage plus best-effort transcript/session metadata.
+- **Model/runtime follow-up hardening** — `openai-codex/gpt-5.4` now resolves with a 1,050,000-token context window and 128,000 max tokens, stale Codex configs snap back to `chatgpt.com/backend-api` with `openai-codex-responses`, and session model switches clear stale cached `contextTokens`.
+
+### Browser, Tools, and Platforms
+
+- **Remote CDP parity** — direct `ws://` / `wss://` CDP endpoints are now first-class, wildcard debugger URLs from remote `/json/version` responses are rewritten to the external host/port, and `browser.relayBindHost` supports WSL2/cross-namespace relay access.
+- **Strict browser SSRF redirect enforcement** — strict browser navigation flows now validate redirect hops and fail closed when remote tab-open flows cannot inspect them.
+- **Backup CLI** — new `openclaw backup create` / `openclaw backup verify` commands create and validate local state archives, including config-only mode and workspace exclusion controls.
+- **Talk/platform changes** — top-level `talk.silenceTimeoutMs` config landed with platform defaults (`700 ms` on macOS/Android, `900 ms` on iOS); macOS remote mode now exposes `gateway.remote.token`; Android Play-distributed builds remove self-update, background-location “always”, screen-record, and background mic capture behavior.
+
+### Operations
+
+- **launchd restart semantics changed** — supervised restart now exits and relies on launchd `KeepAlive`; `XPC_SERVICE_NAME` is treated as a supervision marker; LaunchAgent repair/restart paths `enable` before `bootstrap`.
+- **Control UI asset serving refined** — bundled/package-proven hardlinked asset roots are allowed for auto-detected installs, while configured/custom roots remain on the strict hardlink boundary.
+- **Podman and Docker follow-ups** — Podman bind mounts now add SELinux `:Z` relabeling when needed, inaccessible-cwd setup paths fall back safely, and the runtime Docker image is smaller.
 
 ---

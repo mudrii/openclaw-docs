@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-08 | Version: v2026.3.7 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-09 | Version: v2026.3.8 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -811,7 +811,7 @@ openclaw.json
 ├── hooks                         # HooksConfig (event hooks)
 ├── discovery                     # DiscoveryConfig (mDNS, wide-area DNS)
 ├── canvasHost                    # CanvasHostConfig (enabled, root, port, liveReload)
-├── talk                          # TalkConfig (ElevenLabs TTS)
+├── talk                          # TalkConfig (provider-based voice / silence-timeout controls)
 ├── gateway                       # GatewayConfig
 │   ├── port                      # number — default 18789
 │   ├── mode                      # "local" | "remote"
@@ -1676,7 +1676,7 @@ User types: openclaw <command> [args]
 
 - **Docker/Sandbox browser: `OPENCLAW_BROWSER_NO_SANDBOX=1`** (#29879): sandbox browser creation now sets the `--no-sandbox` Chromium flag inside Docker containers to prevent Chromium namespace clone failures in unprivileged environments. Contributor: @Lukavyi. <!-- v2026.3.1 -->
 
-- **macOS supervised restart: `launchctl kickstart -k`** (#29078): intentional supervised gateway restarts now actively use `launchctl kickstart -k` to bypass the LaunchAgent `ThrottleInterval` delay. Additionally, `LAUNCH_AGENT_THROTTLE_INTERVAL_SECONDS` is reduced from 60 to 1 second to further reduce restart latency. Falls back to in-process restart when kickstart fails. Contributor: @cathrynlavery. <!-- v2026.3.1 -->
+- **macOS supervised restart: `launchctl kickstart -k`** (#29078): this was the `v2026.3.1` launchd strategy for bypassing `ThrottleInterval`. In current `v2026.3.8`, supervised restart instead exits and relies on launchd `KeepAlive`, with LaunchAgent repair/restart paths `enable` before `bootstrap`. Contributor: @cathrynlavery. <!-- v2026.3.1 -->
 
 - **macOS TLS certs: default `NODE_EXTRA_CA_CERTS`** (#27915): LaunchAgent and Node service environments now default `NODE_EXTRA_CA_CERTS` to `/etc/ssl/cert.pem` on macOS (respecting explicit overrides) so HTTPS clients no longer fail with local-issuer errors under launchd. Implementation in `service-env.ts` (`buildServiceEnvironment` and `buildNodeServiceEnvironment`). Contributor: @Lukavyi. <!-- v2026.3.1 -->
 
@@ -1710,3 +1710,11 @@ User types: openclaw <command> [args]
 - Windows Scheduled Task management: task creation and removal are now locale-invariant, fixing failures on non-English Windows installs.
 
 - **Node `system.run` realpath pinning**: `system.run` execution now pins path-token commands to the canonical executable path (`realpath`) in both allowlist and approval execution flows. Integrations/tests that asserted token-form argv (e.g. `tr`) must now accept canonical paths (e.g. `/usr/bin/tr`). This is a **breaking change** for approval flow consumers.
+
+## v2026.3.8 Delta Notes
+
+- **Backup and recovery CLI:** `openclaw backup create` and `openclaw backup verify` are now top-level commands, with config-only and no-workspace modes plus manifest validation. Destructive flows like reset/uninstall now point operators at the backup workflow first.
+- **Config preflight and live-path reporting:** daemon start/restart pre-validates config before service handoff, config writes preserve/refresh runtime snapshots after disk writes, and gateway config RPC responses now report the active config path from the live IO layer.
+- **launchd restart semantics changed:** supervised respawn now exits and relies on launchd `KeepAlive`, supervision detection includes `XPC_SERVICE_NAME`, LaunchAgent repair/restart paths `enable` before `bootstrap`, and restart timeout failures now exit non-zero so the supervisor retries.
+- **Container/runtime ops:** Podman bind mounts now add SELinux `:Z` relabeling when needed, inaccessible-cwd setup paths fall back safely, and the runtime Docker image is smaller.
+- **Version/install/release tooling:** `openclaw --version` now includes the short commit hash when available, installer/version checks accept the decorated format, and release-check validates bundled extension manifest/root-dependency mirror drift.

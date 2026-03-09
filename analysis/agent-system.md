@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-08 | Version: v2026.3.7
+> Updated: 2026-03-09 | Version: v2026.3.8
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1084,5 +1084,14 @@ When event fires:
 - Tool-result truncation with head+tail strategy (PR context): large tool results are now truncated using a head+tail window rather than hard-cutoff, preserving both the start and end of output.
 - Tool-result cleanup timeout hardening: tool-result cleanup jobs apply a bounded timeout to prevent stalled cleanup blocking agent shutdown.
 - Failover overload vs rate-limit classification: the agent runner now distinguishes provider overload errors from rate-limit errors when selecting failover targets.
+
+## v2026.3.8 Delta Notes
+
+- Context-engine plugins now bootstrap from the active runtime workspace before compaction and subagent boundaries, and the registry is shared across duplicated bundled chunks through a process-global singleton.
+- Compaction can now use `agents.defaults.compaction.model` as an override instead of always reusing the session's primary model.
+- Session model switches now clear stale cached `contextTokens` in addition to stale runtime model/fallback fields.
+- ACP child runs persist transcript/session metadata and `spawnedBy` lineage more reliably without blocking successful execution on storage failures.
+- Rate-limit classification now catches Bedrock-style `Too many tokens per day` quota errors without confusing them with context-window failures.
+- Cron text-only announce delivery now routes through the real outbound adapters, and restart catch-up staggering prevents missed-job replays from flooding the gateway after restart.
 
 ---

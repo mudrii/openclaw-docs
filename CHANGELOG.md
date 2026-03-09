@@ -6,7 +6,71 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.7 — Latest Documented Release Summary
+## OpenClaw v2026.3.8 — Latest Documented Release Summary
+
+> **Released:** 2026-03-09 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.7..v2026.3.8` | **Scan stats:** 260 commits, 769 files changed, +29,292 / -8,663 lines
+
+## Highlights
+
+- **Backup and recovery CLI:** new `openclaw backup create` and `openclaw backup verify` commands create local state archives, support `--only-config` / `--no-include-workspace`, and are now recommended before destructive flows like reset/uninstall.
+- **ACP provenance:** ACP can now preserve upstream origin metadata and inject visible provenance receipts with `openclaw acp --provenance off|meta|meta+receipt`; spawned ACP child sessions also persist lineage and transcript metadata more reliably.
+- **Browser/CDP remote reliability:** direct `ws://` / `wss://` CDP profiles are now first-class, wildcard debugger URLs from remote `/json/version` responses are rewritten back to the external host/port, and `browser.relayBindHost` enables WSL2/cross-namespace extension relay binding while strict redirect-hop SSRF checks fail closed.
+- **Talk/runtime config:** top-level `talk.silenceTimeoutMs` now controls auto-send silence windows with platform defaults (`700 ms` on macOS/Android, `900 ms` on iOS), and Talk config resolution now exposes a normalized provider payload.
+- **Plugin/channel onboarding hardening:** onboarding clears plugin discovery cache after installs, bundled channel plugins win over duplicate npm-installed copies during onboarding/update sync, and release checks validate bundled-extension manifest/root-dependency drift.
+- **Daemon/restart hardening:** launchd repair/restart paths now re-enable LaunchAgents before bootstrap, launchd supervision detection includes `XPC_SERVICE_NAME`, and supervised restart flows exit non-zero / rely on the supervisor `KeepAlive` path instead of self-kickstarting in-process.
+- **Web search/runtime updates:** Brave gains `tools.web.search.brave.mode: "llm-context"` with source-grounded snippets, while Perplexity now uses the native Search API for direct Perplexity auth but preserves OpenRouter/Sonar compatibility for legacy `OPENROUTER_API_KEY` or explicit model/baseUrl setups.
+- **Channel/platform fixes:** Telegram DM dedupe and polling cleanup were hardened, Matrix DM routing now prefers explicit room bindings over brittle `m.direct` heuristics, Microsoft Teams sender allowlists remain enforced under route allowlists, macOS remote mode now surfaces `gateway.remote.token`, and Android Play builds remove self-update/background-location/screen-record/background-mic behavior.
+
+For full detail, see the v2026.3.8 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.8`).
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | 374 |
+| `apps/` | 227 |
+| `extensions/` | 89 |
+| `docs/` | 35 |
+| `scripts/` | 18 |
+
+*Note: additional root/config/release files (`Dockerfile*`, `package.json`, `pnpm-lock.yaml`, `appcast.xml`, workflow/config files, and fixtures) make up the remainder of the 769-file release window.*
+
+## Breaking / Behavior Shifts
+
+1. **No new stable-tag breaking config was introduced in `v2026.3.8`,** but operational behavior changed in ways that matter during upgrades: launchd restart now exits and relies on supervisor restart, Android Play builds remove self-update/background-capture capabilities, and Perplexity web search routing now depends on the auth path in use.
+
+## Major Features
+
+- Backup and verify CLI (`openclaw backup create`, `openclaw backup verify`)
+- ACP provenance metadata + receipt injection
+- Brave LLM Context mode for `web_search`
+- `talk.silenceTimeoutMs` runtime config
+- Direct WebSocket CDP support + wildcard debugger URL rewrite
+- `browser.relayBindHost` for WSL2/cross-namespace relay access
+- Decorated `openclaw --version` output with short commit hash
+- macOS remote gateway token UI + preservation of unsupported token shapes
+
+## Security Hardening
+
+- Browser strict redirect-hop SSRF validation now fails closed for remote tab-open paths when hop inspection is unavailable
+- `system.run` approvals now bind `bun` / `deno run` script operands to on-disk file snapshots
+- Skill download installs pin the validated tools root before writing archives
+- Microsoft Teams sender allowlists remain enforced even when route allowlists match
+- Control UI asset serving allows bundled/package-proven hardlinks while preserving strict checks for configured/custom roots
+
+## Maintainer Upgrade Checklist (v2026.3.8)
+
+1. **Adopt the backup workflow:** use `openclaw backup create` before `reset`, uninstall, or large config surgery; verify archives with `openclaw backup verify` if recovery matters.
+2. **Review launchd restart assumptions:** supervised macOS restart now relies on launchd `KeepAlive`, `enable` before `bootstrap`, and `XPC_SERVICE_NAME` detection rather than in-process self-kickstart.
+3. **Check browser remote profiles:** if using remote Chrome/Browserless/WSL2, validate direct WS CDP URLs, wildcard-host rewrites, and `browser.relayBindHost` as needed.
+4. **Review web-search auth paths:** direct Perplexity keys use the native Search API; OpenRouter or explicit Perplexity `baseUrl` / `model` keeps the Sonar/OpenRouter path. Confirm the intended routing.
+5. **Review Talk and remote-app settings:** set `talk.silenceTimeoutMs` if you need non-default pause windows, and verify whether the macOS app can consume your `gateway.remote.token` format directly.
+6. **Validate bundled plugin behavior:** if you previously relied on npm-installed duplicates shadowing bundled channel plugins, that precedence is now reversed during onboarding/update sync.
+
+---
+
+## OpenClaw v2026.3.7 — Historical Release Summary
 
 > **Released:** 2026-03-08 | **Policy note:** latest *documented* released section stays at top.
 > **Window analyzed:** `v2026.3.2..v2026.3.7` | **Scan stats:** 893 commits, 2,412 files changed, +127,093 / -22,412 lines

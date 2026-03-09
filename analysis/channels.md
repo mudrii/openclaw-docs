@@ -1,8 +1,8 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-08 | Version: v2026.3.7 | Cluster: CHANNELS & MESSAGING
-> Modules analyzed: `src/telegram` (108 files), `src/discord` (136 files), `src/signal` (32 files), `src/slack` (103 files), `src/whatsapp` (4 files), `src/imessage` (25 files), `src/line` (46 files), `src/channels` (147 files), `extensions/feishu` (77 files)
+> Updated: 2026-03-09 | Version: v2026.3.8 | Cluster: CHANNELS & MESSAGING
+> Modules analyzed: `src/telegram` (134 files), `src/discord` (170 files), `src/signal` (32 files), `src/slack` (122 files), `src/whatsapp` (4 files), `src/imessage` (31 files), `src/line` (48 files), `src/channels` (174 files), `extensions/feishu` (91 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 
@@ -1249,4 +1249,12 @@ Agent tool call: message(action="send", target="...", message="...")
 - **Google Chat**: multi-account webhook authentication.
 - **ACP**: persistent channel bindings added as new extension (~639 LOC).
 
-*End of analysis. Total files analyzed: ~528 across 9 modules (including extensions/feishu).*
+## v2026.3.8 Delta Notes
+
+- **Telegram:** polling now runs through an explicit polling-session wrapper, long-poll shutdown aborts are forwarded correctly, DM preview lanes stay on message edits to avoid duplicate flashes, and inbound DM dedupe keys are agent-scoped rather than session-key-scoped.
+- **Matrix:** DM fallback detection now requires a two-member room with no room name, explicit room bindings outrank DM heuristics, and room-bound agent selection is preserved for Matrix DM rooms.
+- **Microsoft Teams:** route allowlists no longer widen sender access when `groupPolicy: "allowlist"` is configured; sender allowlists remain enforced after route resolution.
+- **ACP / cross-channel lineage:** ACP-origin context can now surface provenance receipts and carry `originSessionId`, improving traceability when sessions cross editor/channel boundaries.
+- **Bundled channel plugins:** onboarding clears short-lived discovery cache after plugin installs, and duplicate npm-installed channel plugins no longer shadow bundled channel plugins during onboarding/update sync.
+
+*End of analysis. Total files analyzed: ~806 across 9 modules (including extensions/feishu).*
