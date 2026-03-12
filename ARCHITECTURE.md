@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-11 (source package: 2026.3.11) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-12 (source package: 2026.3.11) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -1257,7 +1257,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ### Stats Update
 
-- **5,864 TypeScript files** (was 5,414 at v2026.3.2; +450 files, 893 commits this window)
+- **5,696 TypeScript files** (was 5,414 at v2026.3.2; +282 files, 893 commits this window)
 - **40 extension directories** (stable-tag count), **33 packages**, **52 skills**
 
 ---

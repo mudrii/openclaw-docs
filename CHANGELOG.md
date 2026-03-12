@@ -2,7 +2,7 @@
 
 Consolidated changelog assembled from versioned changelog files in this repository.
 
-Release policy: this file tracks published releases only (stable tags). It does not track unreleased branch snapshots; when historically relevant, notes may mention npm republished builds tied to a stable tag.
+Release policy: this file tracks published releases only (stable tags). It does not track unreleased branch snapshots; when historically relevant, notes may mention npm republished builds tied to a stable tag. Docs-only rereleases in this repo use suffixed git tags such as `-1` while still documenting the same upstream stable release.
 
 ---
 

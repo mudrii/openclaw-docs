@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Codebase: /path/to/openclaw | Version: v2026.3.11
+> Updated: 2026-03-12 | Codebase: OpenClaw release tag `v2026.3.11` | Version: v2026.3.11
 
 ---
 
@@ -99,7 +99,7 @@ The memory module provides **semantic search over markdown files and session tra
 
 - **Close cached memory managers in one-shot CLI shutdown** (#40389) — The `close()` lifecycle method is now called on cached memory search and index manager instances during one-shot CLI teardown, preventing unclosed SQLite connections and dangling file watchers.
 
-### File Inventory (86 files)
+### Selected File Inventory (`src/memory` has 101 tracked files in `v2026.3.11`)
 
 | File | Description |
 |------|-------------|
@@ -110,7 +110,6 @@ The memory module provides **semantic search over markdown files and session tra
 | `manager-embedding-ops.ts` | Mixin: embedding batch logic, cache, retry |
 | `manager-sync-ops.ts` | Mixin: file watching, sync, vector loading, session tracking |
 | `manager-search.ts` | Vector and keyword search query execution |
-| `manager-cache-key.ts` | Computes cache key for manager deduplication |
 | `search-manager.ts` | Factory: selects qmd or builtin backend, FallbackMemoryManager wrapper |
 | `backend-config.ts` | Resolves memory backend config (builtin vs qmd) with defaults |
 | `qmd-manager.ts` | `QmdMemoryManager` — alternative backend using external qmd CLI |
@@ -130,22 +129,14 @@ The memory module provides **semantic search over markdown files and session tra
 | `batch-openai.ts` | OpenAI batch embedding API |
 | `batch-gemini.ts` | Gemini batch embedding API |
 | `batch-voyage.ts` | Voyage batch embedding API |
-| `openai-batch.ts` | Deprecated re-export of batch-openai |
 | `embedding-chunk-limits.ts` | Enforces max input tokens per chunk |
 | `embedding-input-limits.ts` | UTF-8 byte estimation, text splitting |
 | `embedding-model-limits.ts` | Known max input tokens per model |
-| `provider-key.ts` | Computes provider fingerprint for cache invalidation |
-| `headers-fingerprint.ts` | Fingerprints header names for cache keys |
 | `hybrid.ts` | BM25+vector hybrid search merging |
 | `sqlite.ts` | `requireNodeSqlite()` — loads node:sqlite with warning filter |
 | `sqlite-vec.ts` | Loads sqlite-vec native extension |
 | `memory-schema.ts` | SQLite schema creation (meta, files, chunks, embedding_cache, FTS5) |
 | `session-files.ts` | Reads session JSONL transcripts, builds entries with line maps |
-| `sync-index.ts` | Generic file-entry-changed check for incremental sync |
-| `sync-memory-files.ts` | Syncs memory markdown files to index |
-| `sync-session-files.ts` | Syncs session transcript files to index |
-| `sync-progress.ts` | Typed sync progress state, reporting callback for UI updates |
-| `sync-stale.ts` | Deletes stale indexed paths |
 | `status-format.ts` | Formatting helpers for memory status display |
 | `embedding-chunk-limits.test.ts` | Tests for chunk limit enforcement |
 | `embedding-manager.test-harness.ts` | Test fixture for embedding manager tests |

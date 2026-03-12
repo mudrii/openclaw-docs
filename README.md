@@ -3,7 +3,7 @@
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
 **Latest upstream stable release: v2026.3.11 (published 2026-03-11 UTC).**
-**Current validated docs snapshot: v2026.3.11 (released 2026-03-11, validated against tag `v2026.3.11`).**
+**Current validated docs snapshot: v2026.3.11-1 (docs rerelease for upstream tag `v2026.3.11`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -55,7 +55,7 @@ Both models independently confirmed the reference doc significantly reduced time
 
 ## Versioning
 
-Each release is tagged to match the OpenClaw version it documents:
+Each documented release tracks an OpenClaw stable tag. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream tag:
 - `v2026.3.11` (2026-03-11, released) — Updated for v2026.3.8 → v2026.3.11 (235 commits, 977 files): multimodal memory indexing (images + audio) with `gemini-embedding-2-preview`, iOS Home canvas overhaul with live agent overview + docked toolbar, macOS chat model picker, first-class Ollama onboarding wizard (Local and Cloud + Local modes), OpenCode Go provider, Discord `autoArchiveDuration` for auto-created threads, Telegram HTML/final-preview delivery hardening, macOS remote onboarding shared-token detection, iOS TestFlight beta flow, ACP session resume via `resumeSessionId`, ACP `loadSession` session context replay, macOS/launchd v2 restart hardening (detached helper hand-off), node pending-work queue primitives, gateway runtime version in status, and 20+ security hardening fixes including GHSA-5wcw-8jjv-m286 (WebSocket cross-site hijack), symlink-safe secret reads, TAR extraction staging, exec SecretRef traversal rejection, fs-bridge write pinning, gateway auth fail-closed, session-reset auth split, plugin HTTP scope isolation, and session_status sandbox guards. **Breaking:** cron/doctor isolation — cron jobs can no longer send ad hoc notifications or fallback main-session summaries; run `openclaw doctor --fix` to migrate.
 - `v2026.3.8` (2026-03-09, released) — Updated for v2026.3.7 → v2026.3.8 (260 commits, 769 files): `openclaw backup create|verify` with manifest validation and recovery-focused flags, ACP provenance metadata/receipts, top-level `talk.silenceTimeoutMs`, direct WebSocket CDP support with WSL2/remote relay fixes, Brave `llm-context` web search mode, Perplexity native-search vs OpenRouter compatibility split, bundled-channel plugin precedence during onboarding/update sync, launchd restart/repair hardening, and Android Play policy cutbacks (no self-update/background location/screen recording background capture). No new stable-tag breaking config was introduced, but restart semantics and Android/macOS operator workflows changed materially.
 - `v2026.3.7` (2026-03-08, released) — Updated for v2026.3.2 → v2026.3.7 (893 commits, 2,412 files): ContextEngine plugin interface with full lifecycle hooks enabling alternative context management strategies (zero behavior change without config), durable ACP channel bindings surviving restarts, Telegram per-topic agent routing, Spanish locale in Control UI, Mattermost interactive model picker, Discord native slash commands, Gemini 3.1 Flash-Lite + GPT-5.4 support, Venice default `kimi-k2-5`, Docker slim/Podman support, systemd WSL2 hardening, config validation fail-closed, ZIP path traversal hardening, and SecretRef models.json persistence hardening. **Breaking:** explicit `gateway.auth.mode` required when both `gateway.auth.token` and `gateway.auth.password` are set.
@@ -71,12 +71,12 @@ Each release is tagged to match the OpenClaw version it documents:
 - `v2026.2.15` (2026-02-16) — Updated for v2026.2.15: 7 security hardening fixes, Discord Components v2 UI tool, nested subagent orchestration (depth 2, max 5 children), plugin LLM input/output hooks, per-channel ackReaction config, major channel deduplication refactor, 10 analysis files updated
 - `v2026.2.14` — Initial release, documenting OpenClaw v2026.2.14
 
-When a new OpenClaw version is released, the documentation is re-analyzed and a new version is tagged.
+When a new OpenClaw version is released, the documentation is re-analyzed and a new version is tagged. If the docs need factual corrections without a new upstream stable release, the docs repo publishes a suffixed rerelease tag for the same validated upstream tag.
 
 ## Stats
 
 - **5,879 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.11` tag)
-- **1,128,688 lines of TypeScript** covered (same scope as above)
+- **167,779 lines of TypeScript** covered (same scope as above)
 - **49 modules** documented, **42 extension directories** (**33 extension packages**), **52 bundled skills**
 - **~1.0MB** of documentation (5 core MD files + 10 analysis files)
 

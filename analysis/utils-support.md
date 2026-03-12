@@ -3,26 +3,26 @@
 
 **Updated:** 2026-03-12 | **Version:** v2026.3.11
 **Cluster:** Utilities & Support Modules  
-**Total files analyzed:** ~423 TypeScript files + 313 Swift files across 14 modules
+**Total files analyzed:** release-tag snapshot across 14 modules: 501 tracked support-module files plus 353 Swift files in `apps/macos`
 
 ---
 
 ## Table of Contents
 
-1. [src/auto-reply (248 files)](#srcauto-reply)
-2. [src/utils (28 files)](#srcutils)
-3. [src/shared (37 files)](#srcshared)
-4. [src/types (8 files)](#srctypes)
-5. [src/logging (24 files)](#srclogging)
-6. [src/process (24 files)](#srcprocess)
-7. [src/pairing (8 files)](#srcpairing)
-8. [src/node-host (13 files)](#srcnode-host)
-9. [apps/macos (313 Swift files)](#appsmacos)
+1. [src/auto-reply (287 files)](#srcauto-reply)
+2. [src/utils (29 files)](#srcutils)
+3. [src/shared (51 files)](#srcshared)
+4. [src/types (9 files)](#srctypes)
+5. [src/logging (29 files)](#srclogging)
+6. [src/process (28 files)](#srcprocess)
+7. [src/pairing (9 files)](#srcpairing)
+8. [src/node-host (16 files)](#srcnode-host)
+9. [apps/macos (353 Swift files)](#appsmacos)
 10. [src/compat (1 file)](#srccompat)
-11. [src/scripts (1 file)](#srcscripts)
+11. [src/scripts (2 files)](#srcscripts)
 12. [src/docs (1 file)](#srcdocs)
 13. [src/test-helpers (4 files)](#srctest-helpers)
-14. [src/test-utils (26 files)](#srctest-utils)
+14. [src/test-utils (35 files)](#srctest-utils)
 
 ---
 
@@ -48,7 +48,7 @@ The **auto-reply** module is the central brain of OpenClaw — the complete pipe
 - `reply.ts` — re-exports `getReplyFromConfig()` and directive extractors
 - `reply/get-reply.ts` — `getReplyFromConfig()` — the main orchestrator
 
-### File Inventory (179 source files, 69 test files)
+### Selected File Inventory
 
 #### Top-level files
 

@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-12 | Version: v2026.3.11 | Codebase: OpenClaw release tag `v2026.3.11` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 

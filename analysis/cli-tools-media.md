@@ -913,7 +913,7 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 ### Memory
 
-- **Memory/multimodal — new opt-in multimodal image and audio indexing:** `src/memory/` — new opt-in multimodal memory indexing mode using `gemini-embedding-2-preview` for image and audio content. When enabled, image and audio attachments in memory are embedded alongside text for unified multimodal search. Fixes #43460.
+- **Memory/multimodal — new opt-in multimodal image and audio indexing:** `src/memory/` — new opt-in multimodal memory indexing mode using `gemini-embedding-2-preview` for supported image and audio files discovered through `memorySearch.extraPaths`. Default memory roots remain Markdown-only unless extra paths are configured. Fixes #43460.
 
 - **Memory/Gemini embedding-2-preview — configurable output dimensions and automatic reindexing:** `src/memory/embeddings-gemini.ts` + `src/memory/manager-sync-ops.ts` — `gemini-embedding-2-preview` embeddings now support configurable `outputDimensionality`. Changing the dimensionality setting triggers automatic reindexing of the memory store. Fixes #42501.
 

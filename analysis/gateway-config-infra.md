@@ -2,14 +2,14 @@
 <!-- markdownlint-disable MD024 -->
 
 **Updated:** 2026-03-12 | **Version:** v2026.3.11
-**Codebase:** /path/to/openclaw
+**Codebase:** OpenClaw release tag `v2026.3.11`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
 
 ## 1. `src/gateway/` — HTTP/WebSocket Server & API Endpoints
 
-**Lines:** ~66,951 | **Files:** 294 .ts files  
+**Lines:** 84,429 | **Files:** 358 `.ts` / `.tsx` files
 **Purpose:** The heart of OpenClaw — runs the gateway server that accepts WebSocket connections from CLI/plugins, exposes HTTP endpoints (OpenAI-compatible API, control UI), manages agent sessions, chat routing, cron, browser control, node subscriptions, and plugin lifecycle.
 
 ### v2026.2.19 Changes
