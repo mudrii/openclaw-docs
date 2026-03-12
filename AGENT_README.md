@@ -391,6 +391,15 @@ pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
 
+### Release-window Workflow Additions (v2026.3.11)
+
+- **Cron isolation — run `openclaw doctor --fix` (BREAKING):** cron jobs can no longer send ad hoc agent notifications or route through fallback main-session summaries. Any cron jobs relying on this behavior will silently stop delivering. Migration is mandatory; `openclaw doctor --fix` handles legacy cron storage and legacy notify/webhook delivery metadata.
+- **macOS/launchd restart semantics v2:** explicit restarts no longer unload/reload the LaunchAgent — they hand off to a detached launchd helper. If you have custom restart scripts wrapping `launchctl bootout` + `bootstrap`, update them; the new path is `kickstart -k` via a helper. See `src/daemon/launchd-restart-handoff.ts`.
+- **ACP `sessions_spawn` + session resume:** spawned ACP sessions now accept `resumeSessionId` to reattach to an existing ACPX/Codex conversation. If your orchestration code spawns fresh ACP sessions to continue prior conversations, use this field rather than passing prior context manually.
+- **Memory multimodal reindexing:** if you enable `memorySearch.extraPaths` and configure `gemini-embedding-2-preview` with explicit `outputDimensions`, changing `outputDimensions` triggers a full reindex. Plan for that latency on first-run after config change.
+- **WebSocket origin enforcement (GHSA-5wcw-8jjv-m286):** gateway now enforces browser-origin checks for all WebSocket connections regardless of proxy headers. If you run behind a reverse proxy and see new connection rejections, verify that your proxy passes a correct `Origin` header.
+- **Gateway auth fail-closed:** gateway now fails closed when local `gateway.auth.*` SecretRefs are configured but unavailable (e.g. secrets backend offline). Previously it fell back silently to `gateway.remote.*` credentials. Ensure secrets backends are healthy before gateway startup.
+
 ### Release-window Workflow Additions (v2026.3.8)
 
 - **Back up before destructive maintenance:** `openclaw backup create` / `openclaw backup verify` now exist specifically for state recovery. Use them before `reset`, uninstall, or risky config surgery.
