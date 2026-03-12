@@ -75,8 +75,8 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **5,889 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.11` tag)
-- **180,488 lines of TypeScript** covered (same scope as above)
+- **5,879 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.11` tag)
+- **167,779 lines of TypeScript** covered (same scope as above)
 - **49 modules** documented, **40 extension directories** (**33 extension packages**), **52 bundled skills**
 - **~1.0MB** of documentation (5 core MD files + 10 analysis files)
 
