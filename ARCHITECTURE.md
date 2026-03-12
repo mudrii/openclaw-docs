@@ -1279,11 +1279,14 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 - **iOS Home canvas overhaul** — bundled welcome screen with live agent overview (refreshes on connect, reconnect, and foreground return); floating controls replaced with a docked toolbar; chat opens in resolved main session.
 - **macOS chat model picker** — new model picker in the macOS chat UI with persistent explicit thinking-level selections and provider-aware session model sync.
+- **macOS remote onboarding shared-token detection** — the remote-gateway onboarding flow now detects when a gateway needs the shared auth token and explains where to find it.
 - **Ollama onboarding** — first-class wizard with Local or Cloud + Local modes, browser-based cloud sign-in, and curated model suggestions.
 - **OpenCode Go provider** — new OpenCode Go provider; Zen and Go share a single setup key while runtime providers remain split.
+- **iOS local TestFlight beta flow** — Fastlane prepare/archive/upload flow added for local beta distribution, with canonical beta bundle IDs and watch-app archive fixes.
 - **Brave LLM Context fix** — `llm-context` grounding snippets treated as plain strings so `web_search` no longer returns empty snippet arrays.
 - **Kimi Coding tool format fix** — `kimi-coding` tools sent in native Anthropic format again, fixing degradation to XML/plain-text pseudo-invocations.
 - **Discord `autoArchiveDuration`** — channel-level config for auto-created thread archiving (1h, 1d, 3d, 1w).
+- **Telegram delivery hardening** — HTML-mode sends now chunk safely with preserved fallback/silent params, and final-preview cleanup no longer triggers duplicate fallback finals.
 
 ### Operations
 

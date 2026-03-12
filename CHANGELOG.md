@@ -18,6 +18,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 - **macOS chat model picker:** new model picker in the macOS chat UI with persistent explicit thinking-level selections and hardened provider-aware session model sync.
 - **Onboarding/Ollama first-class:** full Ollama setup wizard with Local or Cloud + Local modes, browser-based cloud sign-in, curated model suggestions, and cloud-model handling that skips unnecessary local pulls.
 - **OpenCode Go provider:** new OpenCode Go provider in the wizard; Zen and Go share a single OpenCode setup with one shared key while runtime providers remain split.
+- **Channel and platform polish:** Discord auto-created threads now support configurable `autoArchiveDuration`; Telegram HTML sends and final-preview cleanup avoid duplicate or malformed deliveries; macOS remote onboarding now explains shared-token gateways; iOS gains a local Fastlane-backed TestFlight beta flow.
 - **ACP session resume + UX:** spawned ACP sessions can now resume existing ACPX/Codex conversations via `resumeSessionId`; `loadSession` replays stored user and assistant text; `tool_call` events enriched with file-location hints; `main` alias canonicalized so restarted ACP main sessions rehydrate cleanly.
 - **macOS/launchd restart hardening v2:** LaunchAgent stays registered during explicit restarts; self-restarts handed off through a detached launchd helper; config/hot reload restart paths recovered without unloading the service. Fixes #43311, #43406, #43035, #43049.
 - **BREAKING — Cron/doctor isolation:** cron jobs can no longer notify through ad hoc agent sends or fallback main-session summaries; `openclaw doctor --fix` migrates legacy cron storage and legacy notify/webhook delivery metadata.
@@ -50,6 +51,10 @@ For full detail, see the v2026.3.11 notes in the upstream release changelog (`op
 - macOS chat model picker with persistent thinking-level selections
 - Ollama first-class onboarding wizard (Local and Cloud + Local modes)
 - OpenCode Go provider (shared key with Zen, split runtime providers)
+- Discord `autoArchiveDuration` for auto-created threads
+- Telegram HTML send + final-preview delivery hardening
+- macOS remote onboarding shared-token detection
+- iOS local TestFlight beta flow
 - ACP session resume via `resumeSessionId` in `sessions_spawn`
 - ACP `loadSession` session context replay
 - `tool_call` / `tool_call_update` events enriched with file-location hints

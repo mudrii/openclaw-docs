@@ -2,7 +2,7 @@
 <!-- markdownlint-disable MD024 MD028 -->
 
 > Updated: 2026-03-12 | Version: v2026.3.11 | Cluster: CHANNELS & MESSAGING
-> Modules analyzed: `src/telegram` (134 files), `src/discord` (170 files), `src/signal` (32 files), `src/slack` (122 files), `src/whatsapp` (4 files), `src/imessage` (31 files), `src/line` (48 files), `src/channels` (174 files), `extensions/feishu` (91 files)
+> Modules analyzed: `src/telegram` (141 files), `src/discord` (172 files), `src/signal` (32 files), `src/slack` (122 files), `src/whatsapp` (4 files), `src/imessage` (31 files), `src/line` (48 files), `src/channels` (175 files), `extensions/feishu` (98 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 
@@ -352,7 +352,7 @@ type TelegramProbe = { ok: boolean; bot?: { id?; username?; canReadAllGroupMessa
 - `@grammyjs/types` — Telegram API types
 - `undici` — HTTP client for proxy support
 
-### Test Coverage (28 test files)
+### Test Coverage (67 test files)
 Tests cover: bot creation, message context building, dispatch, native commands, delivery, format/HTML, draft streaming, chunking, download, send (polls, edit, video-note, caption-split, proxy), inline buttons, model buttons, sticker cache, sent message cache, accounts, token resolution, targets, reaction level, webhook, probe, audit, network config/errors, group migration, update offset store, allowlist matching, and numerous e2e integration tests.
 
 ---
@@ -466,7 +466,7 @@ type DiscordSenderIdentity = { id; name?; tag?; label; isPluralKit; pluralkit?: 
 - `ws` — WebSocket (for gateway)
 - `https-proxy-agent` — Proxy support
 
-### Test Coverage (19 test files)
+### Test Coverage (74 test files)
 Tests cover: API fetch, audit, chunking, gateway logging/registry, monitor (message handling, allow-list, exec approvals, threading, presence, inbound contract), send (basic messages, thread creation, voice message security), targets, token, probe intents, PluralKit.
 
 ---
@@ -1321,12 +1321,12 @@ Agent tool call: message(action="send", target="...", message="...")
 
 - **Outbound whitespace: trim leading whitespace** (#43539): Leading whitespace in direct outbound sends is trimmed before delivery (`src/web/outbound.ts`), matching the existing behavior of other outbound paths.
 
-### iMessage (BlueBubbles)
+### BlueBubbles
 
-- **Self-chat echo dedupe: match on `is_from_me` + same chat/text/timestamp** (#38440): Reflected duplicate copies of the bot's own messages are now dropped only when a matching `is_from_me` event was recently seen for the same chat, text content, and `created_at` timestamp. The previous dedupe was too broad and could suppress legitimate messages in self-chat threads.
+- **Self-chat echo dedupe: match on `fromMe` + same chat/body/timestamp** (#38442): Reflected duplicate webhook copies are now dropped only when a matching `fromMe` event was recently seen for the same chat, message body, and timestamp. This is the BlueBubbles-specific counterpart to the classic iMessage `is_from_me` fix, and it avoids suppressing legitimate self-chat traffic through the BlueBubbles bridge.
 
 ### Channels (shared infrastructure)
 
 - **Stale matcher caching removed**: The allowlist matcher cache that was keyed on the array reference has been removed. Same-array allowlist edits and wildcard-entry replacements now take effect immediately on the next match evaluation rather than returning a stale compiled matcher.
 
-*End of analysis. Total files analyzed: ~806 across 9 modules (including extensions/feishu).*
+*End of analysis. Total files analyzed: 823 across 9 modules (including extensions/feishu).*
