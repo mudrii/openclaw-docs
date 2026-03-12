@@ -1262,7 +1262,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ---
 
-## v2026.3.11 Changes (2026-03-11)
+## v2026.3.11 Changes (2026-03-12)
 
 ### Core Runtime
 

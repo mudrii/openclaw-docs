@@ -8,7 +8,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ## OpenClaw v2026.3.11 — Latest Documented Release Summary
 
-> **Released:** 2026-03-11 | **Policy note:** latest *documented* released section stays at top.
+> **Released:** 2026-03-12 | **Policy note:** latest *documented* released section stays at top.
 > **Window analyzed:** `v2026.3.8..v2026.3.11` | **Scan stats:** 235 commits, 977 files changed, +48,586 / -9,950 lines
 
 ## Highlights
@@ -31,14 +31,17 @@ For full detail, see the v2026.3.11 notes in the upstream release changelog (`op
 
 | Area | Files changed |
 | --- | ---: |
-| `src/` | 632 |
-| `extensions/` | 99 |
-| `docs/` | 52 |
-| `apps/` | 31 |
+| `src/` | 713 |
+| `extensions/` | 106 |
+| `docs/` | 53 |
+| `apps/` | 49 |
 | `ui/` | 15 |
+| `skills/` | 10 |
+| `.github/` | 8 |
 | `scripts/` | 6 |
+| `test/` | 3 |
 
-*Note: additional root/config/release files (`Dockerfile*`, `package.json`, `pnpm-lock.yaml`, `appcast.xml`, workflow/config files, and fixtures) make up the remainder of the 977-file release window.*
+*Note: additional root/config/release files (`AGENTS.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `docs.acp.md`, `package.json`, `pnpm-lock.yaml`, app assets/config files, and release metadata) make up the remainder of the 977-file release window.*
 
 ## Breaking / Behavior Shifts
 
