@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-09 | Version: v2026.3.8 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-12 | Version: v2026.3.11 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1097,3 +1097,15 @@ canvas-host → (minimal, mostly standalone)
 - `browser.relayBindHost` allows the extension relay to bind non-loopback addresses for WSL2 and other cross-namespace setups while keeping loopback-only defaults.
 - Strict browser navigation now validates redirect hops and fails closed when remote tab-open flows cannot inspect the chain.
 - Control UI bundled/package-proven static roots may use hardlinked assets in auto-detected installs, while configured/custom roots remain on the strict hardlink boundary.
+
+## v2026.3.11 Delta Notes
+
+### Gateway/WebSocket Origin Enforcement (GHSA-5wcw-8jjv-m286)
+
+- **Browser origin check unconditional on proxy headers** — `message-handler.ts` now derives `enforceOriginCheckForAnyClient` from the presence of an HTTP `Origin` header alone. Previously, requests reaching the gateway through a `trusted-proxy` auth path could bypass the `checkBrowserOrigin()` call if `isControlUi`/`isWebchat` flags were not set. The fix makes the origin gate fire for *any* browser-originated connection (detected via `hasBrowserOriginHeader`), regardless of the auth mode. This closes a cross-site WebSocket hijacking path where an untrusted origin could reach `operator.admin` scopes through `trusted-proxy` mode. Verified in `server.auth.browser-hardening.test.ts` which asserts that a `trusted-proxy`-authenticated connect request with `origin: "https://evil.example"` returns `{ ok: false, reason: "origin not allowed" }` even when all proxy headers are valid.
+- **`checkBrowserOrigin()` contract** (`origin-check.ts`) — The function enforces three checks in order: (1) explicit `allowedOrigins` allowlist (including `"*"` wildcard), (2) opt-in `dangerouslyAllowHostHeaderOriginFallback` Host-header match, (3) loopback-only `isLocalClient` dev fallback. A missing or `"null"` Origin always returns `{ ok: false }`. No changes to the function signature itself; the fix is at the call site in `message-handler.ts`.
+- **Control UI dashboard token scoping (#40892)** — Dashboard auth tokens are now kept in session-scoped browser storage and are scoped to the selected gateway URL; the bootstrap flow uses fragment-only token delivery to prevent credential leakage via HTTP Referer or server logs.
+
+### Sandbox/FS Bridge Write Hardening
+
+- **Staged writes pinned to verified parent directory** — `fs-bridge-mutation-helper.ts` implements `write_atomic()` in the injected Python helper using `dir_fd`-anchored file operations throughout: the parent directory is opened with `O_RDONLY | O_DIRECTORY | O_NOFOLLOW`, temp files are created inside that fd with `O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW`, and `os.replace()` is issued with matching `src_dir_fd`/`dst_dir_fd` to atomically rename within the same directory. This prevents a temporary write file from materializing outside the allowed sandbox mount before the atomic replace, even if a symlink race replaces a directory component between path resolution and file creation.

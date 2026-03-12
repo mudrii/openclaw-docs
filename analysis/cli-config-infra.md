@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-09 | Version: v2026.3.8 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-12 | Version: v2026.3.11 | Codebase: /path/to/openclaw | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1718,3 +1718,49 @@ User types: openclaw <command> [args]
 - **launchd restart semantics changed:** supervised respawn now exits and relies on launchd `KeepAlive`, supervision detection includes `XPC_SERVICE_NAME`, LaunchAgent repair/restart paths `enable` before `bootstrap`, and restart timeout failures now exit non-zero so the supervisor retries.
 - **Container/runtime ops:** Podman bind mounts now add SELinux `:Z` relabeling when needed, inaccessible-cwd setup paths fall back safely, and the runtime Docker image is smaller.
 - **Version/install/release tooling:** `openclaw --version` now includes the short commit hash when available, installer/version checks accept the decorated format, and release-check validates bundled extension manifest/root-dependency mirror drift.
+
+## v2026.3.11 Delta Notes
+
+### CLI
+
+- **CLI/skills JSON — strip ANSI and C1 control bytes from JSON output:** `skills list --json`, `skills info --json`, and `skills check --json` now strip ANSI escape sequences and C1 control bytes (U+0080–U+009F) from all string values before serialization. Fixes invalid JSON output when skill names or descriptions contained terminal color codes. Implementation: `src/cli/skills-cli.format.ts` — `sanitizeJsonValue()` calls `stripAnsi()` then replaces `JSON_CONTROL_CHAR_REGEX` before output. Fixes #27530.
+
+- **CLI/tables — ASCII borders on legacy Windows consoles:** `src/terminal/table.ts` — `resolveDefaultBorder()` defaults to `"ascii"` on `win32` when none of the modern-terminal signals (`WT_SESSION`, `xterm`/`cygwin`/`msys` in `TERM`, `vscode` in `TERM_PROGRAM`) are present. Modern Windows terminals continue to receive Unicode box-drawing borders. Fixes mojibake under GBK/936 code-page legacy consoles (fixes #40853, related #41015).
+
+- **CLI/memory teardown — close cached memory managers on CLI exit:** `src/cli/run-main.ts` now calls `closeAllMemorySearchManagers()` from `src/memory/search-manager.ts` during the one-shot CLI shutdown path. Watcher-backed memory caches (file-watching indexers) no longer keep the process alive after the command completes. Fixes #40389.
+
+- **CLI/daemon scheduled restarts — consistent scheduled gateway restart handling:** gateway scheduled restart path is now handled consistently across daemon lifecycle operations, preventing cases where a scheduled restart could be missed or duplicated.
+
+- **Exec/child commands — `OPENCLAW_CLI` env marker for subprocess detection:** `src/infra/openclaw-exec-env.ts` exports `OPENCLAW_CLI_ENV_VAR = "OPENCLAW_CLI"` and `OPENCLAW_CLI_ENV_VALUE = "1"`. Child command environments are stamped with this variable so subprocesses can detect they were launched from the CLI. Fixes #41411.
+
+### Config/Infra
+
+- **Gateway/config errors — surface up to three validation issues:** `config.set`, `config.patch`, and `config.apply` error messages now surface up to three validation issues at once (previously only the first). Implementation: `src/gateway/server.impl.ts` — validation issue formatting truncated at three items. Fixes #42664.
+
+- **Gateway/Control UI config validation — surface validation issues in dashboard:** config validation issues are now surfaced in the Control UI dashboard in addition to CLI error messages, giving users a visual indication of what is wrong with the active configuration. Fixes #42664.
+
+- **macOS/launchd restarts v2 — keep LaunchAgent registered during explicit restarts:** `src/daemon/launchd.ts` — explicit restarts now keep the LaunchAgent registered and hand off via a detached launchd helper (`src/daemon/launchd-restart-handoff.ts`). Config/hot-reload restart paths are recovered. Replaced `bootout` with `kickstart -k` for launchd restarts (falls back to `bootstrap` + `kickstart` when service was previously deregistered). Fixes #43311, #43406, #43035, #43049.
+
+- **macOS/LaunchAgent install permissions — tighten directory and plist permissions:** `src/daemon/launchd.ts` — LaunchAgent install now sets `LAUNCH_AGENT_DIR_MODE = 0o755` and `LAUNCH_AGENT_PLIST_MODE = 0o644`, and tightens existing permissions by stripping group/world write bits (`mode & ~0o022`) during install.
+
+- **State dir permissions — harden state dir on onboard:** state directory permissions are hardened during the onboarding flow to prevent world-writable or group-writable directories.
+
+- **Git/runtime state — ignore `.dev-state` in repo:** `.gitignore` now includes `.dev-state` so local runtime state files (used during development) no longer appear as untracked changes. Fixes #41848.
+
+- **Plugins/bundle repair — repair bundled plugin dirs after npm install:** bundled plugin directories are now repaired (directory structure re-validated/restored) after `npm install` runs in the plugin directory, preventing corruption from npm's behavior of overwriting or removing files.
+
+- **Runtime version — expose runtime version in gateway status:** gateway status responses now include the Node.js runtime version alongside the OpenClaw version.
+
+### Onboarding
+
+- **Onboarding/Ollama — first-class Ollama setup:** `src/commands/ollama-setup.ts` — new dedicated Ollama onboarding flow with Local or Cloud + Local modes, browser-based cloud sign-in, and curated model suggestions. Cloud model handling and model defaults are improved. Fixes #41529. Thanks @BruceMacD.
+
+- **Ollama auth flow and model defaults:** Ollama auth flow improved with cleaner browser sign-in integration and better model default selection.
+
+- **Ollama onboarding cloud — fix cloud handling:** cloud provider handling in Ollama onboarding corrected so cloud-only and Cloud + Local modes work reliably. Fixes #41529.
+
+- **Ollama share model context — fix context discovery:** shared model context discovery for Ollama now correctly resolves the active model list when Ollama is used alongside a cloud provider.
+
+- **OpenCode/onboarding — new OpenCode Go provider:** `src/commands/onboard-auth.config-opencode-go.ts` — new OpenCode Go provider added. Onboarding wizard treats Zen and Go as a single OpenCode setup, stores one shared OpenCode API key, and no longer overrides the built-in `opencode-go` catalog routing. Fixes #42313.
+
+- **macOS/onboarding remote — detect remote gateways needing shared auth token:** `src/commands/onboard-remote.ts` — remote onboarding now detects when a remote gateway requires a shared auth token, explains where to find it, and clarifies when a successful connectivity check used paired-device auth rather than the token. Fixes #43100.

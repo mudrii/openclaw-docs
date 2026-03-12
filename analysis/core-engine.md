@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-09 | Version: v2026.3.8 | Codebase: /path/to/openclaw
+> Updated: 2026-03-12 | Version: v2026.3.11 | Codebase: /path/to/openclaw
 > Modules: agents (822 files), gateway (347 files), sessions (12 files), routing (11 files), providers (11 files), hooks (43 files), context-engine (6 files)
 
 ---
@@ -1275,5 +1275,67 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **Session model switches clear stale token budgets:** model override handling now clears cached `contextTokens` as well as stale runtime model/fallback fields.
 - **Codex/OpenAI forward-compat:** `openai-codex/gpt-5.4` now resolves with a 1,050,000-token context window and 128,000 max tokens, and stale implicit Codex configs are repaired back to `chatgpt.com/backend-api` with `openai-codex-responses`.
 - **Control UI asset serving refined:** bundled/package-proven auto-detected roots now allow hardlinked assets, while configured/custom roots remain on the strict hardlink boundary.
+
+## v2026.3.11 Delta Notes
+
+### Context Engine / Compaction
+- **Overflow compaction guard and hook delivery (#41361):** `compact()` in `src/agents/pi-embedded-runner/compact.hooks.test.ts` (and corresponding runtime) now wraps engine-owned overflow compaction in a guard that catches thrown errors instead of crashing the session. Compaction lifecycle hooks fire for `ownsCompaction` engines so plugin subscribers still observe compact runs. Source: `fix(context-engine): guard compact() throw + fire hooks for ownsCompaction engines`.
+
+### Agents / Embedded Runner
+- **Bounded compaction retry and SIGUSR1 drain (#40324):** Compaction retry wait is now bounded to prevent indefinite blocking. Embedded runs are drained during SIGUSR1 restart so session lanes recover instead of staying blocked. Source: `fix(agents): bound compaction retry wait and drain embedded runs on restart`.
+
+### Agents / Context Pruning
+- **Image-only tool-result pruning (#41789, followup d68d4362e):** Two-phase fix. First pass (`a78674f11`): context pruner now prunes image-containing tool results during soft-trim instead of skipping them, aligning coverage with the new tool-result contract and extending historical image cleanup. Second pass (`d68d4362e`): additionally covers tool results whose content array contains only image blocks (no text), previously missed by the pruner. Source files: `src/agents/pi-embedded-runner/run/history-image-prune.ts`, `src/agents/pi-extensions/context-pruning/pruner.ts`.
+
+### Sessions
+- **Stale runtime metadata cleared on reset (#41173):** Before a session reset recomputes its replacement session, stale runtime `model`, `contextTokens`, and system-prompt metadata fields are now cleared. Previously, resets could carry over stale model identity and token budget from the prior session. Source: `Fix stale runtime model reuse on session reset`.
+
+### Channels / Allowlists
+- **Stale allowlist matcher cache removed:** `src/channels/allowlist-match.ts` no longer caches compiled matchers. Same-array allowlist edits and wildcard replacements now take effect immediately instead of serving stale compiled results. Source: `fix: remove stale allowlist matcher cache`.
+
+### Subagents / Authority
+- **Leaf vs orchestrator control scope persisted at spawn (#41711):** Two commits harden subagent control boundaries. `fix(security): restrict leaf subagent control scope` (`ecdbd8aa5`) and `fix: harden subagent control boundaries` (`aad014c7c`) persist the leaf-vs-orchestrator distinction at spawn time. Tool and slash-command control is now routed through shared ownership checks (`src/agents/pi-tools.policy.ts`, `src/agents/subagent-capabilities.ts`). Leaf subagents can no longer self-escalate to orchestrator-level control.
+
+### Agents / Text Sanitization
+- **Leaked model control tokens stripped (#42173):** `src/agents/pi-embedded-utils.ts` now strips leaked model control tokens — both ASCII `<|...|>` and full-width `<｜...｜>` variants — from user-facing assistant text. Follows the same architecture as the existing `stripMinimaxToolCallXml` pattern. Affects models like GLM-5 and DeepSeek that occasionally emit internal delimiter tokens in responses.
+
+### OpenAI / Phase Param
+- **Phase param preserved in responses replay:** The `openai phase` param is now preserved during OpenAI Responses API replay sequences. Source: `preserve openai phase param`.
+
+### ACP / sessions_spawn Resume
+- **`resumeSessionId` for ACP runtime (#41847):** `sessions_spawn` tool now accepts an optional `resumeSessionId` field when `runtime: "acp"` is set. Threads `resumeSessionId` through the ACP session spawn pipeline (`spawnAcpDirect` → `initializeSession` → `ensureSession` → `acpx --resume-session`), allowing agents to resume existing ACP sessions instead of starting fresh. Source: `feat(acp): add resumeSessionId to sessions_spawn for ACP session resume`.
+
+### Node / Pending Work Queue
+- **In-memory pending-work queue primitives (#41409, #41429):** `Gateway: add pending node work primitives` (`ef9597541`) introduces narrow `node.pending.enqueue` / `node.pending.drain` RPC primitives and wake-helper reuse for dormant-node work delivery. Follow-up `Gateway: tighten node pending drain semantics` (`1bc59cc09`) keeps `hasMore` true when a deferred baseline status item still needs delivery to the node.
+
+### Exec / Child Commands
+- **`OPENCLAW_CLI` env marker (#41411):** `src/entry.ts` and `src/agents/sandbox/docker.ts` now mark child command environments with `OPENCLAW_CLI` so subprocesses can detect when launched from CLI. Source: `Exec: mark child command env with OPENCLAW_CLI`.
+
+### Plugins / Context-Engine Model Auth
+- **`runtime.modelAuth` exposed to context-engine plugins (#41090):** Plugin SDK and context-engine plugin runtime now expose `runtime.modelAuth` and associated auth helpers, enabling context-engine plugins to perform authenticated model calls. Source: `fix(plugins): expose model auth API to context-engine plugins`.
+
+### Protocol / Swift Model Sync
+- **Swift bindings regenerated (#41477):** After the `node.pending.*` schema additions, Swift model bindings in `Sources/OpenClawKit/` were regenerated to reflect the updated pending node work schema. Source: `build(protocol): regenerate Swift models after pending node work schemas`.
+
+### Models / Kimi Coding
+- **Native Anthropic tool format (#38669 area, openclaw#40008):** `fix(kimi-coding)` (`51bae7512`): Kimi Coding models now receive tool definitions in native Anthropic format instead of the OpenAI tools format, restoring correct tool call handling.
+
+### Models / Alibaba Cloud Model Studio
+- **`MODELSTUDIO_API_KEY` env auth (#40634):** `src/agents/model-auth-env-vars.ts` now includes `MODELSTUDIO_API_KEY`, wiring Alibaba Cloud Model Studio through shared env-based auth discovery. Source: `fix: wire modelstudio env discovery`.
+
+### Models / Guard
+- **Optional model input capability checks guarded (#42096):** `fix(models): guard optional model input capabilities` (`10e6e2745`): access to optional `model.input` capability fields is now guarded against undefined, preventing crashes when a model entry omits the `input` capability block.
+
+### Auth / Cooldowns
+- **Expired auth-profile cooldown counters reset (#41028):** `src/agents/auth-profiles.ts` now resets error counters when an auth-profile cooldown expires before computing the next backoff interval, preventing infinite cooldown escalation from stale counters. Source: `fix(auth): reset cooldown error counters on expiry to prevent infinite escalation`.
+
+### Agents / Embedded Logs
+- **Structured lifecycle observation events (#41336):** `Agents: add embedded error observations` (`87d939be7`): structured, sanitized lifecycle and failover observation events are now emitted by the embedded runner for internal diagnostics.
+
+### Agents / Fallback Observability
+- **Structured model-fallback decision events (#41337):** `Agents: add fallback error observations` (`531e8362b`): structured, sanitized model-fallback decision events with correlated run IDs are now emitted, providing visibility into fallback paths without leaking auth credentials.
+
+### Git / Runtime State
+- **`.dev-state` ignored (#41848):** `.dev-state` added to `.gitignore` so local runtime state files do not appear as untracked repo noise. Source: `chore: add .dev-state to .gitignore`.
 
 ---

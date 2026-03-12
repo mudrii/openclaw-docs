@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-09 | **Version:** v2026.3.8
+**Updated:** 2026-03-12 | **Version:** v2026.3.11
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** ~423 TypeScript files + 313 Swift files across 14 modules
 
@@ -968,3 +968,61 @@ Shared test utilities and mock factories.
 - macOS remote mode now exposes `gateway.remote.token`, preserves unsupported non-plaintext token shapes until explicitly replaced, and warns when the app cannot consume the loaded token directly.
 - iOS/macOS node and canvas flows were hardened: queued foreground actions replay safely after resume, and scoped gateway canvas loading/capability refresh has safer fallback behavior.
 - Android Play-distributed builds are now foreground-only for Voice-tab capture and no longer ship self-update, background-location “always”, screen-record, or background-mic capture behavior.
+
+## v2026.3.11 Delta Notes
+
+### Logging/Observability
+
+- **Agents/embedded lifecycle and failover observation** (#41336) — `src/agents/pi-embedded-runner/run/failover-observation.ts` emits structured, sanitized `embedded_run_failover_decision` events (via `createFailoverDecisionLogger()`) on the `agent/embedded` subsystem. Fields include `runId`, `stage`, `decision`, `failoverReason`, `profileFailureReason`, `provider`, `model`, `profileId`, `fallbackConfigured`, and sanitized error observation fields from `buildApiErrorObservationFields()`. The `consoleMessage` field renders a single-line summary for tail-filtering. This makes overload and provider failures easier to observe and correlate in structured log output.
+
+- **Agents/embedded overload logs include failing model and provider** (#41236) — The `consoleMessage` rendered for embedded-run failover decisions (`embedded_run_failover_decision`) now includes the `provider/model` pair and a shortened profile ID, so the error-path console output directly identifies the failing model without requiring a structured log query.
+
+- **Agents/fallback observability — structured model-fallback decision events** (#41337) — `src/agents/model-fallback-observation.ts` emits structured `model_fallback_decision` events (via `logModelFallbackDecision()`) on the `model-fallback/decision` subsystem. Fields include `runId`, `decision` (`skip_candidate`, `probe_cooldown_candidate`, `candidate_failed`, `candidate_succeeded`), `requestedProvider`, `requestedModel`, `candidateProvider`, `candidateModel`, `reason`, `status`, and sanitized error observation fields. Auth-profile failure-state changes are separately logged via `logAuthProfileFailureStateChange()` in `src/agents/auth-profiles/state-observation.ts` (`auth_profile_failure_state_updated` event, `agent/embedded` subsystem) with correlated `runId` for cross-event tracing.
+
+- **Logging/probe observations — suppress probe warnings on console** (#41338) — `src/logging/subsystem.ts` adds `shouldSuppressProbeConsoleLine()`: warn-level (and below) messages from the `agent/embedded` and `model-fallback` subsystem families are silently suppressed on the console when their `runId` (or `sessionId`) matches the `probe-` prefix. Error and fatal messages are never suppressed. This prevents health-probe noise from appearing in console output while preserving full structured log output to file. Verbose mode (`isVerbose()`) bypasses suppression.
+
+### Auth/Cooldowns
+
+- **Auth/cooldowns — reset expired error counters before backoff recompute** (#41028) — `src/agents/auth-profiles/usage.ts` `computeNextProfileUsageStats()` now checks whether the existing `cooldownUntil`/`disabledUntil` has already elapsed before computing the next backoff. If the previous cooldown is expired, `errorCount` and `failureCounts` are reset to zero so the subsequent failure uses a fresh first-offense backoff window rather than escalating from stale counters. The same reset is applied by `clearExpiredCooldowns()` in-memory during profile ordering, but the lock-based updater path now also applies it when reading a fresh store from disk.
+
+- **Agents/cooldowns — default unknown failure history to `”unknown”` not `”rate_limit”`** (#42911) — `src/agents/auth-profiles/usage.ts` `resolveProfilesUnavailableReason()` now scores profiles with an active cooldown window but no recorded `failureCounts` entries as `”unknown”` instead of `”rate_limit”`. Previously the implicit default caused misleading “rate limit reached” console warnings for profiles that entered cooldown due to unclassified transient errors.
+
+### General Utilities
+
+- **Channels/allowlists — remove stale matcher caching** — `src/channels/allowlist-match.ts` functions (`resolveAllowlistMatchSimple()`, `resolveAllowlistMatchByCandidates()`) recompile the allowlist set from the input array on every call. No per-call caching is performed, so in-place mutations to the same array reference (element replacement, wildcard substitution) take effect immediately. Regression tests in `allowlist-match.test.ts` cover same-length in-place edits and wildcard-to-literal replacement.
+
+- **Exec/child commands — mark child command environments with `OPENCLAW_CLI`** (#41411) — `src/process/exec.ts` `resolveCommandEnv()` calls `markOpenClawExecEnv()` from the new `src/infra/openclaw-exec-env.ts` module, injecting `OPENCLAW_CLI=1` into the environment of every child command spawned via `runCommandWithTimeout()`. Child processes can use this marker to detect that they are running inside an OpenClaw-managed invocation.
+
+- **Git/runtime state — ignore `.dev-state` in gateway working tree** (#41848) — `.gitignore` now lists `.dev-state` so gateway-generated development state files in the working tree are not picked up by git status or committed accidentally.
+
+- **Dependencies refresh** — Workspace dependencies refreshed (excluding the pinned Carbon package). ACP session-config writes are hardened against non-string SDK values to prevent type errors during session initialization.
+
+### Auto-reply/Pairing
+
+- **Telegram/direct delivery hooks — bridge to internal `message:sent`** (#40185) — `src/telegram/bot/delivery.replies.ts` `fireSentHooks()` now calls `triggerInternalHook()` with a `message:sent` event when a `sessionKeyForInternalHooks` is present in the delivery context. This bridges successful Telegram direct-delivery sends to the internal hook bus so internal subscribers (e.g. session event listeners) observe Telegram deliveries on the same `message:sent` path used by other channels.
+
+### Control UI
+
+- **Control UI/Sessions table — restore narrow-viewport single-column collapse** (#12175) — The responsive table override in the gateway control UI is now placed adjacent to the base grid rule, and inline-size container queries are enabled. This restores correct single-column session-table layout on narrow viewports that was broken by rule ordering.
+
+- **Gateway/Control UI auth tokens — session-scoped browser storage, gateway-URL scoping** (#40892) — Dashboard auth tokens are now stored in session-scoped browser storage (cleared on tab close) instead of persistent local storage. Tokens are scoped to the selected gateway URL, and the bootstrap flow uses fragment-only navigation to avoid leaking tokens in the URL history.
+
+### macOS/iOS App
+
+- **macOS/chat UI — chat model picker and persistent thinking-level selections** (#42314) — The macOS chat UI adds a model picker for selecting the active chat model. Explicit thinking-level selections are persisted across relaunches. Provider-aware session model synchronization is hardened to prevent stale model state after provider switches.
+
+- **macOS/onboarding remote — detect shared auth token requirement** (#43100) — The macOS remote-gateway onboarding flow now detects when the selected remote gateway requires a shared auth token and explains where to find it, reducing setup confusion for remote-mode users.
+
+- **iOS/Home canvas — bundled welcome screen with live agent overview** (#42456) — The iOS home canvas adds a bundled welcome screen that includes a live agent overview. Floating controls are replaced with a docked toolbar. The layout adapts to smaller phone screen sizes.
+
+- **iOS/gateway foreground recovery — reconnect immediately on foreground return** (#41384) — The iOS app now tears down stale background sockets and reconnects to the gateway immediately when the app returns to the foreground, rather than waiting for the next scheduled reconnect attempt.
+
+- **iOS/TestFlight — local beta release flow with Fastlane** (#42991) — A local beta release flow backed by Fastlane is added for TestFlight distribution, enabling automated build and upload without requiring manual Xcode Organizer steps.
+
+### Browser/Browserbase
+
+- **Browser/Browserbase 429 — stable no-retry rate-limit guidance** (#40491) — When Browserbase returns HTTP 429 (rate limit), the error surface now provides stable no-retry guidance without buffering or discarding the response body. Previously the 429 body was consumed and discarded before the error was surfaced, making the guidance message less informative.
+
+### Build/CI
+
+- **CI/CodeQL Swift — select Xcode 26.1 before Swift build tools** (#41787) — The CodeQL Swift CI job now selects Xcode 26.1 before installing Swift build tools, ensuring the job uses Swift tools 6.2 rather than the runner's default Xcode version.

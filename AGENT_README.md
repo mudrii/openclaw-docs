@@ -75,6 +75,17 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 
 - No new top-level modules were added in this release window; feature and security changes are in existing modules, including `cli/`, `channels/`, `agents/`, `gateway/`, `security/`, `plugins/`, and `extensions/`.
 
+**v2026.3.11 additions (runtime/ops):**
+
+- **Cron isolation (BREAKING):** cron jobs can no longer notify via ad hoc agent sends or fallback main-session summaries. Run `openclaw doctor --fix` to migrate legacy cron storage and delivery metadata.
+- **Memory/multimodal:** opt-in multimodal image and audio indexing is now available for `memorySearch.extraPaths` using `gemini-embedding-2-preview`. Configurable output dimensions; reindexing triggers automatically on dimension changes.
+- **ACP session resume:** `sessions_spawn` with `runtime: "acp"` now accepts `resumeSessionId` to resume an existing ACPX/Codex conversation. `main` alias is now canonicalized so restarted ACP main sessions rehydrate instead of failing.
+- **macOS/launchd restart v2:** explicit restarts keep the LaunchAgent registered and hand off the actual restart through a detached launchd helper; config/hot reload paths recovered without unloading the service.
+- **Node pending-work queue:** `node.pending.enqueue` / `node.pending.drain` primitives added for dormant-node work delivery.
+- **Gateway runtime version:** `gateway status` now exposes the running server version.
+- **Security — GHSA-5wcw-8jjv-m286:** browser origin validation now enforced for all browser-originated connections regardless of proxy headers; closes cross-site WebSocket hijack path in `trusted-proxy` mode.
+- Additional security hardening: symlink-safe `*File` secret reads, TAR/bz2 extraction staging, exec SecretRef traversal rejection, fs-bridge staged-write pinning, gateway auth fail-closed on missing SecretRefs, `/new`/`/reset` split from admin RPC, plugin HTTP route scope isolation, `session_status` sandbox guards, `nodes` tool owner-only policy.
+
 **v2026.3.8 additions (runtime/ops):**
 
 - `openclaw backup create|verify` is now part of the top-level CLI. Use it before destructive flows or restart/debugging work that may touch local state.

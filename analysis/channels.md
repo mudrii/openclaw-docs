@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-09 | Version: v2026.3.8 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-03-12 | Version: v2026.3.11 | Cluster: CHANNELS & MESSAGING
 > Modules analyzed: `src/telegram` (134 files), `src/discord` (170 files), `src/signal` (32 files), `src/slack` (122 files), `src/whatsapp` (4 files), `src/imessage` (31 files), `src/line` (48 files), `src/channels` (174 files), `extensions/feishu` (91 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
@@ -1256,5 +1256,77 @@ Agent tool call: message(action="send", target="...", message="...")
 - **Microsoft Teams:** route allowlists no longer widen sender access when `groupPolicy: "allowlist"` is configured; sender allowlists remain enforced after route resolution.
 - **ACP / cross-channel lineage:** ACP-origin context can now surface provenance receipts and carry `originSessionId`, improving traceability when sessions cross editor/channel boundaries.
 - **Bundled channel plugins:** onboarding clears short-lived discovery cache after plugin installs, and duplicate npm-installed channel plugins no longer shadow bundled channel plugins during onboarding/update sync.
+
+---
+
+## v2026.3.11 Delta Notes
+
+### Discord
+
+- **`autoArchiveDuration` for auto-created threads** (#35065): New `autoArchiveDuration` field on guild-channel config controls the archive timeout for threads created by the `autoThread` feature. Accepted values (as string or number): `"60"` (1h), `"1440"` (1d), `"4320"` (3d), `"10080"` (1w). Defined on `DiscordGuildChannelConfig` and `DiscordChannelConfigResolved` in `src/discord/monitor/allow-list.ts`; consumed in `src/discord/monitor/threading.ts`. The previous implicit behavior was equivalent to 1h.
+
+- **Reaction ingress allowlist enforcement** (#43476 area): The `authorizeDiscordReactionIngress()` path in `src/discord/monitor/listeners.ts` now enforces the per-guild-channel users/roles allowlist, consistent with message ingress authorization. Previously the allowlist was checked on message events but could be bypassed on reaction events.
+
+- **Reply chunking: `maxLinesPerMessage` and `chunkMode` propagated** (#40133): `resolveDiscordMaxLinesPerMessage()` is now called on all live reply paths (`message-handler.process.ts`, `native-command.ts`) and the resolved `chunkMode` is propagated into the fast-send path in `reply-delivery.ts`. This ensures long Discord replies respect the configured `channels.discord.maxLinesPerMessage` instead of splitting at the default 17-line limit.
+
+- **`autoThread` on canonical guild-channel config type** (#35608): The `autoThread` boolean is now exposed on the canonical guild-channel config type in `src/discord/monitor/allow-list.ts`, making it accessible to downstream type consumers without casting.
+
+- **Runtime config SecretRef threading** (#42352): Runtime-resolved config (including `SecretRef`-backed credentials) is now threaded through Discord send paths so credentials remain resolved during message delivery.
+
+### Telegram
+
+- **Outbound HTML chunking** (#42240): Long HTML-mode outbound messages are now chunked rather than sent as a single oversized payload. The plain-text fallback and silent-delivery (`disable_notification`) params are preserved across retry attempts. When HTML chunk planning cannot safely preserve the full message, delivery cuts over to plain text.
+
+- **Final preview delivery: split active lifecycle from cleanup retention** (#41662): The active preview lifecycle is now tracked separately from cleanup-retain state, preventing missing archived preview edits from triggering a duplicate fallback send.
+
+- **Final preview delivery: ambiguous `message_id` handling** (#41932): Ambiguous missing-`message_id` finals are only retained when the preview was already visible; this prevents ghost deliveries when a preview was never sent.
+
+- **Final preview cleanup: clear stale cleanup-retain state** (#41763): Cleanup-retain state is cleared only for transient preview finals, not for persistent delivery state, preventing stale retain flags from accumulating across sessions.
+
+- **Polling: clear cleanup timeout handles after stop** (#43188): Bounded cleanup timeout handles are cleared after `runner.stop()` and `bot.stop()` settle, so stall recovery no longer leaves stray 15-second timers behind on clean shutdown.
+
+- **Polling: hang fix after stall detection** (#43424 area): A hang condition that could occur when restarting the poller after stall detection is resolved.
+
+- **Config schema: `editMessage` and `createForumTopic` accepted** (#35498): Strict config validation now accepts `editMessage` and `createForumTopic` as recognized keys, eliminating spurious unknown-key warnings for configurations that use these options.
+
+- **Exec approvals: reject `/approve` commands aimed at other bots** (#37233): `/approve` callback queries originating from interactions targeted at other bots are now rejected. Deterministic approval prompt visibility is preserved when tool-result delivery fails so the user always sees the approval prompt.
+
+- **Direct delivery hooks** (#40185): Direct delivery sends (bypassing the normal reply pipeline) are now bridged to the internal `message:sent` hook, ensuring downstream hook listeners (e.g. logging, session recording) receive direct-delivery events.
+
+- **Network env-proxy: apply transport policy to proxied dispatchers** (#40740): The configured transport policy (IP family preference, Happy Eyeballs settings) is now applied when creating the env-proxy HTTPS dispatcher in `src/telegram/fetch.ts`, fixing cases where proxy fetches bypassed the network policy.
+
+- **Docs clarification** (#42451): `channels.telegram.groups` allowlists which chats the bot participates in, while `groupAllowFrom` allowlists which users inside those chats may interact with the bot. These are separate controls and not interchangeable.
+
+- **Runtime config SecretRef threading** (#42352): Runtime-resolved config (including `SecretRef`-backed credentials) is now threaded through Telegram send paths so credentials remain resolved during message delivery.
+
+### Signal
+
+- **Config schema: `channels.signal.accountUuid` accepted** (#35578): Strict config validation now accepts `channels.signal.accountUuid`. This field (`src/config/zod-schema.providers-core.ts`, type `src/config/types.signal.ts`) identifies the bot's own Signal UUID for self-message filtering and was already functional but previously triggered unknown-key warnings under strict validation.
+
+### Feishu (Lark)
+
+- **Local image auto-convert: `mediaLocalRoots` passed through `sendText`** (#40623): The `mediaLocalRoots` allowlist is now forwarded into the `sendText` local-image shim in `extensions/feishu/src/outbound.ts`, so text payloads whose content resolves to a local image path correctly upload as Feishu images. Previously `mediaLocalRoots` was absent from the shim call and local image auto-conversion silently failed.
+
+### Microsoft Teams
+
+- **Allowlist resolution: General channel conversation ID used as team key** (#41838): When resolving a team allowlist entry, the General channel's conversation ID (as returned by the Graph API) is now used as the team key. This matches the `channelData.team.id` value that the Bot Framework runtime sends at message delivery time, fixing allowlist mismatches against the Graph API group GUID. Implemented in `extensions/msteams/src/resolve-allowlist.ts`.
+
+### Mattermost
+
+- **Markdown: first-line indentation preserved when stripping bot mentions** (#18655): Stripping bot mention prefixes no longer drops leading whitespace from the first line of the message, preserving indented list items and code blocks. Mattermost tables are now rendered natively by default rather than falling back to a fenced-code block.
+
+- **Plugin send actions: `replyTo` fallback normalization** (#41176): Threaded plugin sends now trim blank `replyTo` IDs and reuse the correct reply target when the direct `replyTo` fallback path is taken, preventing malformed reply threads from blank-ID payloads.
+
+### WhatsApp
+
+- **Outbound whitespace: trim leading whitespace** (#43539): Leading whitespace in direct outbound sends is trimmed before delivery (`src/web/outbound.ts`), matching the existing behavior of other outbound paths.
+
+### iMessage (BlueBubbles)
+
+- **Self-chat echo dedupe: match on `is_from_me` + same chat/text/timestamp** (#38440): Reflected duplicate copies of the bot's own messages are now dropped only when a matching `is_from_me` event was recently seen for the same chat, text content, and `created_at` timestamp. The previous dedupe was too broad and could suppress legitimate messages in self-chat threads.
+
+### Channels (shared infrastructure)
+
+- **Stale matcher caching removed**: The allowlist matcher cache that was keyed on the array reference has been removed. Same-array allowlist edits and wildcard-entry replacements now take effect immediately on the next match evaluation rather than returning a stale compiled matcher.
 
 *End of analysis. Total files analyzed: ~806 across 9 modules (including extensions/feishu).*

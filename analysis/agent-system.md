@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-09 | Version: v2026.3.8
+> Updated: 2026-03-12 | Version: v2026.3.11
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1093,5 +1093,40 @@ When event fires:
 - ACP child runs persist transcript/session metadata and `spawnedBy` lineage more reliably without blocking successful execution on storage failures.
 - Rate-limit classification now catches Bedrock-style `Too many tokens per day` quota errors without confusing them with context-window failures.
 - Cron text-only announce delivery now routes through the real outbound adapters, and restart catch-up staggering prevents missed-job replays from flooding the gateway after restart.
+
+## v2026.3.11 Delta Notes
+
+### ACP / Session Changes
+
+- **ACP main session alias** (#43285, fixes #25692): `"main"` is now canonicalized before ACP session lookup so restarted ACP main sessions rehydrate into the existing session instead of failing with `Session is not ACP-enabled: main`.
+- **ACP `sessions_spawn` resume** (#41847): `sessions_spawn` accepts an optional `resumeSessionId` parameter when `runtime: "acp"`, enabling spawned ACP sessions to resume an existing ACPX/Codex conversation thread.
+- **ACP `spawnedBy`/`spawnDepth` lineage on session keys** (#40995): `sessions.patch` now accepts `spawnedBy` and `spawnDepth` lineage fields on ACP session key payloads.
+- **ACP stop reason: `error` → `end_turn`** (#41187): gateway chat `state: "error"` is now mapped to ACP `end_turn` instead of `refusal`, matching actual chat-error semantics.
+- **ACP `setSessionMode` failure propagation** (#41185): `sessions.patch` failures from the gateway are now propagated back to ACP clients rather than silently swallowed.
+- **ACP bridge mode hardening** (#41424): unsupported per-session MCP server configuration is now rejected at session setup; rejected session-mode changes are propagated to the caller.
+- **ACP `loadSession` UX** (#41425): stored user and assistant text turns are replayed on `loadSession`; session controls and metadata are exposed in the response.
+- **ACP tool streaming enrichment** (#41442): `tool_call` and `tool_call_update` events are enriched with best-effort text content and file-location hints.
+- **ACP runtime image attachments** (#41427): normalized inbound image attachments are forwarded into ACP runtime turns.
+- **ACP implicit stream for `mode="run"` spawns** (#42404): `mode="run"` ACP spawns implicitly stream to the parent session when the requester is an eligible subagent orchestrator.
+- **ACP ACPX runtime RPC coverage** (#41456): gateway RPC now covers ACP lineage patching operations.
+- **ACP context engine model auth** (#41090): `runtime.modelAuth` is exposed to plugins and the plugin-sdk provides auth helpers so plugins can resolve API keys through the normal auth pipeline.
+- **ACP ACPX pin bump** (#41975): bundled `acpx` updated to `0.1.16`.
+
+### Agent Fixes
+
+- **Strip model control tokens** (#42173): leaked model control tokens (`<|...|>` ASCII and `<｜...｜>` full-width variants, e.g. from GLM-5/DeepSeek) are stripped from user-facing assistant text by `stripModelSpecialTokens()` in `pi-embedded-utils.ts`.
+- **Azure OpenAI Responses API store** (#42934): `azure-openai` is included in the Responses API `store` override set alongside `openai` and `azure-openai-responses`.
+- **Ignore stale `errorMessage` on successful turns** (#40616): stale `errorMessage` fields on assistant turns that ultimately succeeded are ignored during rendering.
+- **Billing cooldown probing** (#41422): existing throttle checks are used to probe single-provider billing cooldowns.
+- **HTTP 499 treated as transient** (#41468): HTTP 499 responses are classified as transient errors eligible for retry/failover.
+- **Venice 402 billing error** (#43205): Venice 402 responses are recognized as billing errors in the fallback pipeline.
+- **Poe 402 billing error** (#42278): Poe 402 responses are recognized as billing errors in the fallback pipeline.
+- **Gemini `MALFORMED_RESPONSE` treated as retryable timeout** (#42292): the `MALFORMED_RESPONSE` stop reason from Gemini is treated as a retryable timeout rather than a hard failure.
+- **Cooldown default: `unknown` instead of `rate_limit`** (#42911): unclassified cooldown reasons default to `"unknown"` rather than `"rate_limit"`, preventing incorrect rate-limit handling for unrelated failures.
+- **Embedded runner compaction retry bound** (#40324): compaction retry wait time is bounded; SIGUSR1 restart drains pending work before exiting.
+- **Fallback cooldown probing capped** (#41711): per-provider cooldown probing is capped to one attempt per provider per fallback run, preventing redundant probes.
+- **Context pruning: image-only tool results** (#43045): image-only tool results are pruned during soft context trim, reducing token pressure when image content is no longer needed.
+- **Session reset: clear stale model metadata** (#41173): stale runtime model and fallback metadata are cleared before session resets to prevent stale model state persisting into new sessions.
+- **Subagent authority persistence** (#41711): leaf vs orchestrator control scope is persisted at spawn time, ensuring authority checks remain consistent for the lifetime of a subagent session.
 
 ---

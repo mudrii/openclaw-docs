@@ -1,7 +1,7 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-09 | **Version:** v2026.3.8
+**Updated:** 2026-03-12 | **Version:** v2026.3.11
 **Codebase:** /path/to/openclaw
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
@@ -727,3 +727,46 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 - Daemon start/restart now pre-validates config before handoff, and invalid restart-triggered shutdown drains exit non-zero so launchd/systemd retry instead of treating the stop as clean.
 - launchd supervision detection now includes `XPC_SERVICE_NAME`, and LaunchAgent repair/restart paths `enable` services before `bootstrap`.
 - Gateway config RPC replies now surface the live config path from the active IO layer, matching runtime-resolved config state.
+
+## v2026.3.11 Changes
+
+### Gateway / WebSocket Origin (Security — GHSA-5wcw-8jjv-m286)
+- **Browser origin validation enforced for all browser-originated connections:** `src/gateway/origin-check.ts` previously skipped `enforceOriginCheckForAnyClient` when proxy headers were present, allowing browser-originated WebSocket connections from untrusted origins to bypass validation via a trusted reverse proxy. An attacker serving a page from an untrusted origin could inherit proxy-injected identity and reach `sharedAuthOk` / `roleCanSkipDeviceIdentity` paths without any origin restriction. The `hasProxyHeaders` exemption is removed — origin validation now runs for all browser-originated connections regardless of proxy headers. Source: `fix(gateway): enforce browser origin check regardless of proxy headers`, fixes GHSA-5wcw-8jjv-m286.
+
+### Gateway / Config Errors (#42664)
+- **Config validation issues surfaced in RPC error messages:** `src/gateway/server-methods/config.ts` now includes up to three validation issue details in the top-level error message for `config.set`, `config.patch`, and `config.apply` RPCs, while preserving the full structured issue list in the response payload. Previously, the top-level error was opaque. Source: `Gateway/Dashboard: surface config validation issues (#42664)`.
+
+### Gateway / Control UI (#42664)
+- **Control UI surfaces config validation issues:** The Control UI dashboard now displays the validation issue details returned by the `config.*` RPCs, providing immediate feedback on config errors. Part of the same commit as the RPC change above.
+
+### Gateway / before_tool_call Hook (#43476)
+- **`before_tool_call` hook runs for HTTP tools:** `fix(gateway): run before_tool_call for HTTP tools` (`8cc0c9baf`): the `before_tool_call` gateway hook was previously skipped for tool invocations arriving via HTTP (e.g. OpenAI-compatible API). It now fires for HTTP-path tool calls consistently with WebSocket-path tool calls.
+
+### Gateway / Auth Fail-Closed (#42672)
+- **Local SecretRef auth fails closed when unavailable:** `Gateway: fail closed unresolved local auth SecretRefs` (`0125ce1f4`): when local `SecretRefs` are configured for gateway auth and cannot be resolved, the gateway now fails closed (rejects the connection) instead of silently falling back to remote credentials. Source: `src/gateway/` auth path, `fix: fail closed for unresolved local gateway auth refs`.
+
+### Gateway / Auth Recovery (#42507)
+- **One trusted device-token retry on shared-token mismatch:** `fix(gateway): harden token fallback/reconnect behavior and docs` (`a76e81019`): gateway clients now allow one trusted device-token retry attempt on a shared-token mismatch, with recovery hints surfaced to the caller. Reconnect gating is tightened across client types. Source: `src/cli/daemon-cli/gateway-token-drift.ts`.
+
+### Gateway / Session Reset Auth (Security)
+- **`/new` and `/reset` split from admin-only `sessions.reset` RPC:** `fix(gateway): split conversation reset from admin reset` (`c91d1622d`): the gateway conversation reset path (`/new` command and user-facing session `/reset`) is extracted from the admin-only `sessions.reset` RPC into `src/gateway/session-reset-service.ts`. This prevents non-admin clients from reaching admin reset paths by routing through the wrong RPC handler.
+
+### macOS / launchd Restarts (Fixes #43311, #43406, #43035, #43049)
+- **`bootout` replaced with `kickstart -k` for launchd restarts:** `fix(daemon): replace bootout with kickstart -k for launchd restarts on macOS` (`3c0fd3dff`): `launchctl bootout` permanently unloaded the LaunchAgent plist, causing the gateway to become unresponsive to KeepAlive respawn after any restart trigger (agent-session restart, SIGTERM on config reload, gateway self-restart, hot reload). `restartLaunchAgent()` in `src/daemon/launchd.ts` now uses `launchctl kickstart -k`, which force-kills and restarts the service without unloading the plist. A new detached handoff helper `src/daemon/launchd-restart-handoff.ts` handles restarts originating from inside the launchd-managed process tree to avoid the caller being killed mid-command. Self-restart paths in `process-respawn.ts` schedule the detached start-after-exit handoff before exiting.
+- **Kickstart restart hardened:** Follow-up `fix(daemon): address clanker review findings for kickstart restart` (`841ee2434`): fixed sleep replaced with caller-PID polling in both kickstart and start-after-exit handoff modes; the enable+bootstrap fallback is gated on `isLaunchctlNotLoaded()` so re-registration is only attempted when kickstart fails due to an absent job, not for other kickstart failures.
+- **LaunchAgent remains registered during explicit restarts:** The LaunchAgent plist stays registered throughout the restart sequence; launchd KeepAlive remains effective across all restart trigger paths listed above.
+
+### macOS / LaunchAgent Install Permissions
+- **LaunchAgent directory and plist permissions tightened:** `fix(launchd): harden macOS launchagent install permissions` (`ce9e91fdf`): `src/daemon/launchd.ts` now applies stricter permissions on the LaunchAgent directory and plist file during install, reducing the risk of local privilege escalation through LaunchAgent plist modification.
+
+### macOS / Daemon Kickstart
+- **`bootout` replaced with `kickstart -k` for daemon restarts:** Same as the launchd restart change above — the `daemon` module restart path now uses `kickstart -k` instead of `bootout`. See macOS/launchd Restarts above for full details.
+
+### Daemon / Scheduled Restarts
+- **Scheduled gateway restarts handled consistently in CLI:** `fix(cli): handle scheduled gateway restarts consistently` (`b31836317`): `src/cli/daemon-cli/lifecycle-core.ts` and `lifecycle.ts` now handle scheduled gateway restart signals consistently, preventing state divergence between the CLI restart poller and the daemon restart path.
+
+### Runtime Version
+- **Runtime version exposed in gateway status:** `feat: expose runtime version in gateway status` (`5ca780fa7`): `src/commands/status.types.ts` and `status.summary.ts` now include the runtime version in the gateway status output.
+
+### Git / Runtime State
+- **`.dev-state` ignored (#41848):** `.dev-state` added to `.gitignore` so local runtime state does not appear as untracked repo noise. This is also noted in the core-engine delta for completeness. Source: `chore: add .dev-state to .gitignore`.

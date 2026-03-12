@@ -6,7 +6,93 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.8 — Latest Documented Release Summary
+## OpenClaw v2026.3.11 — Latest Documented Release Summary
+
+> **Released:** 2026-03-11 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.8..v2026.3.11` | **Scan stats:** 235 commits, 977 files changed, +48,586 / -9,950 lines
+
+## Highlights
+
+- **Memory/multimodal indexing:** new opt-in multimodal image and audio indexing for `memorySearch.extraPaths` using Gemini `gemini-embedding-2-preview`, with strict fallback gating and scope-based reindexing. Configurable output dimensions; reindexing triggers automatically when dimensions change.
+- **iOS Home canvas overhaul:** bundled welcome screen with live agent overview (refreshes on connect, reconnect, and foreground return), replaced floating controls with a docked toolbar, and chat now opens in the resolved main session instead of a synthetic `ios` session.
+- **macOS chat model picker:** new model picker in the macOS chat UI with persistent explicit thinking-level selections and hardened provider-aware session model sync.
+- **Onboarding/Ollama first-class:** full Ollama setup wizard with Local or Cloud + Local modes, browser-based cloud sign-in, curated model suggestions, and cloud-model handling that skips unnecessary local pulls.
+- **OpenCode Go provider:** new OpenCode Go provider in the wizard; Zen and Go share a single OpenCode setup with one shared key while runtime providers remain split.
+- **ACP session resume + UX:** spawned ACP sessions can now resume existing ACPX/Codex conversations via `resumeSessionId`; `loadSession` replays stored user and assistant text; `tool_call` events enriched with file-location hints; `main` alias canonicalized so restarted ACP main sessions rehydrate cleanly.
+- **macOS/launchd restart hardening v2:** LaunchAgent stays registered during explicit restarts; self-restarts handed off through a detached launchd helper; config/hot reload restart paths recovered without unloading the service. Fixes #43311, #43406, #43035, #43049.
+- **BREAKING — Cron/doctor isolation:** cron jobs can no longer notify through ad hoc agent sends or fallback main-session summaries; `openclaw doctor --fix` migrates legacy cron storage and legacy notify/webhook delivery metadata.
+- **Security — GHSA-5wcw-8jjv-m286 (Gateway/WebSocket):** browser origin validation now enforced for all browser-originated connections regardless of proxy headers, closing a cross-site WebSocket hijacking path in `trusted-proxy` mode.
+- **Extensive security hardening:** symlink-safe secret file reads, TAR/bz2 extraction staging, exec SecretRef traversal rejection, fs-bridge staged-write pinning, gateway auth fail-closed, session-reset auth split, plugin HTTP route scope isolation, session_status sandbox guards, and more (see Security section).
+
+For full detail, see the v2026.3.11 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.11`).
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | 632 |
+| `extensions/` | 99 |
+| `docs/` | 52 |
+| `apps/` | 31 |
+| `ui/` | 15 |
+| `scripts/` | 6 |
+
+*Note: additional root/config/release files (`Dockerfile*`, `package.json`, `pnpm-lock.yaml`, `appcast.xml`, workflow/config files, and fixtures) make up the remainder of the 977-file release window.*
+
+## Breaking / Behavior Shifts
+
+1. **Cron/doctor isolation (BREAKING):** cron jobs can no longer send ad hoc agent notifications or fallback summaries to the main session. Run `openclaw doctor --fix` to migrate legacy cron state and legacy notify/webhook delivery metadata.
+
+## Major Features
+
+- Multimodal memory indexing (images + audio) with `gemini-embedding-2-preview`
+- iOS Home canvas overhaul — live agent overview + docked toolbar
+- macOS chat model picker with persistent thinking-level selections
+- Ollama first-class onboarding wizard (Local and Cloud + Local modes)
+- OpenCode Go provider (shared key with Zen, split runtime providers)
+- ACP session resume via `resumeSessionId` in `sessions_spawn`
+- ACP `loadSession` session context replay
+- `tool_call` / `tool_call_update` events enriched with file-location hints
+- macOS/launchd v2 restart — detached helper hand-off, no unload/reload cycle
+- Node pending-work queue primitives (`node.pending.enqueue` / `node.pending.drain`)
+- Gateway runtime version exposed in gateway status
+- `OPENCLAW_CLI` environment marker in child command environments
+
+## Security Hardening
+
+- **GHSA-5wcw-8jjv-m286:** WebSocket origin enforced regardless of proxy headers (cross-site hijack fix)
+- Symlink-safe `*File` secret reads (reject path-swap races and symlink-backed secret files)
+- TAR / `tar.bz2` extraction staging against destination symlink escapes
+- Exec SecretRef traversal id rejection across schema, runtime, and gateway (#42370)
+- fs-bridge staged writes pinned to verified parent directories
+- Gateway auth fails closed when local SecretRefs configured but unavailable (#42672)
+- Config writes enforce both originating and targeted account scope
+- `system.run` approval-backed commands fail closed without concrete single local file operand
+- `/new` and `/reset` split from admin-only `sessions.reset` RPC
+- Unauthenticated plugin HTTP routes blocked from inheriting synthetic admin gateway scopes
+- `session_status` enforces sandbox session-tree visibility before reads/mutations
+- `nodes` tool treated as owner-only fallback policy
+- Whitespace-delimited `EXTERNAL UNTRUSTED CONTENT` markers treated like underscore-delimited variants
+- Telegram `/approve` commands reject approvals aimed at other bots
+- Subagent leaf vs orchestrator scope persisted at spawn time
+- Discord reaction ingress enforces users/roles allowlist
+- Gateway browser origin check enforced regardless of proxy headers
+- State dir permissions hardened during onboard
+- Plugin discovery env isolated from global state
+- OpenAI WebSocket replay hardened
+
+## Maintainer Upgrade Checklist (v2026.3.11)
+
+1. **Run `openclaw doctor --fix` for cron migration:** cron jobs that previously sent ad hoc notifications or fallback main-session summaries will break without migration.
+2. **Review WebSocket origin policy:** if running behind a reverse proxy with `trusted-proxy` mode, the new origin enforcement may reject same-origin WebSocket connections that previously passed. Verify gateway CORS/origin config.
+3. **Review ACP cron session usage:** if ACP spawns previously relied on silent error-state completions mapped to `refusal`, those are now `end_turn`.
+4. **Check `*File` secret paths:** paths pointing to symlinks will now be rejected. Update to direct regular file paths.
+5. **Review plugin HTTP routes:** unauthenticated plugin HTTP routes can no longer call `runtime.subagent.*` admin methods. Add gateway auth if needed.
+6. **Ollama onboarding:** if upgrading Ollama setups, re-run the wizard to pick up the new Local/Cloud + Local mode and updated model defaults.
+
+---
+
+## OpenClaw v2026.3.8 — Historical Release Summary
 
 > **Released:** 2026-03-09 | **Policy note:** latest *documented* released section stays at top.
 > **Window analyzed:** `v2026.3.7..v2026.3.8` | **Scan stats:** 260 commits, 769 files changed, +29,292 / -8,663 lines

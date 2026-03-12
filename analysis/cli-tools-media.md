@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-09 | Version: v2026.3.8
+> Updated: 2026-03-12 | Version: v2026.3.11
 
 ## Overview
 
@@ -894,3 +894,33 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 - **Browser/CDP remote tooling:** direct `ws://` / `wss://` CDP endpoints are supported as primary profiles, wildcard debugger URLs are rewritten back to the external host/port, and `browser.relayBindHost` supports WSL2/cross-namespace relay exposure.
 - **TUI/runtime UX:** the TUI can infer the active agent from the current workspace, and the light-terminal palette now auto-detects `COLORFGBG` with an `OPENCLAW_THEME=light|dark` override.
 - **Talk/platform behavior:** top-level `talk.silenceTimeoutMs` now controls pause-to-send thresholds, and Android Play-distributed builds drop self-update, background-location, screen-record, and background-mic capture behavior.
+
+## v2026.3.11 Delta Notes
+
+### Tools
+
+- **Tools/web search Brave — `llm-context` grounding snippets as plain strings:** `src/agents/tools/web-search.ts` — `BraveLlmContextResult.snippets` entries are now filtered with `typeof s === "string"` before use, treating grounding snippet fields as plain strings rather than assuming they are always strings. Prevents `web_search` from returning empty snippet arrays in LLM Context mode when the API returns non-string snippet values. Fixes #41387.
+
+- **Tools/web search OpenRouter Perplexity — recover citation extraction from `message.annotations`:** `src/agents/tools/web-search.ts` — OpenRouter Perplexity citation extraction now reads from `choice.message.annotations` in addition to the top-level response, recovering citations that were silently dropped when Perplexity routed through OpenRouter. Fixes #40881.
+
+- **Resolve web tool SecretRefs atomically at runtime:** `src/cli/command-secret-gateway.ts` + `src/secrets/runtime-web-tools.ts` — web tool `SecretRef` values (`apiKey` and similar fields) are now resolved atomically at runtime and swapped into the gateway snapshot in a single operation, preventing partial-resolution races. Fixes #41599.
+
+- **Models/Kimi Coding — send tools in native Anthropic format:** Kimi Coding models (`kimi-coding/k2p5` and related) now receive tool definitions in native `anthropic-messages` format again. A regression had caused tool calls to degrade to XML/plain-text encoding, reducing tool call reliability. Fixes #38669, #39907, #40552.
+
+- **Models/Alibaba Cloud Model Studio — `MODELSTUDIO_API_KEY` env auth:** `src/agents/model-auth-env-vars.ts` — `MODELSTUDIO_API_KEY` is now wired through shared env auth, implicit provider discovery, and shell-env fallback. Alibaba Cloud Model Studio can now authenticate via environment variable without manual config. Fixes #40634.
+
+- **Models guard — guard optional `model.input` capability checks:** capability checks on `model.input` are now guarded for optional/undefined values, preventing runtime errors when a model entry omits the `input` field. Fixes #42096.
+
+### Memory
+
+- **Memory/multimodal — new opt-in multimodal image and audio indexing:** `src/memory/` — new opt-in multimodal memory indexing mode using `gemini-embedding-2-preview` for image and audio content. When enabled, image and audio attachments in memory are embedded alongside text for unified multimodal search. Fixes #43460.
+
+- **Memory/Gemini embedding-2-preview — configurable output dimensions and automatic reindexing:** `src/memory/embeddings-gemini.ts` + `src/memory/manager-sync-ops.ts` — `gemini-embedding-2-preview` embeddings now support configurable `outputDimensionality`. Changing the dimensionality setting triggers automatic reindexing of the memory store. Fixes #42501.
+
+### Models/Catalog
+
+- **OpenRouter stealth models — Hunter Alpha and Healer Alpha in built-in catalog:** `src/agents/models-config.providers.static.ts` — temporary entries for `openrouter/hunter-alpha` (Hunter Alpha) and `openrouter/healer-alpha` (Healer Alpha) added to the built-in model catalog. Fixes #43642.
+
+### Agents
+
+- **Agents/context pruning — prune image-only tool results during soft-trim:** `src/agents/pi-extensions/context-pruning/` — image-only tool results are now pruned during soft-trim (replaced with placeholders), and historical image cleanup is extended to cover more cases where replayed image bytes are not needed. Reduces token usage and context pressure for vision-heavy sessions. Fixes #43045.

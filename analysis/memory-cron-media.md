@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-09 | Codebase: /path/to/openclaw | Version: v2026.3.8
+> Updated: 2026-03-12 | Codebase: /path/to/openclaw | Version: v2026.3.11
 
 ---
 
@@ -84,6 +84,20 @@ The memory module provides **semantic search over markdown files and session tra
 - **QMD discard-output mode** (#28900) — `qmd update` and `qmd embed` commands now run with `discardOutput: true`, draining stdout without accumulation. Prevents "produced too much output" failures on large indexes (>200K chars). Contributor: @Glucksberg.
 
 - **LanceDB extension: custom OpenAI baseUrl and dimensions** (#17874) — The `memory-lancedb` extension (`extensions/memory-lancedb/`) now supports `embedding.baseUrl` and `embedding.dimensions` configuration fields, enabling use of OpenAI-compatible endpoints (e.g. Ollama at `http://localhost:11434/v1`) and custom vector dimensions for non-standard models. When `dimensions` is specified, the built-in model-dimension lookup is bypassed.
+
+### v2026.3.11 Changes <!-- v2026.3.11 -->
+
+- **Multimodal memory indexing** (#43460) — Opt-in multimodal image and audio indexing for `memorySearch.extraPaths`. When enabled, image files (`.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`, `.heic`, `.heif`) and audio files (`.mp3`, `.wav`, `.ogg`, `.opus`, `.m4a`, `.aac`, `.flac`) in configured extra paths are indexed using Gemini structured inputs. Requires the `gemini-embedding-2-preview` model. Strict fallback gating prevents non-Gemini-2 providers from attempting multimodal indexing. Reindexing is triggered automatically when the multimodal scope settings change. Configuration: `memorySearch.multimodal.enabled`, `memorySearch.multimodal.modalities` (`"image"`, `"audio"`, or `"all"`), `memorySearch.multimodal.maxFileBytes` (default 10 MB).
+
+- **`gemini-embedding-2-preview` support** (#42501) — The Gemini embedding provider now supports `gemini-embedding-2-preview` with configurable output dimensions. Valid dimension values are `768`, `1536`, and `3072` (default). When the configured dimension value changes, the memory index is automatically reindexed. The model set is tracked in `GEMINI_EMBEDDING_2_MODELS` in `embeddings-gemini.ts`.
+
+- **Normalize Gemini embeddings** (#43409) — Gemini embedding vectors are now L2-normalized before storage. The normalization helper `normalizeGeminiEmbeddingModelForMemory()` is exposed from `multimodal.ts` for use in provider routing.
+
+- **Revalidate multimodal files before indexing** — Multimodal file entries (images/audio) are revalidated against the filesystem immediately before indexing. Files that grow or change between discovery and indexing are skipped to prevent partial or corrupt index entries.
+
+- **Forward `memoryFlushWritePath` through `runEmbeddedPiAgent`** (#41761) — The `memoryFlushWritePath` parameter is now correctly forwarded when running embedded agent sessions, ensuring memory flush writes reach the intended path in all execution contexts.
+
+- **Close cached memory managers in one-shot CLI shutdown** (#40389) — The `close()` lifecycle method is now called on cached memory search and index manager instances during one-shot CLI teardown, preventing unclosed SQLite connections and dangling file watchers.
 
 ### File Inventory (86 files)
 
@@ -372,6 +386,18 @@ The cron module provides **scheduled job execution** — one-shot (`at`), recurr
 - **Legacy schedule field migration** (#28889) — Legacy `schedule.cron` fields in stored jobs are migrated to the current `schedule.expr` format on load.
 
 - **List sort guard** (#28896) — `cron list` sorting now guards against malformed legacy jobs that lack required fields.
+
+### v2026.3.11 Changes <!-- v2026.3.11 -->
+
+#### Delivery Isolation (BREAKING)
+
+- **Tighten isolated cron delivery** (#40998, BREAKING) — Isolated cron jobs can no longer deliver responses through ad hoc agent sends or fall back to main-session summaries. Cron delivery is now strictly scoped to the isolated session's configured delivery target. `openclaw doctor --fix` migrates legacy cron storage records and legacy `notify`/webhook delivery metadata to the current format. Operators upgrading from older stores should run `openclaw doctor --fix` to avoid silent delivery failures.
+
+#### Reliability
+
+- **Cron subagent fix: empty/`NO_REPLY` responses** (#41383) — Empty responses and explicit `NO_REPLY` returns from cron subagents are no longer misclassified as interim acknowledgements. Previously this could trigger a spurious retry turn; now they are correctly treated as deliberate non-delivery.
+
+- **Record `lastErrorReason` in cron job state** (#14382) — The cron job state now persists `lastErrorReason` (typed as `FailoverReason`) after a failed run, and the gateway schema is kept aligned with the full failover-reason set. This makes failure reasons queryable without reading run logs.
 
 ### File Inventory (83 files)
 
@@ -1032,3 +1058,14 @@ type ParsedFrontmatter = Record<string, string>;
 - **Cron/Telegram announce delivery:** text-only announce jobs now route through the real outbound adapters after descendant finalization, fixing false-positive `delivered: true` results for plain Telegram targets.
 - **Cron owner-context recovery:** trusted isolated cron runs once again receive owner context so `cron` / `gateway` tooling remains available after earlier owner-auth hardening.
 - **Telegram media download recovery:** stalled body reads now time out without aborting slow-but-still-streaming downloads, preventing hung file downloads from wedging the polling loop.
+
+## v2026.3.11 Delta Notes
+
+- **Multimodal memory indexing (opt-in):** image and audio files in `memorySearch.extraPaths` can now be indexed using Gemini `gemini-embedding-2-preview`; scope-based reindexing fires automatically when multimodal settings change (#43460).
+- **`gemini-embedding-2-preview` memory support:** configurable output dimensions (768/1536/3072) with automatic reindex on dimension changes; Gemini embeddings are now L2-normalized (#42501, #43409).
+- **Multimodal file revalidation:** files are rechecked against the filesystem immediately before indexing — size changes after discovery abort the index entry.
+- **`memoryFlushWritePath` forwarding fix:** correctly threaded through `runEmbeddedPiAgent` so memory flush writes always land at the configured path (#41761).
+- **Memory manager CLI teardown:** cached search/index managers are now explicitly closed during one-shot CLI shutdown, preventing dangling SQLite handles (#40389).
+- **BREAKING — Cron delivery isolation tightened:** isolated cron jobs can no longer fall back to ad hoc agent sends or main-session summaries; run `openclaw doctor --fix` to migrate legacy storage and delivery metadata (#40998).
+- **Cron `NO_REPLY`/empty response fix:** empty or `NO_REPLY` cron subagent responses are no longer misidentified as interim acknowledgements, preventing spurious retry turns (#41383).
+- **Cron `lastErrorReason` persistence:** failed run error reasons are now stored in job state and the gateway schema covers the full `FailoverReason` set (#14382).

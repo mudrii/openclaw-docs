@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-09 | Version: v2026.3.8
+> Updated: 2026-03-12 | Version: v2026.3.11
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -866,3 +866,33 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 - `system.run` approvals for `bun` / `deno run` now bind script operands to on-disk file snapshots, blocking post-approval rewrites.
 - Skill download installs pin the validated per-skill tools root before writing archives, preventing lexical-path rebinding from redirecting writes.
 - Feishu's bundled runtime dependency mirror is now enforced at the root-package level so bundled installs do not miss required SDK runtime bits.
+
+## v2026.3.11 Delta Notes
+
+### Plugin Hook Context Parity (#42362)
+
+- **`trigger` and `channelId` in embedded hook contexts** — `llm_input`, `agent_end`, and `llm_output` hooks now receive `trigger` and `channelId` fields through the embedded agent-run context (`PluginHookAgentRunContext` in `types.ts`). Previously these fields were present in `session_start`/`message_received` hook payloads but absent from the LLM-phase hooks, meaning plugins could not correlate hook phases to the originating channel or run trigger. `trigger` values include `"user"`, `"heartbeat"`, `"cron"`, and `"memory"`; `channelId` is the channel identifier string (e.g., `"telegram"`, `"discord"`).
+
+### Plugin Global Hook Runner State Hardening (#40184)
+
+- **Singleton state leak prevention** — `hook-runner-global.ts` singleton handling is hardened so that reuse of the shared global hook runner across registry reloads (e.g., after plugin install/uninstall) does not carry over stale runner state or corrupt hook registrations. The fix ensures `initializeGlobalHookRunner()` always initializes from the current registry rather than reusing a partially-torn-down runner instance.
+
+### Plugin Discovery Environment Isolation
+
+- **Plugin discovery env isolated from global state** — The plugin discovery process (`discovery.ts`) now runs with an isolated environment snapshot. Previously, mutations to process-level global state during gateway startup could bleed into the discovery env, causing non-deterministic candidate filtering. The isolation change ensures the discovery result depends only on the filesystem state and config, not on runtime global mutations.
+
+### Archive Extraction Hardening (Plugin Installs)
+
+- **TAR and `tar.bz2` symlink escape prevention** — Plugin installs from TAR and external `tar.bz2` archives now extract into a staging directory first. The staging pass detects destination symlinks and pre-existing child-symlink entries that could redirect extracted paths outside the plugin install root before any files are written to the final location.
+
+### SecretRef Exec Traversal Rejection (#42370)
+
+- **Traversal IDs rejected across schema, runtime, and gateway** — `exec` SecretRef IDs that contain traversal segments are now rejected at all three validation layers (schema validation, runtime SecretRef resolution, gateway auth). Previously, a crafted traversal ID could escape the expected SecretRef namespace.
+
+### Security/Plugin Runtime: Unauthenticated HTTP Routes
+
+- **Plugin HTTP routes do not inherit admin gateway scopes** — Unauthenticated plugin HTTP routes no longer inherit synthetic `operator.admin` gateway scopes when invoking `runtime.subagent.*`. A plugin's HTTP route that lacks a gateway auth token now executes subagent calls with the scope level corresponding to the actual request auth, not an elevated synthetic scope that was being injected for gateway-initiated plugin calls.
+
+### ACP/Context Engine: Plugin SDK Model Auth (#41090)
+
+- **`runtime.modelAuth` for plugins** — `runtime.modelAuth` and matching plugin-sdk auth helpers are now exposed so plugins can resolve provider/model API keys through the normal OpenClaw auth pipeline rather than accessing credential files directly. This allows plugins to call provider APIs with properly scoped auth without requiring raw secret file access.

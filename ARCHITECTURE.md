@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-09 (source package: 2026.3.8) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-11 (source package: 2026.3.11) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -933,7 +933,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Extension packages (`extensions/*/package.json`) | 33 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current analyzed source package: `2026.3.8` (tag `v2026.3.8`). Counts measured from that released tag snapshot.
+> Current analyzed source package: `2026.3.11` (tag `v2026.3.11`). Counts measured from that released tag snapshot.
 
 ### Key External Dependencies
 
@@ -1259,6 +1259,51 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 - **5,864 TypeScript files** (was 5,414 at v2026.3.2; +450 files, 893 commits this window)
 - **40 extension directories** (stable-tag count), **33 packages**, **52 skills**
+
+---
+
+## v2026.3.11 Changes (2026-03-11)
+
+### Core Runtime
+
+- **Cron isolation hardening (BREAKING)** — cron jobs can no longer send ad hoc agent notifications or fallback main-session summaries. `openclaw doctor --fix` migrates legacy cron state and legacy notify/webhook delivery metadata.
+- **Memory/multimodal indexing** — opt-in image and audio indexing for `memorySearch.extraPaths` using `gemini-embedding-2-preview` with configurable output dimensions and automatic reindexing on dimension change.
+- **ACP session resume** — `sessions_spawn` with `runtime: “acp”` accepts `resumeSessionId` to resume existing ACPX/Codex sessions; `main` alias canonicalized to rehydrate restarted ACP main sessions; `loadSession` replays stored user/assistant text.
+- **ACP tool streaming enrichment** — `tool_call` and `tool_call_update` events now carry best-effort text content and file-location hints.
+- **Node pending-work primitives** — `node.pending.enqueue` / `node.pending.drain` in-memory queue added for dormant-node work delivery.
+- **Gateway runtime version** — gateway status endpoint now exposes the running server version.
+- **Control token stripping** — leaked model control tokens (`<|...|>` and `<｜...｜>` variants) are stripped from user-facing assistant text.
+- **Context engine compaction guard** — overflow compaction attempts in `ownsCompaction` engines are now guarded against throws; compaction hooks fire for plugin-owned engines.
+
+### Browser, Tools, and Platforms
+
+- **iOS Home canvas overhaul** — bundled welcome screen with live agent overview (refreshes on connect, reconnect, and foreground return); floating controls replaced with a docked toolbar; chat opens in resolved main session.
+- **macOS chat model picker** — new model picker in the macOS chat UI with persistent explicit thinking-level selections and provider-aware session model sync.
+- **Ollama onboarding** — first-class wizard with Local or Cloud + Local modes, browser-based cloud sign-in, and curated model suggestions.
+- **OpenCode Go provider** — new OpenCode Go provider; Zen and Go share a single setup key while runtime providers remain split.
+- **Brave LLM Context fix** — `llm-context` grounding snippets treated as plain strings so `web_search` no longer returns empty snippet arrays.
+- **Kimi Coding tool format fix** — `kimi-coding` tools sent in native Anthropic format again, fixing degradation to XML/plain-text pseudo-invocations.
+- **Discord `autoArchiveDuration`** — channel-level config for auto-created thread archiving (1h, 1d, 3d, 1w).
+
+### Operations
+
+- **macOS/launchd restart v2** — LaunchAgent stays registered during explicit restarts; self-restarts handed off through a detached launchd helper; config/hot reload paths recovered without unloading the service. Fixes #43311, #43406, #43035, #43049.
+- **LaunchAgent install permissions** — LaunchAgent directory and plist permissions tightened during install to prevent launchd bootstrap failures from group/world-writable modes.
+- **CLI/skills JSON** — ANSI and C1 control bytes stripped from `skills list|info|check --json` output for machine-readable validity.
+- **CLI/tables legacy Windows** — ASCII borders default on legacy GBK/936 consoles; Unicode borders preserved on modern Windows terminals.
+
+### Security
+
+- **GHSA-5wcw-8jjv-m286 (WebSocket origin)** — browser origin validation enforced for all browser-originated connections regardless of proxy headers, closing cross-site WebSocket hijacking path in `trusted-proxy` mode.
+- **Symlink-safe `*File` secret reads** — CLI and channel credential `*File` reads require direct regular files; symlink-backed secret paths are rejected.
+- **TAR/bz2 extraction staging** — archives extracted into staging before merging into canonical destination; destination symlink and child-symlink escapes hardened.
+- **Exec SecretRef traversal rejection** — exec SecretRef traversal IDs rejected across schema, runtime, and gateway.
+- **fs-bridge write pinning** — staged writes pinned to verified parent directories before atomic replace.
+- **Gateway auth fail-closed** — fails closed when local `gateway.auth.*` SecretRefs are configured but unavailable.
+- **Session-reset auth split** — `/new` and `/reset` conversation paths split from the admin-only `sessions.reset` RPC.
+- **Plugin HTTP route scope** — unauthenticated plugin HTTP routes cannot inherit synthetic admin gateway scopes for `runtime.subagent.*` calls.
+- **`session_status` sandbox guards** — session-tree visibility and agent-to-agent access guards enforced before reads or mutations.
+- **`nodes` tool owner-only policy** — `nodes` agent tool treated as owner-only fallback policy.
 
 ---
 
