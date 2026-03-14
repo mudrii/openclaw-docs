@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-12 | **Version:** v2026.3.11
+**Updated:** 2026-03-15 | **Version:** v2026.3.13-1 | **Codebase:** OpenClaw release tag `v2026.3.13-1`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** release-tag snapshot across 14 modules: 501 tracked support-module files plus 353 Swift files in `apps/macos`
 
@@ -1026,3 +1026,49 @@ Shared test utilities and mock factories.
 ### Build/CI
 
 - **CI/CodeQL Swift — select Xcode 26.1 before Swift build tools** (#41787) — The CodeQL Swift CI job now selects Xcode 26.1 before installing Swift build tools, ensuring the job uses Swift tools 6.2 rather than the runner's default Xcode version.
+
+## v2026.3.12 Changes <!-- v2026.3.12 -->
+
+### Auto-Reply <!-- v2026.3.12 -->
+
+- **Auto-reply/fast mode — `params.fastMode` resolution:** `src/agents/fast-mode.ts` introduces `resolveFastMode()`, which checks `extraParams.fastMode` / `extraParams.fast_mode`, then `modelConfig.params.fastMode` / `modelConfig.params.fast_mode`, then the `SessionEntry.fastMode` field. The embedded runner (`src/agents/pi-embedded-runner/openai-stream-wrappers.ts`) reads `extraParams.fastMode` the same way. This makes per-model config defaults and per-session overrides consistent across the agent pipeline.
+
+- **Auto-reply/commands — require owner for `/config` and `/debug`:** `src/auto-reply/commands-registry.data.ts` marks `/config` and `/debug` as requiring owner-level sender authorization. `src/auto-reply/command-auth.ts` enforces the `requireOwner` flag during command dispatch. These commands no longer appear in `/status` output for non-owner senders (fixes #44305).
+
+- **Auto-reply/status resolution — context window by provider-qualified key:** `src/agents/context-window-guard.ts` (`resolveContextWindowInfo`) and related compaction paths now resolve context window tokens by provider-qualified model key first, falling back to the maximum among bare-id matches on collision (fixes #36389).
+
+### General Utilities <!-- v2026.3.12 -->
+
+- **Infra/host env security — block `GIT_EXEC_PATH` in sanitized exec environments:** `src/infra/host-env-security-policy.json` adds `GIT_EXEC_PATH` to the blocked env var list for sanitized host exec contexts. Prevents PATH/executable injection via the Git exec helper path (fixes #43685).
+
+- **Infra/device scope — cap device tokens to approved scope baseline:** device token scopes are capped to an approved baseline during pairing and auth, limiting the authority of self-issued tokens (fixes #43686).
+
+- **Infra/exec allowlist — tighten glob matching, preserve POSIX case sensitivity:** exec allowlist glob pattern matching is tightened; POSIX case sensitivity is preserved so case-sensitive platforms are not incorrectly permissive (fixes #43798).
+
+### Shared <!-- v2026.3.12 -->
+
+- **Config/Anthropic alias normalization at load time:** `src/config/defaults.ts` normalizes Anthropic model aliases inline during config load. Stale model refs that previously caused a startup crash-loop are now recovered at load time (fixes #45520).
+
+- **Config/models SecretRef enforcement:** generated `models.json` entries enforce `SecretRef` markers for source-managed secrets (fixes #43759).
+
+### macOS/iOS <!-- v2026.3.12 -->
+
+- **macOS/launchd — daemon install avoids false-fails on slower Macs and fresh VMs:** the `openclaw onboard --install-daemon` path includes hardening against launchd bootstrap race conditions on slower hardware and fresh VM snapshots.
+
+## v2026.3.13 Changes <!-- v2026.3.13 -->
+
+### Auto-Reply <!-- v2026.3.13 -->
+
+- **Agents/memory bootstrap — `MEMORY.md` preferred over `memory.md`:** `src/memory/internal.ts` tries `MEMORY.md` first when scanning for the root memory file, falling back to `memory.md` only when the uppercase variant is absent. `src/memory/manager-sync-ops.ts` follows the same preference order (fixes #26054).
+
+### General Utilities <!-- v2026.3.13 -->
+
+- **Build/plugin-sdk bundling — single-pass bundling prevents memory blow-up:** the build pipeline bundles all plugin-sdk subpath entries in a single pass rather than sequentially, avoiding OOM conditions in large plugin graphs (fixes #45426).
+
+- **Config/validation — `channels.signal.groups` and `discovery.wideArea.domain`:** both keys are confirmed accepted in strict config validation as of v2026.3.13. `channels.signal.groups` configures Signal group memberships. `discovery.wideArea.domain` sets the DNS-SD wide-area discovery domain.
+
+### macOS/iOS <!-- v2026.3.13 -->
+
+- **macOS/onboarding — avoid self-restarting freshly bootstrapped launchd gateways:** the onboarding flow no longer triggers a gateway self-restart immediately after a fresh launchd bootstrap, preventing a double-restart loop on new installs.
+
+- **macOS/runtime locator — Node >=22.16.0 enforced during system discovery:** `src/daemon/runtime-paths.ts` rejects system Node versions below 22.16.0 during macOS runtime locator scans.

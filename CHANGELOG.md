@@ -6,9 +6,182 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.11 — Latest Documented Release Summary
+## OpenClaw v2026.3.13 — Latest Documented Release Summary
 
-> **Released:** 2026-03-12 | **Policy note:** latest *documented* released section stays at top.
+> **Released:** 2026-03-15 (docs release) | upstream tag `v2026.3.13` published 2026-03-13 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.12..v2026.3.13-1` | **Scan stats:** 1,189 files changed, +59,900 / -32,153 lines
+
+## Highlights
+
+- **Browser — Chrome DevTools MCP attach mode:** new `profile="user"` and `profile="chrome-relay"` built-in browser profiles enable attaching to a signed-in live Chrome session via Chrome DevTools MCP. Batched act automation is also supported in this mode.
+- **Android:** redesigned chat settings sheet; Google Code Scanner integration for QR-based onboarding flows.
+- **iOS:** first-run welcome pager displayed before gateway setup, improving initial onboarding UX.
+- **Gateway:** RPC timeout for unanswered client requests; `--require-rpc` flag on `gateway status`; session reset now preserves `lastAccountId` and `lastThreadId`.
+- **Security — 8 exec approval hardening items (v2026.3.13):** pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, and skill auto-allow are all hardened in the exec approval pipeline. Single-use bootstrap pairing codes are now enforced. External content zero-width character stripping added. Telegram webhook auth now happens before body read. iMessage attachment path rejection tightened.
+- **Agents:** blank API key accepted for loopback custom providers; compaction token sanity check validates against full pre-compaction totals; compaction safeguard language continuity via `agents.defaults.compaction.customInstructions`; memory bootstrap now prefers `MEMORY.md` over `memory.md`; replayed Anthropic/Bedrock thinking blocks are dropped; tool warning distinction between gated-core and plugin-only.
+- **Cron:** nested cron lane routing prevents cross-lane deadlocks.
+- **Config validation:** `agents.list[].params`, `tools.web.fetch.readability`/`firecrawl`, `channels.signal.groups`, `discovery.wideArea.domain` are now accepted config keys (previously rejected by Zod validation).
+- **Docker:** `OPENCLAW_TZ` environment variable for timezone pinning in container deployments.
+- **Platform:** gateway install/stop/status fixes on Windows; macOS onboarding self-restart avoidance; macOS Node >=22.16.0 runtime guard.
+- **Dependencies:** pi packages bumped to 0.58.0.
+- **Dashboard:** fixed full reload on every live tool result; oversized plain-text replies now rendered as paragraphs; `chat-new-messages` scroll pill styling corrected.
+
+For full detail, see the v2026.3.13 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.13`).
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | ~850 |
+| `extensions/` | ~140 |
+| `apps/` | ~85 |
+| `docs/` | ~60 |
+| `ui/` | ~30 |
+| `scripts/` | ~10 |
+| `skills/` | ~8 |
+| `.github/` | ~6 |
+
+*Note: additional root/config/release files (`package.json`, `pnpm-lock.yaml`, release metadata) make up the remainder of the 1,189-file release window.*
+
+## Breaking / Behavior Shifts
+
+1. **No new stable-tag breaking config changes in v2026.3.13.** Exec approval hardening may reject previously-allowed commands that relied on pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrapper shims, or macOS line continuation in system.run calls; review any custom exec allowlist entries if commands stop passing the preflight guard.
+
+## Major Features
+
+- Chrome DevTools MCP attach mode (`profile="user"`, `profile="chrome-relay"` built-in profiles)
+- Batched act automation in browser
+- Android chat settings sheet redesign + Google Code Scanner for QR onboarding
+- iOS first-run welcome pager before gateway setup
+- Gateway RPC timeout for unanswered client requests
+- `--require-rpc` on `gateway status`
+- Session reset preserves `lastAccountId` / `lastThreadId`
+- `agents.defaults.compaction.customInstructions` for compaction language continuity
+- Memory bootstrap prefers `MEMORY.md` over `memory.md`
+- `OPENCLAW_TZ` Docker timezone pinning
+- pi packages bumped to 0.58.0
+
+## Security Hardening
+
+- Single-use bootstrap pairing codes (replaces shared credentials for `/pair` setup)
+- External content zero-width character stripping (prompt injection hardening)
+- Telegram webhook auth now enforced before body read
+- iMessage attachment path rejection tightened
+- Exec approval hardening: pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, skill auto-allow
+
+## Maintainer Upgrade Checklist (v2026.3.13)
+
+1. **Review exec allowlists:** exec approval hardening may block pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrapper invocations, or macOS `\`-continued` shell commands. Audit and update allowlist entries.
+2. **Pairing codes:** bootstrap pairing codes are now single-use. Update any automated pairing flows that reuse a code.
+3. **Memory bootstrap:** if you rely on a lowercase `memory.md` as the primary memory bootstrap file, rename it to `MEMORY.md` or update your config.
+4. **Docker timezone:** use `OPENCLAW_TZ` to pin timezone in containerized deployments rather than host mounts or environment hacks.
+5. **Windows gateway:** verify install/stop/status behavior after upgrading on Windows gateway deployments.
+
+---
+
+## OpenClaw v2026.3.12 — Historical Release Summary
+
+> **Released:** upstream tag `v2026.3.12` published 2026-03-12 (docs release 2026-03-15) | **Policy note:** historical section.
+> **Window analyzed:** `v2026.3.11..v2026.3.12` | **Scan stats:** 830 files changed, +48,951 / -9,749 lines
+
+## Highlights
+
+- **Fast mode:** new `/fast` toggle enables `service_tier` fast-mode for OpenAI and Anthropic — per-model config defaults, TUI/ACP support; isolated cron runs can use fast mode.
+- **Dashboard-v2:** modular overview/chat/config/agent/session views; command palette; mobile bottom tabs; slash commands; search; export; pinned messages.
+- **Provider plugins:** Ollama, vLLM, and SGLang are now modularized onto the provider-plugin architecture, enabling operator-managed provider updates independent of core.
+- **`sessions_yield` tool:** orchestrators can end a turn immediately, skip queued work, and carry a hidden follow-up payload — a new cooperative turn-ending primitive.
+- **Context engine:** `sessionKey` is forwarded through all ContextEngine lifecycle calls.
+- **Slack:** Block Kit messages supported in shared reply delivery; opt-in interactive replies via `channels.slack.capabilities.interactiveReplies`.
+- **ACP:** final assistant text snapshot preserved before `end_turn`.
+- **Mattermost:** `replyToMode` support (`off`/`first`/`all`).
+- **Compaction:** post-compaction memory sync + transcript updates; status reaction during compaction; skip double `cache-ttl` write.
+- **Security — 20+ GHSAs fixed (v2026.3.12):** GHSA-99qw (workspace plugin trust), GHSA-pcqg (exec format char escape), GHSA-9r3v (Unicode obfuscation normalization), GHSA-f8r2 (exec allowlist glob), GHSA-r7vr (`/config`/`/debug` owner-only), GHSA-rqpp (WebSocket unbound scope strip), GHSA-vmhq (browser profile create/delete block), GHSA-2rqg (spawned workspace boundary), GHSA-wcxr (`session_status` sandbox visibility), GHSA-2pwv (device token scope cap), GHSA-jv4g + GHSA-xwx2 (WebSocket preauth limits), GHSA-6rph (media store size cap), GHSA-jf5v (`GIT_EXEC_PATH` block), GHSA-57jw + GHSA-jvqh + GHSA-x7pp + GHSA-jc5j (exec approval inline loader/pnpm/npx hardening), GHSA-g353 (Feishu `encryptKey`), GHSA-m69h (Feishu reaction), GHSA-mhxh (LINE signatures), GHSA-5m9r (Zalo rate limiting).
+- **Bootstrap tokens:** `/pair` setup codes switch from shared credentials to short-lived tokens.
+- **Kubernetes:** starter K8s install path with raw manifests.
+- **Node 24 default, Node 22.16 minimum floor.**
+- **Hooks:** fail closed on unreadable loader paths; idempotency key deduplication.
+- **Memory:** post-compaction session reindexing via `agents.defaults.compaction.postIndexSync` and `agents.defaults.memorySearch.sync.sessions.postCompactionForce`.
+- **Zalo:** markdown-to-Zalo text style parsing; stable group ID enforcement.
+- **Terminal:** grapheme display width and table rendering fixes.
+
+For full detail, see the v2026.3.12 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.12`).
+
+## Change Distribution (By Top-Level Area)
+
+| Area | Files changed |
+| --- | ---: |
+| `src/` | ~520 |
+| `extensions/` | ~140 |
+| `apps/` | ~90 |
+| `docs/` | ~45 |
+| `ui/` | ~20 |
+| `scripts/` | ~8 |
+
+*Note: additional root/config/release files (`package.json`, `pnpm-lock.yaml`, release metadata) make up the remainder of the 830-file release window.*
+
+## Breaking / Behavior Shifts
+
+1. **No new breaking config changes in v2026.3.12.** Node 22.16 is now the minimum supported runtime; upgrades from older Node LTS releases must update runtime before upgrading OpenClaw.
+
+## Major Features
+
+- `/fast` mode toggle for OpenAI and Anthropic (`service_tier`) — per-model defaults, TUI/ACP support
+- Isolated cron runs can use fast mode
+- Dashboard-v2 modular UI: overview, chat, config, agent, session views
+- Command palette, mobile bottom tabs, slash commands, search, export, pinned messages
+- Ollama, vLLM, SGLang modularized as provider plugins
+- `sessions_yield` tool (cooperative turn-ending primitive)
+- `sessionKey` forwarded through all ContextEngine lifecycle calls
+- Slack Block Kit messages in shared reply delivery
+- Slack opt-in interactive replies (`channels.slack.capabilities.interactiveReplies`)
+- ACP final assistant text snapshot before `end_turn`
+- Mattermost `replyToMode`
+- Post-compaction memory sync + transcript updates
+- Status reaction during compaction
+- Bootstrap `/pair` codes switched to short-lived tokens
+- Starter Kubernetes install path with raw manifests
+- Node 24 default; Node 22.16 minimum
+- Hooks: fail-closed on unreadable loader paths; idempotency key deduplication
+- Post-compaction session reindexing (`postIndexSync`, `postCompactionForce`)
+- Zalo markdown-to-text parsing; stable group ID enforcement
+- Terminal: grapheme display width + table rendering fixes
+
+## Security Hardening
+
+- **GHSA-99qw:** workspace plugin trust boundary enforcement
+- **GHSA-pcqg:** exec format character escape hardening
+- **GHSA-9r3v:** Unicode obfuscation normalization in exec preflight
+- **GHSA-f8r2:** exec allowlist glob pattern escape hardening
+- **GHSA-r7vr:** `/config` and `/debug` endpoints restricted to owner-only scope
+- **GHSA-rqpp:** WebSocket unbound scope strip hardening
+- **GHSA-vmhq:** browser profile create/delete restricted; block unauthorized profile ops
+- **GHSA-2rqg:** spawned workspace boundary enforcement
+- **GHSA-wcxr:** `session_status` sandbox visibility restricted
+- **GHSA-2pwv:** device token scope capped per device
+- **GHSA-jv4g + GHSA-xwx2:** WebSocket preauth connection limits
+- **GHSA-6rph:** media store size cap enforcement
+- **GHSA-jf5v:** `GIT_EXEC_PATH` env var blocked in exec context
+- **GHSA-57jw + GHSA-jvqh + GHSA-x7pp + GHSA-jc5j:** exec approval inline loader, pnpm, npx hardening
+- **GHSA-g353:** Feishu `encryptKey` validation hardened
+- **GHSA-m69h:** Feishu reaction handling hardened
+- **GHSA-mhxh:** LINE webhook signature validation hardened
+- **GHSA-5m9r:** Zalo rate limiting enforced
+
+## Maintainer Upgrade Checklist (v2026.3.12)
+
+1. **Node runtime:** upgrade to Node 22.16+ (minimum) before upgrading OpenClaw. Node 24 is the new default for fresh installs.
+2. **Bootstrap pairing tokens:** `/pair` now issues short-lived tokens instead of shared credentials. Update any automated pairing integrations.
+3. **Provider plugins (Ollama/vLLM/SGLang):** these are now provider plugins; ensure no config references to old inline provider paths remain.
+4. **Post-compaction reindexing:** if memory freshness after compaction is important, enable `agents.defaults.compaction.postIndexSync: true` and `agents.defaults.memorySearch.sync.sessions.postCompactionForce: true`.
+5. **Exec allowlists:** review and update allowlists in light of multiple exec approval hardening GHSAs (inline loader, pnpm, npx paths).
+6. **Slack interactive replies:** opt in to Block Kit interactive replies by setting `channels.slack.capabilities.interactiveReplies: true`; this is opt-in and off by default.
+7. **Hook loader paths:** unreadable hook loader paths now fail closed. Review hook configurations to ensure all loader paths are accessible.
+
+---
+
+## OpenClaw v2026.3.11 — Historical Release Summary
+
+> **Released:** 2026-03-12 | **Policy note:** historical section.
 > **Window analyzed:** `v2026.3.8..v2026.3.11` | **Scan stats:** 235 commits, 977 files changed, +48,586 / -9,950 lines
 
 ## Highlights

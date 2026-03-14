@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -75,6 +75,7 @@ The core engine of OpenClaw. Handles LLM agent execution (the "PI embedded runne
 |------|------|
 | `pi-extensions/compaction-safeguard.ts` | Prevent infinite compaction loops |
 | `pi-extensions/compaction-safeguard-runtime.ts` | Runtime state for safeguard |
+| `pi-extensions/compaction-instructions.ts` | `resolveCompactionInstructions()` — precedence-based resolver for compaction summary instructions (SDK event → config → default); `DEFAULT_COMPACTION_INSTRUCTIONS` for language/persona continuity |
 | `pi-extensions/context-pruning/` | Context window pruning (extension.ts, pruner.ts, runtime.ts, settings.ts, tools.ts) |
 
 #### Tool System
@@ -116,7 +117,8 @@ The core engine of OpenClaw. Handles LLM agent execution (the "PI embedded runne
 | `tools/nodes-tool.ts` | Node device control tool |
 | `tools/nodes-utils.ts` | Node tool utilities |
 | `tools/session-status-tool.ts` | Session status inspection tool |
-| `tools/sessions-*.ts` | Session management tools (list, history, send, spawn, announce, helpers) |
+| `tools/sessions-*.ts` | Session management tools (list, history, send, spawn, yield, announce, helpers) |
+| `tools/sessions-yield-tool.ts` | `sessions_yield` tool — end current turn and pass optional message into next turn |
 | `tools/subagents-tool.ts` | Subagent management tool |
 | `tools/agents-list-tool.ts` | List configured agents |
 | `tools/tts-tool.ts` | Text-to-speech tool |
@@ -1128,5 +1130,91 @@ When event fires:
 - **Context pruning: image-only tool results** (#43045): image-only tool results are pruned during soft context trim, reducing token pressure when image content is no longer needed.
 - **Session reset: clear stale model metadata** (#41173): stale runtime model and fallback metadata are cleared before session resets to prevent stale model state persisting into new sessions.
 - **Subagent authority persistence** (#41711): leaf vs orchestrator control scope is persisted at spawn time, ensuring authority checks remain consistent for the lifetime of a subagent session.
+
+---
+
+## v2026.3.12 Delta Notes
+
+### Agents / PI Embedded Runner
+
+- **`sessions_yield` tool** (#36537): New `sessions_yield` tool added (`src/agents/tools/sessions-yield-tool.ts`). Orchestrators call it to end the current turn immediately, skip any queued tool work, and carry an optional message payload into the next turn. The tool schema accepts an optional `message` string; on success it returns `{ status: "yielded", message }`. The implementation relies on an `onYield` callback injected by the runner context; without it, the tool returns an error. This enables subagent-orchestration patterns where the parent yields after spawning children and resumes when their results arrive.
+
+- **PI embedded runner / OAuth and payload hooks** (#pi-0.58): The pi-ai OAuth and payload hooks in `pi-embedded-runner` were adapted for the pi 0.58.0 API surface. All `@mariozechner/pi-*` packages bumped to `0.58.0`.
+
+- **Compaction: skip double cache-ttl marker on same-attempt completion** (#28548): Post-compaction `cache-ttl` marker writes are now skipped when compaction completed in the same attempt, preventing the marker from being written twice and triggering a spurious second compaction.
+
+- **Compaction: post-compaction memory sync + transcript update emission** (#25558, #25561): After compaction, the memory manager is now synced and `emitSessionTranscriptUpdate` is called so downstream subscribers (memory index, UI) see the updated transcript. Post-compaction session reindexing is gated by `agents.defaults.compaction.postIndexSync` and `agents.defaults.memorySearch.sync.sessions.postCompactionForce`.
+
+- **Compaction safeguard: route warnings through SubsystemLogger** (#9974): Missing-model and API-key warnings emitted by the compaction safeguard are now routed through `createSubsystemLogger("compaction-safeguard")` instead of bare `console.warn`, keeping log output consistent with other subsystems.
+
+- **Failover: z.ai `network_error` stop reason classified as retryable timeout** (#43884): The z.ai provider's `network_error` stop reason is now classified as a retryable timeout in `failover-error.ts`, allowing the fallback chain to engage instead of treating it as a hard failure.
+
+- **Failover: ZenMux quota-refresh 402 classified as rate_limit** (#43917): ZenMux quota-refresh HTTP 402 responses are now classified as `rate_limit` failover reasons. HTTP 422 responses are classified as `format` errors. OpenRouter credit-exhaustion responses are classified as `billing` (#43823).
+
+- **Kimi Coding: fix malformed Anthropic-compatible tool call args** (#42835): Malformed tool call argument strings from the Kimi Coding provider (Anthropic-compatible format) are now repaired in `pi-embedded-runner/run/attempt.ts`. Trailing garbage suffixes after the valid JSON are trimmed and a warning is logged.
+
+- **Kimi Coding: clear invalid Kimi tool arg repair** (#43824): Invalid Kimi tool argument repair state is cleared between turns so stale repair context does not corrupt subsequent calls.
+
+### Subagents
+
+- **Completion announce timeout raised to 90 s; gateway-timeout retries disabled** (#41235): `DEFAULT_SUBAGENT_ANNOUNCE_TIMEOUT_MS` is now `90_000` ms (raised from 60 s). Gateway-timeout failures are no longer retried for external completion announces, preventing retry storms on slow external endpoints.
+
+### Auto-reply / Compaction
+
+- **Status reaction during context compaction pauses** (#35474): A status reaction is now shown to the user while a context compaction pause is in progress, providing feedback that the agent is working rather than idle.
+
+### Delivery / Dedupe
+
+- **Direct-cron delivery cache trimmed correctly** (#44666): The completed direct-cron delivery cache is now correctly trimmed, preventing stale entries from accumulating. Mirrored transcript deduplication remains active even when individual JSONL lines are malformed.
+
+### ACP
+
+- **Preserve terminal assistant text snapshot before `end_turn`** (#17615): The ACP layer now snapshots the terminal assistant text before emitting `end_turn`, ensuring the final message content is preserved for downstream consumers.
+
+### Agents / Thinking Hints
+
+- **`xhigh` thinking level added to `openclaw cron add`, `openclaw cron edit`, `openclaw agent`** (#44819): The `--thinking` option in the cron-add CLI, cron-edit CLI, and agent CLI now lists `xhigh` as a valid level in its help text, matching the full `ThinkLevel` union.
+
+---
+
+## v2026.3.13 Delta Notes
+
+### Agents / Custom Providers
+
+- **Preserve blank API keys for loopback OpenAI-compatible custom providers** (#45631): Custom providers pointing at loopback addresses (`localhost`, `127.0.0.1`, `[::1]`, etc.) can now have a blank `apiKey` configured without auth resolution failing. The `isLocalBaseUrl()` guard in `model-auth.ts` synthesizes a local auth marker when the key is absent, so users who left the API key empty during onboarding are not blocked.
+
+### Agents / Compaction
+
+- **Post-compaction token sanity check against full-session totals** (#28347): The post-compaction token sanity check in `pi-embedded-runner/compact.ts` now compares against the full-session token count (`fullSessionTokensBefore`) rather than only the summarizable window. When token estimation fails, the sanity check is skipped entirely (`sanityCheckBaseline > 0` guard) instead of crashing compaction.
+
+- **Compaction summary language continuity via `agents.defaults.compaction.customInstructions`** (#10456): A new `compaction-instructions.ts` module (`src/agents/pi-extensions/compaction-instructions.ts`) provides `resolveCompactionInstructions()` with a precedence chain (SDK event → runtime config → built-in default). The built-in `DEFAULT_COMPACTION_INSTRUCTIONS` instructs the model to write the summary in the primary conversation language and preserve code/path/identifier content unchanged. Operators can override via `agents.defaults.compaction.customInstructions` (string, max 800 characters). The function `composeSplitTurnInstructions()` merges SDK turn-prefix instructions with the resolved instructions.
+
+### Agents / Tool Warnings
+
+- **Distinguish gated core tools from plugin-only unknowns in `tools.profile` warnings**: The `tools.profile` warning path now separates gated core tools (present but access-restricted) from genuinely unknown tools (not found in any plugin), emitting distinct warning messages for each category.
+
+### Agents / OpenAI-Compatible Compat Overrides
+
+- **Respect explicit `models[].compat` opt-ins for non-native OpenAI completions endpoints** (#44432): When a model entry in `models[]` has an explicit `compat` object, those compat overrides are now applied even for non-native OpenAI completions endpoints, giving operators fine-grained control over per-model compatibility flags.
+
+### Agents / Azure OpenAI
+
+- **Rephrase built-in startup prompts to avoid HTTP 400 content filter** (#43403): Built-in startup prompts sent to Azure OpenAI are rephrased to avoid triggering Azure's content filter with HTTP 400 responses.
+
+### Agents / Memory Bootstrap
+
+- **Load only one root memory file; prefer `MEMORY.md`, fall back to `memory.md`** (#26054): `resolveMemoryBootstrapEntry()` in `workspace.ts` now returns at most one root memory file. It checks `MEMORY.md` first and only falls back to `memory.md` when `MEMORY.md` is absent. This prevents both files from being injected as bootstrap context when both exist (a common case on case-insensitive filesystems where Docker mounts expose both names).
+
+### Agents / Anthropic Replay
+
+- **Drop replayed thinking blocks for native Anthropic and Bedrock Claude providers** (#44843): When replaying session history for native Anthropic and Amazon Bedrock Claude providers, thinking blocks are now stripped from prior assistant turns. This prevents `400 Bad Request` errors caused by passing raw thinking block content back to providers that do not accept replayed thinking in non-streaming context.
+
+### Cron / Isolated Sessions
+
+- **Nested cron-triggered embedded runner work routed onto nested lane**: `runCronIsolatedAgentTurn()` now calls `resolveNestedAgentLane(params.lane)` when setting up the embedded runner, routing nested cron-triggered work (compaction, inner tool calls, etc.) onto a dedicated nested lane. This prevents deadlocks that could occur when compaction or other inner queued work ran on the same lane as the outer cron session.
+
+### Dependencies
+
+- **pi packages bumped to `0.58.0`**: All `@mariozechner/pi-*` packages (`pi-agent-core`, `pi-ai`, `pi-coding-agent`, `pi-tui`) are at `0.58.0` in `package.json`.
 
 ---

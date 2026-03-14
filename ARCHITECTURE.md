@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-12 (source package: 2026.3.11) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-15 (source package: 2026.3.13-1) | Release-only architecture snapshot for contributors
 
 ---
 
@@ -692,7 +692,7 @@ Parsed by `plugins/manifest.ts`.
 | Type | Count | Examples |
 |------|-------|---------|
 | **Channel plugins** | 21 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams, nostr, twitch, zalo |
-| **Provider plugins** | 4 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, qwen-portal-auth |
+| **Provider plugins** | 7 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, qwen-portal-auth, ollama, vllm, sglang |
 | **Tool/Feature plugins** | 11 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership, diffs |
 
 ---
@@ -929,11 +929,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 42 |
+| Extension directories (`extensions/*`) | 45 |
 | Extension packages (`extensions/*/package.json`) | 33 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current analyzed source package: `2026.3.11` (tag `v2026.3.11`). Counts measured from that released tag snapshot.
+> Current analyzed source package: `2026.3.13-1` (tag `v2026.3.13-1`). Counts measured from that released tag snapshot.
 
 ### Key External Dependencies
 
@@ -1330,5 +1330,125 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - **launchd restart semantics changed** — supervised restart now exits and relies on launchd `KeepAlive`; `XPC_SERVICE_NAME` is treated as a supervision marker; LaunchAgent repair/restart paths `enable` before `bootstrap`.
 - **Control UI asset serving refined** — bundled/package-proven hardlinked asset roots are allowed for auto-detected installs, while configured/custom roots remain on the strict hardlink boundary.
 - **Podman and Docker follow-ups** — Podman bind mounts now add SELinux `:Z` relabeling when needed, inaccessible-cwd setup paths fall back safely, and the runtime Docker image is smaller.
+
+---
+
+## v2026.3.12 Changes (2026-03-12)
+
+### New Tools
+
+- **`sessions_yield` tool** — new cooperative turn-ending primitive for orchestrators. Calling `sessions_yield` ends the current turn immediately, skips any remaining queued tool work, and optionally carries a hidden follow-up payload for the next turn. Enables agents to yield control back to the caller without completing their full tool queue.
+
+### Provider Plugin Architecture
+
+- **Ollama, vLLM, SGLang modularized** — these three local/inference providers are now managed as provider plugins (`extensions/ollama/`, `extensions/vllm/`, `extensions/sglang/`), allowing operator-managed updates and configuration independent of the core package. No behavior change for existing configs; provider resolution and auth profiles remain unchanged.
+
+### Dashboard-v2
+
+- Modular UI architecture: overview, chat, config, agent, and session views are independently loaded
+- Command palette, mobile bottom tabs, slash commands, search, message export, and pinned messages
+- Block Kit messages in Slack shared reply delivery
+- Slack opt-in interactive replies via `channels.slack.capabilities.interactiveReplies`
+
+### Core Runtime
+
+- **`/fast` mode toggle** — `service_tier` fast-mode for OpenAI and Anthropic; per-model config defaults; supported in TUI, ACP, and isolated cron runs
+- **Context engine `sessionKey` forwarded** — `sessionKey` now flows through all ContextEngine lifecycle calls (`bootstrap`, `ingest`, `assemble`, `compact`, `afterTurn`, `prepareSubagentSpawn`, `onSubagentEnded`)
+- **ACP final snapshot** — final assistant text is snapshotted before `end_turn` events are emitted, ensuring completeness in ACP session logs
+- **Mattermost `replyToMode`** — `off`/`first`/`all` reply-thread modes for Mattermost channel extension
+- **Compaction:** post-compaction memory sync and transcript updates; status reaction emitted during compaction; double `cache-ttl` write eliminated
+- **Hooks:** fail closed on unreadable loader paths; idempotency key deduplication prevents duplicate hook invocations
+- **Memory:** post-compaction session reindexing via `agents.defaults.compaction.postIndexSync` and `agents.defaults.memorySearch.sync.sessions.postCompactionForce`
+- **Zalo:** markdown-to-Zalo text style parsing; stable group ID enforcement
+- **Terminal:** grapheme display width and table rendering fixes
+
+### Operations
+
+- **Node 24 default; Node 22.16 minimum** — fresh installs default to Node 24; minimum supported runtime is now Node 22.16.0
+- **Bootstrap `/pair` tokens** — `/pair` setup codes switched from shared credentials to short-lived tokens; previous shared-credential pairing codes are no longer accepted
+- **Kubernetes starter path** — raw Kubernetes manifests for a minimal OpenClaw deployment added to `docs/install/kubernetes/`
+- **`OPENCLAW_TZ` Docker timezone** — container deployments can pin timezone via `OPENCLAW_TZ` environment variable
+
+### Security (20+ GHSAs)
+
+- **GHSA-99qw:** workspace plugin trust boundary enforcement
+- **GHSA-pcqg:** exec format character escape hardening
+- **GHSA-9r3v:** Unicode obfuscation normalization in exec preflight
+- **GHSA-f8r2:** exec allowlist glob pattern escape hardening
+- **GHSA-r7vr:** `/config` and `/debug` endpoints restricted to owner-only scope
+- **GHSA-rqpp:** WebSocket unbound scope strip hardening
+- **GHSA-vmhq:** browser profile create/delete restricted
+- **GHSA-2rqg:** spawned workspace boundary enforcement
+- **GHSA-wcxr:** `session_status` sandbox visibility restricted
+- **GHSA-2pwv:** device token scope capped per device
+- **GHSA-jv4g + GHSA-xwx2:** WebSocket preauth connection limits
+- **GHSA-6rph:** media store size cap enforcement
+- **GHSA-jf5v:** `GIT_EXEC_PATH` env var blocked in exec context
+- **GHSA-57jw + GHSA-jvqh + GHSA-x7pp + GHSA-jc5j:** exec approval inline loader, pnpm, npx hardening
+- **GHSA-g353:** Feishu `encryptKey` validation hardened
+- **GHSA-m69h:** Feishu reaction handling hardened
+- **GHSA-mhxh:** LINE webhook signature validation hardened
+- **GHSA-5m9r:** Zalo rate limiting enforced
+
+---
+
+## v2026.3.13 Changes (2026-03-13)
+
+### Browser — Chrome DevTools MCP Attach Mode
+
+- **`profile="user"` and `profile="chrome-relay"` built-in profiles** — attach to an existing signed-in live Chrome session via Chrome DevTools MCP rather than launching a new isolated browser. The `user` profile connects to a user's default Chrome profile; `chrome-relay` uses the built-in relay transport.
+- **Batched act automation** — browser automation actions can now be batched in MCP attach mode, reducing round-trips for multi-step sequences.
+
+### Core Runtime
+
+- **`sessions_yield` safeguards** — compaction token sanity check now validates against full pre-compaction totals rather than partial counts; follow-up payload routing hardened.
+- **Memory bootstrap** — `MEMORY.md` is preferred over `memory.md` during agent workspace bootstrap; mixed-case filenames resolved deterministically.
+- **Compaction language continuity** — `agents.defaults.compaction.customInstructions` enables per-agent instructions for compaction to preserve language/style continuity across context resets.
+- **Thinking block replay** — replayed Anthropic and Bedrock thinking blocks are now dropped to prevent stale reasoning from polluting resumed turns.
+- **Tool warning distinction** — tool warnings now differentiate between gated core tools (available but restricted) and plugin-only tools (not loaded), improving agent error messages.
+- **Blank API key for loopback providers** — custom providers at loopback addresses now accept a blank API key, removing the requirement for a dummy key in local inference setups.
+- **Nested cron lane routing** — nested cron jobs route through their own lane, preventing cross-lane deadlocks in concurrent cron execution.
+
+### Platforms
+
+- **Android:** chat settings sheet redesigned; Google Code Scanner integration for QR-based gateway onboarding.
+- **iOS:** first-run welcome pager displayed before gateway setup step.
+- **Gateway RPC timeout** — unanswered RPC client requests now time out rather than hanging indefinitely.
+- **`--require-rpc` on `gateway status`** — flag to assert that an RPC-responding gateway is running; exits non-zero if gateway is unreachable.
+- **Session reset** — `lastAccountId` and `lastThreadId` are now preserved across session resets, maintaining channel context for the next conversation.
+- **Windows gateway** — install/stop/status command fixes; macOS onboarding self-restart avoidance; macOS runtime guard enforces Node >=22.16.0.
+
+### Config Validation
+
+- `agents.list[].params`, `tools.web.fetch.readability`, `tools.web.fetch.firecrawl`, `channels.signal.groups`, and `discovery.wideArea.domain` are now accepted config keys (previously rejected by Zod validation as unknown keys).
+
+### Dependencies
+
+- pi packages bumped to 0.58.0.
+
+### Dashboard
+
+- Fixed full reload triggered on every live tool result.
+- Oversized plain-text replies now rendered as paragraphs rather than a single scrolling block.
+- `chat-new-messages` scroll pill styling corrected.
+
+### Security (8 exec approval hardening items)
+
+- pnpm exec paths hardened in approval pipeline
+- Perl `-M` and `-I` flag injection blocked
+- PowerShell `-File` and `-f` flag injection blocked
+- Env wrapper shims blocked (prevents env-based command substitution in exec approvals)
+- macOS line continuation (`\` at end of line) blocked in exec approval context
+- Skill auto-allow tightened — skills no longer implicitly widen exec approval scope
+- Single-use bootstrap pairing codes enforced (replaces shared credentials from v2026.3.12)
+- External content zero-width character stripping (Unicode ZWS/ZWNJ prompt injection hardening)
+- Telegram webhook authentication enforced before body is read
+- iMessage attachment path rejection tightened against path traversal
+
+### Stats Update (v2026.3.13-1)
+
+- **6,176 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`)
+- **200,794 lines of TypeScript** (same scope)
+- **45 extension directories**, **33 packages**, **52 skills**
 
 ---

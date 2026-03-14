@@ -8,7 +8,7 @@
 
 ## Project Structure & Module Organization
 
-- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web provider in `src/channel-web.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`).
+- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web provider in `src/channel-web.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`). Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity).
 - Tests: colocated `*.test.ts`.
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
@@ -53,7 +53,7 @@
 
 ## Build, Test, and Development Commands
 
-- Runtime baseline: Node **22+** (keep Node + Bun paths working).
+- Runtime baseline: Node **22.16+** (keep Node + Bun paths working; Node 24 is the default for fresh installs; minimum floor is Node 22.16.0).
 - Install deps: `pnpm install`
 - If deps are missing (for example `node_modules` missing, `vitest not found`, or `command not found`), run the repo’s package-manager install command (prefer lockfile/README-defined PM), then rerun the exact requested command once. Apply this to test/build/lint/typecheck/dev commands; if retry still fails, report the command and first actionable error.
 - Pre-commit hooks: `prek install` (runs same checks as CI)
@@ -149,6 +149,7 @@
 
 ## GHSA (Repo Advisory) Patch/Publish
 
+- **v2026.3.12–v2026.3.13 context:** 20+ GHSAs were fixed across these two releases (v2026.3.12: GHSA-99qw, GHSA-pcqg, GHSA-9r3v, GHSA-f8r2, GHSA-r7vr, GHSA-rqpp, GHSA-vmhq, GHSA-2rqg, GHSA-wcxr, GHSA-2pwv, GHSA-jv4g, GHSA-xwx2, GHSA-6rph, GHSA-jf5v, GHSA-57jw, GHSA-jvqh, GHSA-x7pp, GHSA-jc5j, GHSA-g353, GHSA-m69h, GHSA-mhxh, GHSA-5m9r; v2026.3.13: exec approval hardening for pnpm/Perl/PowerShell/env-wrappers/macOS line continuation, single-use bootstrap pairing codes, external content ZWS stripping, Telegram webhook auth before body read, iMessage attachment path rejection). Before working on any exec/auth/provider/channel security issue, check if it overlaps with these advisory scopes.
 - Before reviewing security advisories, read `SECURITY.md`.
 - Fetch: `gh api /repos/openclaw/openclaw/security-advisories/<GHSA>`
 - Latest npm: `npm view openclaw version --userconfig "$(mktemp)"`
@@ -243,7 +244,7 @@
   - skip if package is missing on npm or version already matches.
 - Keep `openclaw` untouched: never run publish from repo root unless explicitly requested.
 - Post-check for each release:
-  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.3.11`)
+  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.3.13`)
   - core guard: `npm view openclaw version --userconfig "$(mktemp)"` should stay at previous version unless explicitly requested.
 
 ## Changelog Release Notes

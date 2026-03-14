@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -896,3 +896,98 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 ### ACP/Context Engine: Plugin SDK Model Auth (#41090)
 
 - **`runtime.modelAuth` for plugins** — `runtime.modelAuth` and matching plugin-sdk auth helpers are now exposed so plugins can resolve provider/model API keys through the normal OpenClaw auth pipeline rather than accessing credential files directly. This allows plugins to call provider APIs with properly scoped auth without requiring raw secret file access.
+
+---
+
+## v2026.3.12 Delta Notes
+
+### Security — Exec Approval Hardening
+
+- **GHSA-pcqg-f7rg-xfvv: Invisible Unicode in exec prompts** — Invisible Unicode format characters (zero-width joiners, directional marks, etc.) are now escaped to `\u{...}` visible notation in exec approval prompts, preventing spoofed command display (#43687).
+- **GHSA-9r3v-37xh-2cf6: Unicode normalization before obfuscation checks** — Unicode compatibility normalization and invisible formatting character stripping are applied before obfuscation detection checks, closing an obfuscation bypass via Unicode confusables (#44091).
+- **GHSA-f8r2-vg7x-gh8m: POSIX glob matching hardening** — Exec allowlist glob matching now preserves POSIX case sensitivity and constrains `?` to remain within a single path segment, preventing glob patterns from matching across directory boundaries (#43798).
+- **GHSA-57jw-9722-6rf2, GHSA-jvqh-rfmh-jh27, GHSA-x7pp-23xv-mmr4, GHSA-jc5j-vg4r-j5jx: Exec approval — ambiguous inline loader/shell-payload, POSIX shell flags, pnpm/npm exec/npx script runners** — Four additional exec approval hardening fixes: ambiguous inline loader/shell-payload approval detection hardened; POSIX shell flags blocked; pnpm and npm exec/npx script runner forms are now properly unwrapped before approval matching (#44247).
+- **Security/exec: fail closed for Ruby `-r`/`--require`/`-I` flags** — Exec approval flow for Ruby now fails closed when `-r`, `--require`, or `-I` flags are encountered, preventing load-path injection through approved Ruby invocations.
+- **Security/Mongolian selectors: strip in exec obfuscation detector** — Mongolian free variation selectors (Unicode Mongolian selector codepoints) are stripped before exec obfuscation checks to prevent selector-based command hiding.
+- **GIT_EXEC_PATH blocked in sanitized host exec environments (GHSA-jf5v-pqgw-gm5m)** — `GIT_EXEC_PATH` is now blocked from being inherited in sanitized host exec environments, preventing git exec-path injection into approved commands (#43685).
+
+### Security — Authentication and Scoping
+
+- **GHSA-r7vr-gr74-94p8: `/config` and `/debug` require sender ownership** — The `/config` and `/debug` gateway endpoints now require that the requesting sender is the owner of the resource; non-owner requests are rejected (#44305).
+- **GHSA-rqpp-rjj8-7wv8: Clear unbound client-declared scopes on shared-token WebSocket connects** — Unbound client-declared scopes are cleared when a shared-token WebSocket client connects, preventing scope escalation via client-declared scope claims (#44306).
+- **GHSA-2pwv-x786-56f8: Device-token scope cap** — Device token scopes are now capped to the paired device's approved scope baseline, preventing a device from claiming scopes that were not granted during pairing (#43686).
+- **GHSA-wcxr-59v9-rxr8: Sandbox session-tree visibility in `session_status`** — The `session_status` tool now enforces sandbox session-tree visibility checks before allowing reads or mutations, preventing cross-sandbox session access (#43754).
+- **GHSA-2rqg-gjgv-84jm: Reject public spawned-run lineage fields** — Public-facing spawned-run requests with lineage fields are now rejected; workspace inheritance continues on the internal path only (#43801).
+
+### Security — WebSocket and Handshake
+
+- **GHSA-jv4g-m82p-2j93 + GHSA-xwx2-ppv2-wx98: Handshake retention and pre-auth frame size** — Unauthenticated handshake retention window is shortened; oversized pre-auth frames are now rejected before processing (#44089).
+
+### Security — Webhooks
+
+- **GHSA-g353-mgv3-8pcj: Feishu webhook requires `encryptKey`** — Feishu webhook ingress now requires `encryptKey` to be configured; unencrypted Feishu webhooks are rejected (#44087).
+- **GHSA-mhxh-9pjm-w7q5: LINE webhook requires signatures** — LINE webhook ingress now requires signature validation before processing requests (#44090).
+- **GHSA-5m9r-p9g7-679c: Zalo webhook rate-limits invalid secrets** — Zalo webhook ingress now rate-limits requests with invalid secrets (#44173).
+
+### Security — Media Store
+
+- **GHSA-6rph-mmhp-h7h9: Shared media-store size cap restored for browser proxy files** — The shared media-store size cap is restored for browser proxy files, preventing unbounded proxy file accumulation in the shared store (#43684).
+
+### Plugins — Workspace Trust Requirement
+
+- **GHSA-99qw-6mr3-36qr: Explicit trust required for workspace-discovered plugins** — Cloned repositories can no longer execute workspace plugin code without an explicit trust decision. `plugins.allow` must now include the plugin ID for any workspace-discovered plugin to load. Non-bundled plugins discovered in workspaces emit a warning if `plugins.allow` is unset, and loading proceeds only when trust has been explicitly granted (#44174).
+- **Plugin discovery/load cache and provenance tracking** — Plugin discovery and load caches are fixed for env-scoped roots; provenance tracking is updated to correctly attribute plugins discovered from workspace-relative roots (#44046).
+
+### Plugins — Provider Architecture
+
+- **Provider-plugin architecture for Ollama, vLLM, SGLang** — Ollama, vLLM, and SGLang providers are moved onto a provider-plugin architecture. Each provider now owns its onboarding flow, model discovery, and model-picker setup, rather than these being handled by the core engine.
+
+### Pairing — Bootstrap Tokens
+
+- **Bootstrap tokens for `/pair` and `openclaw qr`** — Setup codes generated by `/pair` and `openclaw qr` are now short-lived bootstrap tokens rather than long-lived pairing codes, limiting the window of exposure for intercepted setup codes.
+
+### Security — Nodes Tool
+
+- **`nodes` tool marked as explicitly owner-only** — The `nodes` system tool is now marked as requiring owner-level authorization, ensuring it cannot be invoked by non-owner senders.
+
+### Browser — Existing Session (v2026.3.12)
+
+- **Stop reporting fake CDP ports for live attached Chrome** — When attaching to an existing Chrome session via Chrome DevTools MCP, OpenClaw no longer reports a fake CDP port or URL. The profile now renders `transport: chrome-mcp` to accurately reflect the attach mechanism.
+- **Transport-aware timeout diagnostics** — Timeout diagnostic messages for browser operations are now aware of the active transport type, producing accurate guidance for `chrome-mcp` sessions versus standard CDP sessions.
+
+---
+
+## v2026.3.13 Delta Notes
+
+### Security — Exec Approval Hardening
+
+- **Single-use setup codes** — Bootstrap token setup codes are now single-use; a setup code is invalidated after first use, preventing replay of captured pairing codes.
+- **Security/exec: fail closed for Perl `-M` and `-I` flags** — Exec approval flow for Perl now fails closed when `-M` (module load) or `-I` (include path) flags are encountered, preventing load-path injection through approved Perl invocations.
+- **Security/exec: PowerShell `-File`/`-f` wrapper forms recognized** — Exec approval now recognizes PowerShell `-File` and `-f` as script-runner wrappers, applying consistent approval handling for PowerShell script invocations.
+- **Security/exec: pnpm forms unwrapped** — Additional pnpm runner forms (`pnpm --reporter exec`, `pnpm node <file>`) are now unwrapped before exec approval matching, ensuring the underlying script receives the same approval scrutiny as direct invocations.
+- **Security/exec: `env` dispatch wrappers unwrapped in shell-segment allowlist on macOS** — `env` dispatch wrappers inside shell-segment allowlist resolution are now unwrapped on macOS, so approval decisions reflect the effective executable rather than the `env` wrapper binary.
+- **Security/exec: backslash-newline as shell line continuation on macOS** — Backslash-newline sequences are now treated as shell line continuations during macOS shell-chain parsing, closing a chain-break bypass via backslash-escaped newlines.
+- **Security/exec: bind macOS skill auto-allow trust to both executable name and resolved path** — macOS skill auto-allow trust is now bound to both the executable name and its resolved (realpath) path, preventing trust from applying to a different binary that happens to occupy the same path.
+- **macOS/exec approvals: per-agent exec approval settings respected in gateway prompter** — The gateway prompter now respects per-agent exec approval settings when processing approval requests, aligning interactive gateway behavior with the per-agent configuration (#13707).
+
+### Security — External Content
+
+- **Strip zero-width and soft-hyphen marker-splitting chars during boundary sanitization** — Zero-width characters and soft-hyphen (U+00AD) used for marker splitting are stripped during external content boundary sanitization, closing a bypass that could split boundary markers with invisible characters.
+
+### Security — Webhooks
+
+- **GHSA (iMessage): reject unsafe remote attachment paths before spawning SCP** — iMessage remote attachment handling now validates attachment paths before spawning SCP, rejecting paths that could escape the expected attachment directory.
+- **Telegram webhook validates secret before reading/parsing request body** — Telegram webhook ingress now validates the webhook secret token before reading or parsing the request body, preventing parser-level exposure of untrusted input prior to auth.
+
+### Plugins — Provider Architecture
+
+- No additional provider-plugin changes in v2026.3.13 beyond the v2026.3.12 architecture migration.
+
+### Browser — Chrome DevTools MCP Attach Mode (v2026.3.13)
+
+- **Official Chrome DevTools MCP attach mode for signed-in live Chrome sessions** — The `existing-session` driver is formalized as Chrome DevTools MCP attach mode. The `user` built-in profile (driver `existing-session`, `attachOnly: true`) provides attach-only access to the host's signed-in Chrome via the `chrome-devtools-mcp` package, without launching a separate browser process.
+- **Built-in `profile="user"` for logged-in host browser** — The `user` browser profile is now a built-in profile (auto-injected if not explicitly configured) that routes through Chrome DevTools MCP for existing signed-in sessions.
+- **Built-in `profile="chrome-relay"` for extension relay** — The `chrome-relay` browser profile is now a built-in profile (auto-injected if not explicitly configured) that routes to the local extension relay CDP endpoint (`controlPort + 1`), providing attach-style access via the Chrome extension.
+- **Browser act automation: batched actions, selector targeting, delayed clicks** — The browser act tool supports batched action sequences, explicit selector-based element targeting, and delayed click timing for more robust automation workflows (contributed by @vincentkoc).
+- **Browser/existing-session: hardened driver validation and session lifecycle** — The `existing-session` driver validates its MCP session lifecycle more strictly and extracts shared ARIA role sets for consistent snapshot output across sessions (#45682).
+- **Browser/existing-session: accept text-only `list_pages` and `new_page` responses** — The Chrome DevTools MCP integration now accepts text-only (non-structured) responses from `list_pages` and `new_page` tool calls, improving compatibility with variants of the `chrome-devtools-mcp` package.

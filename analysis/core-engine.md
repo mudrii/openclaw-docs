@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11 | Codebase: OpenClaw release tag `v2026.3.11`
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
 > Modules: agents (850 files), gateway (360 files), sessions (12 files), routing (11 files), providers (11 files), hooks (48 files), context-engine (6 files)
 
 ---
@@ -92,6 +92,8 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 
 ### Recent Changes
 
+- **v2026.3.13:** `lastAccountId` and `lastThreadId` are now preserved across gateway session resets, so replies keep routing to the correct account and thread after `/reset` (#44773).
+- **v2026.3.12:** Optional `sessionKey` forwarded through all ContextEngine lifecycle calls (bootstrap, assembly, post-turn ingestion, compaction) so context-engine plugins can see structured routing metadata (#44157).
 - **v2026.3.1:** `model-overrides.ts` now clears stale runtime `model`/`modelProvider` fields when the user switches model overrides, so status surfaces immediately reflect the selected model. Clears `fallbackNoticeSelectedModel`/`fallbackNoticeActiveModel`/`fallbackNoticeReason` on any override update. New `model-overrides.test.ts` added.
 - **v2026.2.23:** Session keys canonicalized to lowercase; legacy case-variant entries migrated automatically. (`sessions/store.ts`)
 - **v2026.2.22:** `session.dmScope` defaults to `per-channel-peer` on new CLI installs. Symlinked state-dir aliases resolved during transcript-path validation.
@@ -257,6 +259,8 @@ Provider-specific authentication and model discovery for GitHub Copilot and Qwen
 
 ### Recent Changes
 
+- **v2026.3.13:** Agents/custom providers: blank API keys for loopback OpenAI-compatible custom providers are now preserved by clearing the synthetic `Authorization` header at runtime (#45631). Agents/OpenAI-compatible compat overrides: explicit user `models[].compat` opt-ins are now respected for non-native `openai-completions` endpoints so capability overrides (including `supportsUsageInStreaming`) are no longer forced off (#44432). Agents/Anthropic replay: replayed assistant thinking blocks are dropped for native Anthropic and Bedrock Claude providers so persisted follow-up turns no longer fail on stored thinking blocks (#44843).
+- **v2026.3.12:** Agents/Kimi Coding: fixed malformed tool call args — tool definitions now sent in native Anthropic format again (#42835). Agents/failover: z.ai `network_error` stop reasons classified as retryable timeouts (#43884). Provider plugin architecture: Ollama, vLLM, and SGLang moved onto provider-plugin architecture with provider-owned onboarding, discovery, and model-picker setup. Pi-embedded-runner/pi-ai: adapt pi-ai OAuth and payload hooks for pi-embedded-runner.
 - **v2026.3.1:** Copilot token refresh: proactively refresh GitHub Copilot API tokens before expiry and retry on 401 auth errors during long-running embedded turns, preventing mid-session auth failures for Copilot-provider subagents.
 - **v2026.2.23:** Vercel AI Gateway normalizes `vercel-ai-gateway/claude-*` shorthand refs to canonical Anthropic-routed IDs. Anthropic OAuth tokens (`sk-ant-oat-*`) skip `context-1m-*` beta injection. OpenRouter: conflicting top-level `reasoning_effort` removed when injecting `reasoning.effort`. Groq: TPM limit errors no longer classified as context overflow.
 - **v2026.2.22:** Mistral provider added (embeddings + voice). Grounded Gemini web search via `tools.webSearch.provider: "gemini"`. Google Vertex AI available for Claude models. OpenRouter: inject `cache_control` on system prompts for Anthropic models.
@@ -386,6 +390,10 @@ Hooks are loaded from multiple sources with later sources overriding by name:
 - **Strategy** — Eligibility checking with requirement predicates
 - **Factory** — `installHooksFrom*` family of functions
 - **Process management** — Gmail watcher spawns/monitors child processes
+
+### Recent Changes
+
+- **v2026.3.12:** Hooks/loader: fail closed when workspace hook paths cannot be resolved with `realpath`, so unreadable or broken internal hook paths are skipped instead of falling back to unresolved imports (#44437). Hooks/agent deliveries: dedupe repeated hook requests by optional idempotency key (via `idempotency-key`, `x-openclaw-idempotency-key` headers, or `payload.idempotencyKey`) so webhook retries reuse the first run instead of launching duplicate agent executions (#44438). Gateway/hooks: hook auth failures are now bucketed by forwarded client IP behind trusted proxies; a startup warning is emitted when `hooks.allowedAgentIds` leaves hook routing unrestricted.
 
 ---
 
@@ -695,6 +703,8 @@ The largest module (348 source files, 335 tests). This is the **AI agent runtime
 
 ### Recent Changes
 
+- **v2026.3.13:** Agents/compaction: post-compaction token sanity checks now compare against full-session pre-compaction totals and skip when token estimation fails (#28347). Agents/compaction: safeguard compaction summary language continuity via default and configurable custom instructions (#10456). Agents/tool warnings: gated core tools (e.g. `apply_patch`) are now distinguished from plugin-only unknown entries in `tools.profile` warnings — unavailable core tools report runtime/provider/model/config gating instead of suggesting a missing plugin. Agents/Azure OpenAI: built-in `/new`, `/reset`, and post-compaction startup instructions rephrased to avoid content filter HTTP 400 (#43403). Agents/memory bootstrap: at most one root memory file is loaded — `MEMORY.md` wins; `memory.md` is used only when `MEMORY.md` is absent (#26054). Cron/isolated sessions: nested cron-triggered embedded runner work routes onto the nested lane to prevent deadlocks. Delivery/dedupe: completed direct-cron delivery cache trimmed correctly; mirrored transcript dedupe kept active even when transcript files contain malformed lines (#44666).
+- **v2026.3.12:** `sessions_yield` new tool added (`src/agents/tools/sessions-yield-tool.ts`): orchestrators can end the current turn immediately, skip queued tool work, and carry a hidden follow-up payload into the next session turn (#36537). Agents/compaction: skip the post-compaction `cache-ttl` marker write when compaction completed in the same attempt, preventing double compaction (#28548). Agents/compaction safeguard: missing-model and missing-API-key cancellation warnings now routed through `SubsystemLogger` (#9974). Memory/session sync: post-compaction session reindexing added (`agents.defaults.compaction.postIndexSync` and `agents.defaults.memorySearch.sync.sessions.postCompactionForce`) (#25561). Fast mode: `sessions_yield`, `/fast` toggle, `params.fastMode` mapped to OpenAI `service_tier` and Anthropic API `service_tier`; per-model config defaults; fast mode for isolated cron runs. ACP/final-message delivery: terminal assistant text snapshots preserved before resolving `end_turn` so ACP clients do not drop the last visible reply (#17615). Compaction: status reaction shown during auto-compaction pauses (#35474).
 - **v2026.3.1:** Subagent runtime events: typed `task_completion` internal events (`AgentInternalEvent` in new `internal-events.ts`) replace ad-hoc system-message handoff for subagent/cron completion announces. `AnnounceQueueItem` carries `internalEvents` array through queue drain and direct delivery paths. Cron completions skip the subagent status header. Announce steer messages use `formatAgentInternalEventsForPrompt()` instead of raw trigger strings. `sessions_spawn` rejects unsupported channel-delivery params (`target`, `transport`, `channel`, `to`, `threadId`, `replyTo`) with a `ToolInputError`. Thinking defaults: Claude 4.6 defaults to `adaptive` thinking; `thinkingDefault` config now accepts `"adaptive"` level. `thinkingDefault` priority: per-model defaults take precedence over agent-level defaults, and session entry `thinkingLevel`/`verboseLevel`/`reasoningLevel` are checked before agent defaults. Model failover: `ECONNREFUSED`, `ENETUNREACH`, `EHOSTUNREACH`, `ENETRESET`, `EAI_AGAIN` classified as failover-worthy network errors alongside existing `ETIMEDOUT`/`ESOCKETTIMEDOUT`/`ECONNRESET`/`ECONNABORTED`. Failover reason classification: `hasRateLimitTpmHint()` uses `\btpm\b` word-boundary regex instead of substring `includes("tpm")`, preventing false rate-limit classification from unrelated error messages containing `tpm` substrings. Copilot token refresh: proactively refresh GitHub Copilot tokens before expiry during long-running embedded turns. Sessions list: `transcriptPath` resolution now resolves per-agent store paths (including `{agentId}` expansion and `~` home-dir expansion) instead of requiring a pre-resolved store path. Subagent Slack thread delivery: `threadId` no longer blindly set to `conversationId`; only explicit requester thread hints are preserved, fixing invalid `thread_ts` on Slack DM/top-level delivery.
 - **v2026.2.23:** Reasoning: when `thinking=low` (model-default thinking), auto-reasoning stays disabled. Reasoning-required errors no longer classified as context overflow. Context overflow: detect additional error shapes + Chinese patterns. HTTP 502/503/504 treated as failover-eligible transient timeouts.
 - **v2026.2.22:** Moonshot: `supportsDeveloperRole=false` forced. Kimi token limit errors classified as context overflow. Google: non-base64 `thought_signature` sanitized from replay transcripts. Mistral: tool-call IDs sanitized. Ollama: large integer args preserved as exact strings. Transcripts: tool-call names validated before persistence.
@@ -959,6 +969,8 @@ Channel (Telegram/Discord/...)
 
 ### Recent Changes
 
+- **v2026.3.13:** Gateway/client requests: unanswered gateway RPC calls are now rejected after a bounded timeout and pending state is cleared, so stalled connections no longer leak hanging promises indefinitely (#45689). Gateway/session reset: `lastAccountId` and `lastThreadId` preserved across session resets (#44773). Gateway/status: `openclaw gateway status --require-rpc` flag added (`src/cli/daemon-cli/status.ts`); clearer Linux non-interactive daemon-install failure reporting. Gateway/Control UI: operator-only device-auth bypass restored; browser connect failures classified so origin and device-identity problems no longer surface as generic auth errors (#45512). Security/bootstrap tokens: setup codes made single-use to prevent replay.
+- **v2026.3.12:** Gateway/session discovery: disk-only and retired ACP session stores discovered under custom templated `session.store` roots so ACP reconciliation and run-id fallback keep working after restart (#44176). Gateway/main-session routing: TUI and `mode:UI` main-session sends kept on the internal surface when `deliver` is enabled, so replies no longer inherit persisted Telegram/WhatsApp routes (#43918). Gateway/hooks: hook auth failures bucketed by forwarded client IP behind trusted proxies; startup warning emitted when `hooks.allowedAgentIds` leaves routing unrestricted. Gateway/session stores: Swift push-test protocol models regenerated; Windows native session-store realpath handling aligned (#44266). Security/bootstrap tokens: `/pair` and `openclaw qr` setup codes switched to short-lived bootstrap tokens.
 - **v2026.3.1:** Health probes: `/health`, `/healthz` (liveness) and `/ready`, `/readyz` (readiness) endpoints added to `server-http.ts` via `GATEWAY_PROBE_STATUS_BY_PATH` map and `handleGatewayProbeRequest()` for container health checks (Kubernetes, Docker, Fly.io). Control UI method guard: POST requests to `/plugins/*` and `/api/*` paths fall through to their respective handlers instead of being caught by the SPA fallback, preventing untrusted plugins from claiming arbitrary UI paths. WS security: origin allowlist in `origin-check.ts` upgraded from array `includes` to `Set.has`; wildcard `["*"]` in `gateway.controlUi.allowedOrigins` now explicitly accepted. Control UI CSP: `style-src` includes `https://fonts.googleapis.com` and `font-src` includes `https://fonts.gstatic.com` for Google Fonts support. Control UI origins: `startup-control-ui-origins.ts` seeds `gateway.controlUi.allowedOrigins` for non-loopback installs upgrading to v2026.2.26+ at startup. Historical note: `v2026.3.1` introduced `launchctl kickstart -k` restart assistance under launchd, but current `v2026.3.8` supervised restart now exits and relies on supervisor restart instead. macOS TLS certs: `NODE_EXTRA_CA_CERTS` added to LaunchAgent environment for custom CA certificate support. Node exec approval: `systemRunPlanV2` renamed to `systemRunPlan` (breaking: old node clients sending `systemRunPlanV2` payloads will fail approval matching). `system.run` pins to canonical `realpath`: `resolveCommandResolution()` now resolves `resolvedRealPath` via `fs.realpathSync`, used in approval binding for symlink-resistant command identity. `node.canvas.capability.refresh` added to `NODE_ROLE_METHODS` in method-scopes. Canvas auth helpers extracted from `server-http.ts` into `server/http-auth.ts`.
 - **v2026.2.23:** WS: repeated unauthorized request floods closed per-connection with sampled rejection logging. Config Write: `unsetPaths` applied with immutable path-copy updates; prototype-key traversal rejected in `config get/set/unset`.
 - **v2026.2.22:** Auth: unified credential-source precedence via shared resolver helpers. Pairing: `operator.admin` satisfies `operator.*` scope checks; loopback scope-upgrade auto-approved; default scope bundles include `operator.read`/`operator.write`.
@@ -1339,3 +1351,97 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **`.dev-state` ignored (#41848):** `.dev-state` added to `.gitignore` so local runtime state files do not appear as untracked repo noise. Source: `chore: add .dev-state to .gitignore`.
 
 ---
+
+## v2026.3.12 Delta Notes
+
+### Agents / sessions_yield (#36537)
+- New tool `sessions_yield` added in `src/agents/tools/sessions-yield-tool.ts`. Orchestrators call it to end the current turn immediately, skip any queued tool work in the current turn, and carry a hidden follow-up payload into the next session turn. This enables tighter orchestration patterns where an agent delegates and yields in a single step without blocking the lane on intermediate tool results.
+
+### Agents / Compaction
+- **Skip double-compaction post-compact cache-ttl write (#28548):** When a compaction completes within the same attempt, the post-compaction `cache-ttl` marker write is now skipped so the next turn does not see a fresh TTL trigger and immediately fire a second small compaction.
+- **Compaction safeguard warnings via SubsystemLogger (#9974):** Missing-model and missing-API-key cancellation warnings from the compaction safeguard extension are now routed through the shared `SubsystemLogger` so they appear in structured logs and log files.
+
+### Memory / Post-Compaction Session Sync (#25561)
+- Two new config keys added: `agents.defaults.compaction.postIndexSync` (mode-aware synchronous reindexing immediately after compaction) and `agents.defaults.memorySearch.sync.sessions.postCompactionForce` (force session memory refresh post-compaction). Source: `src/agents/memory-search.ts`.
+
+### Agents / Fast Mode
+- `params.fastMode` wired through the embedded runner extra-params path. Mapped to `service_tier` on OpenAI/Codex endpoints and `service_tier` on direct Anthropic API calls. Per-model config defaults supported. Fast mode also applied for isolated cron runs.
+
+### Context Engine / Session Routing (#44157)
+- Optional `sessionKey` field now forwarded through all ContextEngine lifecycle calls (bootstrap, assembly, post-turn ingestion, compaction) in `src/context-engine/types.ts`. Plugins that implement context-engine hooks can now see structured routing metadata at each lifecycle point.
+
+### Gateway / Session Discovery (#44176)
+- Session discovery in `src/gateway/sessions-resolve.ts` now finds disk-only and retired ACP session stores under custom templated `session.store` roots. This keeps ACP reconciliation, session-id/label targeting, and run-id fallback working after gateway restart when non-default store paths are configured.
+
+### Gateway / Main-Session Routing (#43918)
+- TUI and `mode:UI` main-session sends are kept on the internal surface when `deliver` is enabled. Previously, replies could inherit the session's persisted Telegram/WhatsApp route; they now stay internal-only when originating from TUI or Control UI.
+
+### Gateway / Hooks (Auth + Idempotency)
+- Hook auth failures are now bucketed by the forwarded client IP when a trusted proxy is in use, rather than being attributed to the proxy IP. A startup warning is emitted when `hooks.allowedAgentIds` is unset or includes `'*'`, leaving hook routing unrestricted.
+- Hook requests can now carry an optional idempotency key (via `idempotency-key` or `x-openclaw-idempotency-key` HTTP headers, or `payload.idempotencyKey`) to deduplicate repeated deliveries. Source: `src/gateway/hooks.ts` (#44438).
+
+### Gateway / Session Stores (#44266)
+- Swift push-test protocol models regenerated after session-store schema changes. Windows native session-store path handling aligned to use `realpath`-resolved paths.
+
+### Security / Bootstrap Tokens
+- Device pairing setup codes (`/pair` and `openclaw qr`) switched from shared gateway credentials to short-lived bootstrap tokens. The token is consumed on first use in `src/infra/device-bootstrap.ts`.
+
+### ACP / Final-Message Delivery (#17615)
+- Terminal assistant text snapshots are now preserved before `end_turn` resolves in the ACP client path, so ACP clients no longer drop the last visible reply when the gateway sends the final message body on the terminal chat event.
+
+### Compaction / Status Reactions (#35474)
+- A temporary compacting reaction is shown during auto-compaction pauses and the thinking reaction is restored afterward, so the bot no longer appears frozen while context is being compacted.
+
+---
+
+## v2026.3.13 Delta Notes
+
+### Gateway / RPC Timeout (#45689)
+- Unanswered gateway RPC calls are now rejected after a bounded timeout and their pending state is cleared from `GatewayClient`. Previously, a stalled connection could leave hanging `request()` promises indefinitely. Source: `src/gateway/client.ts` area.
+
+### Gateway / Session Reset (#44773)
+- `lastAccountId` and `lastThreadId` are now preserved across gateway session resets. Previously, a `/reset` could clear these fields, causing subsequent replies to route to the wrong account or thread. Source: `src/config/sessions/store.ts`.
+
+### Gateway / Status (`--require-rpc`)
+- `openclaw gateway status` now accepts `--require-rpc` flag. When set and the RPC probe fails, the command exits non-zero so automation can distinguish a printed RPC error from a healthy probe. Source: `src/cli/daemon-cli/status.ts`. Clearer Linux non-interactive daemon-install failure reporting also added.
+
+### Gateway / Control UI (#45512)
+- Operator-only device-auth bypass restored in the Control UI WebSocket path. Browser connect failures are now classified (origin vs. device-identity) so Control UI and web chat no longer surface these as generic auth errors.
+
+### Agents / Custom Providers (#45631)
+- Blank API keys are now preserved for loopback OpenAI-compatible custom providers. Previously, a blank `apiKey` caused a synthetic `Authorization` header to be injected, breaking auth for self-hosted loopback endpoints. The header is now cleared at runtime when the key is explicitly blank.
+
+### Agents / Compaction (#28347, #10456)
+- Post-compaction token sanity checks now compare against full-session pre-compaction totals and skip when token estimation fails, so sessions with large bootstrap context report real token counts. Source: `src/agents/pi-embedded-runner/compact.ts` area.
+- Safeguard compaction summary language continuity: default and configurable custom instructions are used to reduce persona drift after auto-compaction.
+
+### Agents / Tool Warnings
+- Gated core tools (e.g. `apply_patch`) are now distinguished from plugin-only unknown tool entries in `tools.profile` warnings. An unavailable core tool now reports current runtime/provider/model/config gating instead of suggesting a missing plugin. Source: `src/agents/tool-policy-pipeline.ts`.
+
+### Agents / OpenAI-Compatible Compat Overrides (#44432)
+- Explicit user `models[].compat` opt-ins are now respected for non-native `openai-completions` endpoints. Previously, capability overrides such as `supportsUsageInStreaming` were forced off even when the endpoint supports them.
+
+### Agents / Azure OpenAI (#43403)
+- Built-in `/new`, `/reset`, and post-compaction startup instructions rephrased to avoid hitting the Azure OpenAI content filter and returning HTTP 400.
+
+### Agents / Memory Bootstrap (#26054)
+- At most one root memory bootstrap file is now loaded: `MEMORY.md` is preferred; `memory.md` is used only when `MEMORY.md` is absent. Source: `src/agents/workspace.ts` (`DEFAULT_MEMORY_FILENAME`, `DEFAULT_MEMORY_ALT_FILENAME`). This also fixes duplicate memory injection on case-insensitive Docker mounts.
+
+### Agents / Anthropic Replay (#44843)
+- Replayed assistant thinking blocks are dropped for native Anthropic and Bedrock Claude providers so persisted follow-up turns no longer fail on stored thinking blocks.
+
+### Cron / Isolated Sessions
+- Nested cron-triggered embedded runner work routes onto the nested lane to prevent deadlocks when compaction or other queued inner work runs.
+
+### Config / Validation (#41171, #42583, #27199, #35615)
+- Four previously rejected config keys are now accepted in strict validation:
+  - `agents.list[].params` — per-agent `cacheRetention`, `temperature`, `maxTokens` overrides (#41171).
+  - `tools.web.fetch.readability` and `tools.web.fetch.firecrawl` — web fetch config keys (#42583). Source: `src/config/zod-schema.agent-runtime.ts`.
+  - `channels.signal.groups` — per-group Signal overrides (#27199).
+  - `discovery.wideArea.domain` — unicast DNS-SD domain (#35615). Source: `src/config/zod-schema.ts`.
+
+### Security / Bootstrap Tokens (single-use)
+- Bootstrap setup codes made single-use: the record is consumed before the token is returned in `src/infra/device-bootstrap.ts`, preventing replay of pending device pairing requests.
+
+### Delivery / Dedupe (#44666)
+- Completed direct-cron delivery cache trimmed correctly; mirrored transcript dedupe kept active even when transcript files contain malformed lines.

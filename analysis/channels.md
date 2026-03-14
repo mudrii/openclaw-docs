@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11 | Cluster: CHANNELS & MESSAGING
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
 > Modules analyzed: `src/telegram` (141 files), `src/discord` (172 files), `src/signal` (32 files), `src/slack` (122 files), `src/whatsapp` (4 files), `src/imessage` (31 files), `src/line` (48 files), `src/channels` (175 files), `extensions/feishu` (98 files)
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
@@ -1330,3 +1330,105 @@ Agent tool call: message(action="send", target="...", message="...")
 - **Stale matcher caching removed**: The allowlist matcher cache that was keyed on the array reference has been removed. Same-array allowlist edits and wildcard-entry replacements now take effect immediately on the next match evaluation rather than returning a stale compiled matcher.
 
 *End of analysis. Total files analyzed: 823 across 9 modules (including extensions/feishu).*
+
+---
+
+## v2026.3.12 Delta Notes (2026-03-13)
+
+### Slack
+
+- **Agent reply Block Kit support** (#44592): `deliverReplies()` in `extensions/slack/src/monitor/replies.ts` now reads `payload.channelData?.slack?.blocks` via `readSlackReplyBlocks()` and forwards the parsed block array to `sendMessageSlack()`. Agents can deliver rich Block Kit layouts in shared reply delivery by supplying `channelData.slack.blocks` in the reply payload.
+
+- **Interactive replies opt-in** (#44607): Slack button and select-menu reply directives are gated behind `channels.slack.capabilities.interactiveReplies` (disabled by default). The helper `isSlackInteractiveRepliesEnabled()` in `extensions/slack/src/interactive-replies.ts` reads the flag from per-account config (`config.capabilities.interactiveReplies`) or from the top-level `channels.slack.capabilities` object when a single account is configured. The flag is disabled by default; operators must explicitly set it to `true` to enable interactive reply directives.
+
+  **New config key:** `channels.slack.capabilities.interactiveReplies` (boolean, default `false`)
+
+- **Allowlist routing requires stable IDs**: Channel and team allowlist routing now requires stable Slack channel and team IDs. Mutable name-based matching is available only when `channels.slack.dangerouslyAllowNameMatching: true` is set.
+
+  **Config key:** `channels.slack.dangerouslyAllowNameMatching` (boolean, default `false`)
+
+- **Probe bot/team metadata mapping** (#44775, v2026.3.13): `probeSlack()` in `extensions/slack/src/probe.ts` now maps `auth.test()` response fields to the `bot` (`user_id`, `user`) and `team` (`team_id`, `team`) sub-objects on `SlackProbe`, stabilizing metadata availability for status and health checks.
+
+### Telegram
+
+- **Model picker session persistence** (#40105): Inline model button selections in `extensions/telegram/src/bot-handlers.ts` now persist the chosen model to the session store via `applyModelOverrideToSessionEntry()`. Selecting the default model clears any override rather than storing a redundant entry. The `/models` command validates fallback models against the configured provider catalog before offering them as selections.
+
+- **Native command sync: suppress `BOT_COMMANDS_TOO_MUCH` noise**: Errors of type `BOT_COMMANDS_TOO_MUCH` from `setMyCommands` are now suppressed during native command menu sync; a fallback summary log is emitted instead to reduce noise in deployments with many registered commands.
+
+- **Media download transport policy** (#44639, v2026.3.13): Direct and proxy transport policy is now threaded into SSRF-guarded file fetches in `extensions/telegram/src/bot/delivery.resolve-media.ts`, ensuring media downloads obey the configured network policy including SSRF pinning.
+
+- **Inbound media IPv4 fallback** (v2026.3.13): SSRF-guarded downloads now retry with an explicit IPv4 fallback policy when the initial connection attempt fails, complementing the existing network-level IPv4 preference.
+
+- **File URL redaction in error logs** (v2026.3.13): Telegram file URLs (which embed the bot token in the path) are now redacted in error log output via `redactSensitiveText()` to prevent bot token leaks through application logs.
+
+- **Webhook auth before body parsing** (v2026.3.13): `extensions/telegram/src/webhook.ts` validates the webhook secret token before reading or parsing the request body. Unauthenticated requests are rejected immediately without consuming the body, as confirmed by the test `"rejects unauthenticated requests before reading the request body"`.
+
+### Mattermost
+
+- **Reply media delivery: `mediaLocalRoots` passthrough** (#44021): The agent-scoped `mediaLocalRoots` is now retrieved by `getAgentScopedMediaLocalRoots()` inside `extensions/mattermost/src/mattermost/reply-delivery.ts` and passed through the shared reply so locally allowed files are uploaded correctly.
+
+- **Block streaming + threading: duplicate message fix** (#41362): Fixed a duplicate-message condition that occurred when block streaming was active together with thread-reply mode in Mattermost.
+
+- **`replyToMode` support** (#29587): `extensions/mattermost/src/config-schema.ts` now accepts `replyToMode: z.enum(["off", "first", "all"])`. The value is surfaced in `MattermostAccountConfig` in `types.ts` and consumed in the channel plugin.
+
+  **New config key:** `channels.mattermost.accounts.<id>.replyToMode` (`"off" | "first" | "all"`)
+
+### BlueBubbles
+
+- **Self-chat echo dedupe: `fromMe` matching** (#38442): Reflected duplicate webhook copies are dropped only when a matching `fromMe` event was recently seen for the same chat, message body, and timestamp. The logic lives in `extensions/bluebubbles/src/monitor-self-chat-cache.ts` and mirrors the iMessage fix below.
+
+### iMessage
+
+- **Self-chat echo dedupe: `is_from_me` matching** (#38440): Reflected duplicate RPC notifications are dropped only when a matching `is_from_me: true` event was seen for the same chat, text, and `created_at` timestamp. Implemented via `extensions/imessage/src/monitor/self-chat-cache.ts`, verified by tests in `inbound-processing.test.ts`.
+
+- **Security: reject unsafe remote attachment paths** (v2026.3.13): Remote attachment path validation is applied in `extensions/imessage/src/monitor/monitor-provider.ts` before spawning the SCP copy, rejecting paths that could escape the expected remote root.
+
+### Feishu (Lark)
+
+- **Event dedupe: align with message-id contract** (#43762): The early duplicate-suppression check in `extensions/feishu/src/dedup.ts` now correctly aligns with Feishu's message-id contract. Pre-queue dedupe markers are released (via `processingClaims` TTL expiry) after a failed dispatch to allow reprocessing rather than permanently suppressing the event.
+
+- **File uploads: preserve literal UTF-8 filenames** (#34262): `extensions/feishu/src/media.ts` now passes filenames through a sanitizer that preserves the original UTF-8 display name (Chinese characters, emoji, etc.) when calling `im.file.create`. Previous versions percent-encoded non-ASCII characters, which the Feishu API treated as literal display text rather than decoding, causing garbled filenames.
+
+- **Security: require `encryptKey` alongside `verificationToken`** (`GHSA-g353-mgv3-8pcj`, #44087): Webhook mode now requires both `verificationToken` and `encryptKey` to be configured. Startup throws an explicit error if either is missing when `connectionMode` is `"webhook"`. Validation is enforced in both `extensions/feishu/src/config-schema.ts` (Zod schema refinement) and `extensions/feishu/src/monitor.account.ts` (runtime check).
+
+- **Security: preserve group chat typing and fail closed on ambiguous reaction context** (`GHSA-m69h-jm2f-2pv8`, #44088): Looked-up group chat typing is preserved and ambiguous reaction contexts now fail closed to prevent information leakage.
+
+### LINE
+
+- **Security: require signatures for empty-event POST probes** (`GHSA-mhxh-9pjm-w7q5`, #44090): LINE webhook handlers now require a valid HMAC-SHA256 signature on empty-event POST requests (used by LINE as connectivity probes). Previously, empty-event payloads could be delivered without signature validation.
+
+### Zalouser
+
+- **Security: rate limit invalid secret guesses** (`GHSA-5m9r-p9g7-679c`, #44173): Invalid secret guesses on the Zalouser webhook endpoint are now rate-limited before authentication proceeds.
+
+- **Security: require stable group IDs for allowlist auth**: Group allowlist authorization now requires stable Zalo group IDs. Mutable group-name matching is available only when `channels.zalouser.dangerouslyAllowNameMatching: true` is explicitly set in config.
+
+  **Config key:** `channels.zalouser.dangerouslyAllowNameMatching` (boolean, optional) — defined in `extensions/zalouser/src/config-schema.ts` and `extensions/zalouser/src/types.ts`.
+
+- **Markdown-to-Zalo text style parsing** (#43324): `extensions/zalouser/src/text-styles.ts` provides a full markdown-to-Zalo text style converter. Inline markers (bold, italic, code, color tags, underline, strikethrough) and block-level patterns are mapped to `TextStyle` values from `zca-client.js`.
+
+- **Outbound chunker**: An outbound markdown-aware chunker is now wired in `extensions/zalouser/src/channel.ts` via the `chunker`/`chunkerMode: "markdown"` fields on the channel plugin descriptor.
+
+### Discord
+
+- **`autoArchiveDuration` for auto-created threads** (#35065): Confirmed from source — `autoArchiveDuration` is read from `DiscordGuildChannelConfig` in `extensions/discord/src/monitor/allow-list.ts` and applied in `extensions/discord/src/monitor/threading.ts` when creating auto-threads. Values: `"60"` (1h, default), `"1440"` (1d), `"4320"` (3d), `"10080"` (1w).
+
+- **Gateway startup: treat `/gateway/bot` failures as transient** (#44397, v2026.3.13): `extensions/discord/src/monitor/gateway-plugin.ts` now classifies HTTP and JSON parse errors from the `/gateway/bot` metadata endpoint as transient (`createGatewayMetadataError({ transient: true })`). The gateway startup no longer propagates these as unhandled rejections; instead the error wraps with a recoverable cause so reconnect logic can handle it.
+
+- **Allowlists: honor raw `guild_id` when hydrated guild object is missing** (v2026.3.13): `extensions/discord/src/monitor/message-handler.preflight.ts` uses `params.data.guild_id` (raw snowflake from the gateway event) as the authoritative guild identifier. When the hydrated `guild` object is absent (e.g. during cache miss), the raw `guild_id` is still used for allowlist lookups, preventing allowlisted channels and threads from being false-dropped.
+
+### Signal
+
+- **`channels.signal.groups` schema support** (#27199, v2026.3.13): Config validation now accepts `channels.signal.groups`, enabling per-group configuration entries for Signal group chats.
+
+---
+
+## v2026.3.13 Delta Notes (2026-03-15)
+
+Changes in this release are recorded inline above under each channel section where they first appear. Summary of what landed in v2026.3.13 on top of v2026.3.12:
+
+- **Discord**: gateway startup transient error handling (#44397); raw `guild_id` allowlist fix.
+- **Slack**: `probeSlack()` bot/team metadata stabilization (#44775).
+- **Telegram**: media download transport policy threading (#44639); inbound media IPv4 fallback; file URL redaction in error logs; webhook secret validated before body read.
+- **iMessage**: reject unsafe remote attachment paths before SCP spawn.
+- **Signal**: `channels.signal.groups` schema support (#27199).

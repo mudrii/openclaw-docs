@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11 | Codebase: OpenClaw release tag `v2026.3.11` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -272,7 +272,7 @@ type RouteSpec = {
 | `openclaw health` | Gateway health check |
 | `openclaw sessions` | Session management |
 | `openclaw browser` | Browser automation tools |
-| `openclaw gateway` | Gateway control (`run`/`stop`/`restart`/`status`/`call`/`discover`; supports `--dev`) |
+| `openclaw gateway` | Gateway control (`run`/`stop`/`restart`/`status`/`call`/`discover`; supports `--dev`, `--require-rpc` on `status`) |
 | `openclaw daemon` | Legacy service management alias |
 | `openclaw logs` | View gateway logs |
 | `openclaw system` | System events, heartbeat, presence |
@@ -1509,6 +1509,7 @@ User types: openclaw <command> [args]
 | `TELEGRAM_BOT_TOKEN` | Telegram bot token | — |
 | `DISCORD_BOT_TOKEN` | Discord bot token | — |
 | `ELEVENLABS_API_KEY` | ElevenLabs TTS API key | — |
+| `OPENCLAW_TZ` | Pin timezone inside Docker container (`docker-setup.sh`); must be a valid IANA timezone string (e.g. `Asia/Shanghai`) | — |
 
 ---
 
@@ -1764,3 +1765,89 @@ User types: openclaw <command> [args]
 - **OpenCode/onboarding — new OpenCode Go provider:** `src/commands/onboard-auth.config-opencode-go.ts` — new OpenCode Go provider added. Onboarding wizard treats Zen and Go as a single OpenCode setup, stores one shared OpenCode API key, and no longer overrides the built-in `opencode-go` catalog routing. Fixes #42313.
 
 - **macOS/onboarding remote — detect remote gateways needing shared auth token:** `src/commands/onboard-remote.ts` — remote onboarding now detects when a remote gateway requires a shared auth token, explains where to find it, and clarifies when a successful connectivity check used paired-device auth rather than the token. Fixes #43100.
+
+## v2026.3.12 Changes <!-- v2026.3.12 -->
+
+### CLI <!-- v2026.3.12 -->
+
+- **Fast mode toggle — `/fast` TUI command and `params.fastMode` session field:** `src/tui/commands.ts` adds `/fast <status|on|off>` as a TUI slash command. `src/tui/tui-command-handlers.ts` handles it and emits `fast mode: on/off` status lines. `src/tui/tui-session-actions.ts` persists the toggle in session state. `src/config/sessions/types.ts` adds `fastMode?: boolean` to `SessionEntry`. `src/agents/fast-mode.ts` resolves fast mode from session entry, model config `params.fastMode` or `params.fast_mode`, and extra params.
+
+- **Provider plugin architecture — Ollama, vLLM, SGLang:** Ollama, vLLM, and SGLang onboarding and model discovery are now handled via the plugin provider architecture (`auth-choice.apply.plugin-provider.ts`). Provider-owned onboarding, discovery, model-picker, and post-selection hooks replace older inline flows.
+
+- **CLI/thinking help — `xhigh` level added to cron and agent commands:** `src/cli/cron-cli/register.cron-add.ts`, `register.cron-edit.ts`, and `src/cli/program/register.agent.ts` now document `xhigh` as a valid value for `--thinking <level>` (full range: `off|minimal|low|medium|high|xhigh`).
+
+- **MiniMax onboarding — flatten to 4 direct auth choices, unify CN/Global:** MiniMax onboarding in `src/commands/auth-choice.apply.minimax.ts` routes to `minimax:cn` or `minimax:global` profiles depending on the region flag. CN and Global are unified under a single provider path (fixes #44284).
+
+- **Commands — require owner for `/config` and `/debug`:** `src/auto-reply/commands-registry.data.ts` enforces that `/config` and `/debug` commands require owner-level authorization. The `requireOwner` flag is checked by `src/auto-reply/command-auth.ts`.
+
+- **Terminal table rendering — grapheme display width and emoji presentation:** `src/terminal/ansi.ts` adds `graphemeWidth()` using `Intl.Segmenter` at grapheme granularity and per-codepoint Unicode East Asian width detection. `src/terminal/table.ts` tokenizes plain text by grapheme to wrap by display width. Tables no longer shrink one column due to miscounted grapheme widths. Emoji ZWJ sequences are kept as single graphemes. Emoji presentation normalization is applied in skills output.
+
+- **Kubernetes install docs — starter K8s path with raw manifests and Kind setup:** deployment documentation for Kubernetes added (raw manifests, Kind setup).
+
+- **Build — default to Node 24, raise Node 22 floor to 22.16:** `src/infra/runtime-guard.ts` now requires Node `>=22.16.0`. Daemon runtime locators (`src/daemon/runtime-paths.ts`, `src/daemon/program-args.ts`) prefer Node 24 and treat Node 22 LTS 22.16+ as the minimum floor.
+
+### Config <!-- v2026.3.12 -->
+
+- **Config/Anthropic alias normalization at startup:** inline Anthropic model alias normalization runs during config load to prevent startup crashes on stale model refs (fixes #45520). See `src/config/defaults.ts` and `src/config/model-alias-defaults.ts`.
+
+- **Models/OpenRouter native IDs — canonicalize across config writes and runtime:** `src/agents/model-selection.ts` preserves native OpenRouter model prefixes (e.g. `openrouter/aurora-alpha`). Config writes, runtime lookups, fallback management, and `models list --plain` use canonicalized OpenRouter model keys. Legacy `openrouter/openrouter/...` entries are migrated. See `src/commands/models.set.e2e.test.ts` for migration test coverage.
+
+- **Models/secrets — enforce source-managed SecretRef markers in `models.json`:** generated `models.json` entries now enforce `SecretRef` markers for source-managed secret fields (fixes #43759).
+
+- **Config/validation — new accepted keys in strict validation:**
+  - `agents.list[].params` per-agent parameter overrides (fixes #41171)
+  - `tools.web.fetch.readability` and `tools.web.fetch.firecrawl.*` (fixes #42583)
+  - `channels.signal.groups` group configuration
+  - `discovery.wideArea.domain` for wide-area DNS-SD domain (fixes #35615)
+
+- **Docker/timezone — `OPENCLAW_TZ` env var for `docker-setup.sh`:** `docker-setup.sh` reads `OPENCLAW_TZ` (must be a valid IANA timezone string) and writes it into the container `.env` file and `docker-compose.yml` `TZ` slots. Invalid or missing timezone values fail with a clear message (fixes #34119).
+
+### Infra/Doctor <!-- v2026.3.12 -->
+
+- **Doctor/gateway service — canonicalize entrypoint paths before comparison:** `src/commands/doctor-gateway-services.ts` resolves the installed service entrypoint via `fs.realpath()` before comparing to the current install, preventing false repair prompts caused by symlinks or relative paths (fixes #43882).
+
+- **Doctor/cron — stop flagging canonical payload kinds as legacy:** `src/commands/doctor-cron.ts` no longer flags canonical cron payload kinds as requiring legacy repair (fixes #44012).
+
+- **Infra/exec allowlist — tighten glob matching, preserve POSIX case sensitivity:** exec allowlist glob matching tightened; POSIX case sensitivity preserved (fixes #43798).
+
+- **Infra/host env — block `GIT_EXEC_PATH` in sanitized host exec environments:** `src/infra/host-env-security-policy.json` includes `GIT_EXEC_PATH` in the blocked env var list for sanitized host exec contexts (fixes #43685).
+
+- **Status resolution — resolve context window by provider-qualified key:** context window resolution prefers the provider-qualified model key; on bare-ID collision the maximum context window is used (fixes #36389).
+
+### Windows <!-- v2026.3.12 -->
+
+- **Windows/gateway install — bound schtasks calls, Startup-folder fallback:** `src/daemon/schtasks.ts` bounds schtasks execution with timeouts and falls back to installing a Startup-folder login item when task creation hangs or is denied.
+
+- **Windows/gateway stop — resolve Startup-folder fallback listeners:** gateway stop resolves Startup-folder fallback listeners by inspecting the installed `gateway.cmd` port.
+
+- **Windows/gateway auth — stop attaching device identity on local loopback shared-token calls:** device identity is no longer attached to local loopback calls that use the shared gateway token.
+
+### macOS <!-- v2026.3.12 -->
+
+- **macOS/launchd — `openclaw onboard --install-daemon` avoids false-fails on slower Macs and fresh VM snapshots:** daemon install path hardened against timing-sensitive launchd bootstrap races.
+
+## v2026.3.13 Changes <!-- v2026.3.13 -->
+
+### CLI <!-- v2026.3.13 -->
+
+- **Gateway/status — `--require-rpc` flag:** `src/cli/daemon-cli/register-service-commands.ts` adds `--require-rpc` to the `status` command (both `openclaw gateway status` and `openclaw daemon status`). When set, the command exits non-zero if the RPC probe fails. Cannot be combined with `--no-probe`. Tested in `src/cli/daemon-cli/status.test.ts` and `register-service-commands.test.ts`.
+
+- **Gateway/status — clearer Linux non-interactive daemon-install failure reporting:** failure messages for the Linux non-interactive daemon install path are now more explicit about the failure reason.
+
+- **Agents/memory bootstrap — single root memory file preference:** `src/memory/internal.ts` and `src/memory/manager-sync-ops.ts` prefer `MEMORY.md` over `memory.md` as the single root memory file when both exist (fixes #26054).
+
+- **Build/plugin-sdk bundling — bundle plugin-sdk subpath entries in one pass:** plugin-sdk subpath entries are bundled in a single pass to prevent memory blow-up during build (fixes #45426).
+
+### Config/Infra <!-- v2026.3.13 -->
+
+- **Config/validation — `channels.signal.groups` and `discovery.wideArea.domain` accepted in strict validation:** both keys are now allowlisted in strict config validation (backported from v2026.3.12 scope, confirmed present in v2026.3.13).
+
+### Windows <!-- v2026.3.13 -->
+
+- **Windows/gateway — all three gateway fixes landed:** Windows gateway install (schtasks timeout + Startup-folder fallback), stop (fallback listener resolution), and auth (loopback device identity noise) fixes are all present in v2026.3.13.
+
+### macOS <!-- v2026.3.13 -->
+
+- **macOS/runtime locator — require Node >=22.16.0 during macOS runtime discovery:** `src/daemon/runtime-paths.ts` enforces the Node 22.16+ floor when scanning system Node installations on macOS.
+
+- **macOS/onboarding — avoid self-restarting freshly bootstrapped launchd gateways:** onboarding no longer triggers a self-restart on a gateway that was just bootstrapped by the same onboarding flow.

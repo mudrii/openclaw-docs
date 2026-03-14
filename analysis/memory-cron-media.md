@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Codebase: OpenClaw release tag `v2026.3.11` | Version: v2026.3.11
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
 
 ---
 
@@ -267,6 +267,9 @@ type SessionFileEntry = { path, absPath, mtimeMs, size, hash, content, lineMap }
 - `agents.defaults.memorySearch.*` — provider, model, store path, chunking, sync, query, cache, hybrid, extra paths
 - `agents.defaults.memorySearch.store.vector.enabled` — enable sqlite-vec
 - `agents.defaults.memorySearch.remote.batch.*` — batch embedding config
+- `agents.defaults.memorySearch.sync.sessions.postCompactionForce` — force session memory reindex after compaction-triggered transcript updates (boolean, default `true`) — added v2026.3.12 (#25561)
+- `agents.defaults.compaction.postIndexSync` — post-compaction session memory index sync mode: `"off"` | `"async"` | `"await"` (default `"async"`) — added v2026.3.12 (#25561)
+- `agents.defaults.compaction.customInstructions` — additional compaction-summary instructions for language/persona continuity; resolved with precedence SDK event → this config → built-in default; max 800 characters — added v2026.3.13 (#10456)
 
 ### Test Coverage
 20 test files covering: backend config resolution, embedding chunk limits, embedding providers (OpenAI, Voyage, Gemini), batch APIs, hybrid search, chunking/file listing, session entry parsing, QMD manager/parser/scope, search manager factory, async search, atomic reindex, batch splitting, token limits, sync error handling, vector deduplication, watcher configuration, concurrent manager creation deduplication, SQLite readonly sync recovery.
@@ -1060,3 +1063,39 @@ type ParsedFrontmatter = Record<string, string>;
 - **BREAKING — Cron delivery isolation tightened:** isolated cron jobs can no longer fall back to ad hoc agent sends or main-session summaries; run `openclaw doctor --fix` to migrate legacy storage and delivery metadata (#40998).
 - **Cron `NO_REPLY`/empty response fix:** empty or `NO_REPLY` cron subagent responses are no longer misidentified as interim acknowledgements, preventing spurious retry turns (#41383).
 - **Cron `lastErrorReason` persistence:** failed run error reasons are now stored in job state and the gateway schema covers the full `FailoverReason` set (#14382).
+
+## v2026.3.12 Delta Notes
+
+### Memory / Session Sync
+
+- **Post-compaction session reindexing** (#25561): After compaction completes, the memory manager now performs a session reindex pass. The behaviour is controlled by two new config keys: `agents.defaults.compaction.postIndexSync` (`"off"` | `"async"` | `"await"`, default `"async"`) and `agents.defaults.memorySearch.sync.sessions.postCompactionForce` (boolean, default `true`). `postCompactionForce=true` forces a full session reindex after a compaction-triggered transcript write even if the normal delta thresholds have not been crossed, so compacted summaries are immediately searchable.
+
+### Cron
+
+- **Direct cron sends excluded from write-ahead resend queue** (#40646): Isolated direct cron send operations are no longer enqueued into the write-ahead resend queue. Previously, after a gateway restart these entries could replay and produce duplicate messages. The fix scopes direct cron delivery to fire-and-forget, consistent with isolated session semantics.
+
+- **Doctor no longer flags canonical `agentTurn`/`systemEvent` payload kinds as legacy** (#44012): The `openclaw doctor` check that previously flagged `agentTurn` and `systemEvent` as legacy payload kind strings now only normalizes whitespace-padded variants (e.g. `" agentTurn "`) rather than the canonical forms.
+
+- **Fast mode enabled for isolated cron runs**: `runCronIsolatedAgentTurn()` now passes the resolved `fastMode` state through to the embedded runner for isolated cron sessions, matching the behavior already available for main-session runs.
+
+### Auto-reply / Compaction
+
+- **Status reaction shown during context compaction pauses** (#35474): A visual status reaction is now emitted to the channel while the agent is paused waiting for context compaction to complete, giving users feedback that the agent is active rather than hung.
+
+### Delivery / Dedupe
+
+- **Direct-cron delivery cache trimmed correctly** (#44666): Stale entries in the completed direct-cron delivery cache are now correctly pruned. Mirrored transcript deduplication continues to function even when individual JSONL lines in the transcript are malformed.
+
+---
+
+## v2026.3.13 Delta Notes
+
+### Memory / Bootstrap
+
+- **Load only one root memory file; prefer `MEMORY.md`, fall back to `memory.md`** (#26054): `resolveMemoryBootstrapEntry()` in `workspace.ts` now returns at most one root memory file per workspace. It tries `MEMORY.md` first; only if that file is absent does it try `memory.md`. Previously, both files could be loaded as bootstrap context on case-insensitive filesystems (e.g. macOS Docker volumes), wasting tokens by injecting the same content twice.
+
+### Cron / Isolated Sessions
+
+- **Nested cron-triggered embedded runner work routed onto nested lane**: `runCronIsolatedAgentTurn()` now calls `resolveNestedAgentLane(params.lane)` when launching the embedded runner. This routes any nested work triggered from inside a cron-isolated session (compaction, inner tool completions, etc.) onto a dedicated nested lane, preventing deadlocks that could arise when inner queued work competed with the outer cron session on the same lane.
+
+---

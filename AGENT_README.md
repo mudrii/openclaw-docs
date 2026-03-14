@@ -4,6 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
+> **Current docs version: v2026.3.13-1 (2026-03-15).** Latest upstream stable release: v2026.3.13 (published 2026-03-13).
 
 ---
 
@@ -74,6 +75,23 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 **v2026.3.2 additions (behavioral):**
 
 - No new top-level modules were added in this release window; feature and security changes are in existing modules, including `cli/`, `channels/`, `agents/`, `gateway/`, `security/`, `plugins/`, and `extensions/`.
+
+**v2026.3.13 additions (runtime/ops):**
+
+- **Chrome DevTools MCP attach mode:** new `profile="user"` and `profile="chrome-relay"` built-in browser profiles attach to a signed-in live Chrome session rather than launching an isolated browser. Batched act automation is also supported. Key files: `src/browser/cdp-profiles.ts`, `src/browser/mcp-attach.ts`.
+- **`sessions_yield` safeguards:** compaction token sanity check validates against full pre-compaction totals; follow-up payload routing hardened. Key file: `src/agents/tools/sessions-yield-tool.ts`.
+- **Compaction language continuity:** `agents.defaults.compaction.customInstructions` allows per-agent instructions to preserve language/style across compaction resets. Key file: `src/agents/pi-extensions/compaction-instructions.ts`.
+- **Memory bootstrap preference:** `MEMORY.md` is now preferred over `memory.md` during workspace bootstrap. No config change needed.
+- **Nested cron lane routing:** nested cron jobs route through their own lane to prevent cross-lane deadlocks.
+- **Security — 8 exec hardening items:** pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, skill auto-allow all hardened; single-use bootstrap pairing codes enforced; external content ZWS stripping added.
+
+**v2026.3.12 additions (runtime/ops):**
+
+- **`sessions_yield` tool (new):** cooperative turn-ending primitive. Calling `sessions_yield` ends the turn immediately, skips queued tool work, and optionally carries a hidden follow-up payload. Key file: `src/agents/tools/sessions-yield-tool.ts`.
+- **Provider plugins for Ollama/vLLM/SGLang:** these providers are now managed as plugins (`extensions/ollama/`, `extensions/vllm/`, `extensions/sglang/`). No behavioral change for existing configs.
+- **`/fast` mode:** `service_tier` fast mode for OpenAI and Anthropic; per-model config defaults; TUI/ACP support; cron runs can use fast mode.
+- **Node 24 default; Node 22.16 minimum:** upgrade runtime before upgrading OpenClaw on hosts below Node 22.16.
+- **Security — 20+ GHSAs:** see CHANGELOG.md v2026.3.12 section for full list. Exec allowlist hardening (GHSA-pcqg, GHSA-f8r2, GHSA-57jw, GHSA-jvqh, GHSA-x7pp, GHSA-jc5j) is the most impactful for agent tooling workflows.
 
 **v2026.3.11 additions (runtime/ops):**
 
@@ -391,6 +409,25 @@ pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
 
+### Release-window Workflow Additions (v2026.3.13)
+
+- **Exec approval hardening:** pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, and skill auto-allow are all hardened in the exec approval pipeline. Review any custom exec allowlist entries — previously-allowed invocations using these patterns may now be blocked by the preflight guard.
+- **Single-use bootstrap pairing codes:** `/pair` pairing codes are now single-use (v2026.3.12 introduced short-lived tokens; v2026.3.13 enforces single-use). Automated pairing flows that reuse codes must be updated.
+- **Memory bootstrap:** `MEMORY.md` is preferred over `memory.md`. If your workspace uses `memory.md` as the primary bootstrap file, rename it or ensure `MEMORY.md` exists.
+- **`agents.defaults.compaction.customInstructions`:** add per-agent compaction instructions to preserve language/style across context resets. Key file: `src/agents/pi-extensions/compaction-instructions.ts`.
+- **Chrome DevTools MCP:** browser profiles `user` and `chrome-relay` attach to a live signed-in Chrome session. If you use browser automation in agent tooling, be aware that these profiles share browser state with the user's active session.
+- **Windows gateway:** install/stop/status behavior changed on Windows. Verify gateway lifecycle commands after upgrading on Windows deployments.
+
+### Release-window Workflow Additions (v2026.3.12)
+
+- **Node 22.16 minimum runtime:** upgrade to Node 22.16+ before upgrading OpenClaw. Node 24 is the new default for fresh installs.
+- **`sessions_yield` tool added:** orchestrators can now call `sessions_yield` to end a turn immediately and skip queued tool work. Key file: `src/agents/tools/sessions-yield-tool.ts`. Update any orchestration logic that depends on queued tools completing before `end_turn`.
+- **Provider plugins for Ollama/vLLM/SGLang:** these providers are now plugin-managed. Ensure no hardcoded references to old inline provider paths remain in config or tooling.
+- **Exec allowlist GHSAs (20+):** multiple exec approval hardening advisories were fixed in this release (GHSA-pcqg, GHSA-f8r2, GHSA-57jw, GHSA-jvqh, GHSA-x7pp, GHSA-jc5j, and others). Review exec allowlists carefully after upgrading.
+- **Bootstrap tokens:** `/pair` setup codes switched to short-lived tokens. Any automated pairing flow using the previous shared-credential approach must be updated.
+- **Post-compaction reindexing:** enable `agents.defaults.compaction.postIndexSync: true` and `agents.defaults.memorySearch.sync.sessions.postCompactionForce: true` if memory freshness after compaction is required.
+- **Hook loader paths:** unreadable hook loader paths now fail closed. Audit hook configurations to ensure loader paths are accessible.
+
 ### Release-window Workflow Additions (v2026.3.11)
 
 - **Cron isolation — run `openclaw doctor --fix` (BREAKING):** cron jobs can no longer send ad hoc agent notifications or route through fallback main-session summaries. Any cron jobs relying on this behavior will silently stop delivering. Migration is mandatory; `openclaw doctor --fix` handles legacy cron storage and legacy notify/webhook delivery metadata.
@@ -516,6 +553,10 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 > **v2026.2.17 additions:** Anthropic models support `params.context1m: true` (1M beta header), Z.AI models default to `params.tool_stream: true`, and recurring top-of-hour cron schedules now persist deterministic staggering via `schedule.staggerMs` unless explicitly disabled.
 >
 > **v2026.2.19 additions:** `gateway.auth.mode` defaults to `"token"` (was implicit open). `gateway.auth.token` is auto-generated and persisted on first start. `hooks.token` must differ from `gateway.auth.token` (startup validation). `browser.ssrfPolicy` controls SSRF behavior for browser URL navigation. `tools.exec.safeBins` now validates against trusted bin directories only. Cron webhook targets are SSRF-validated before dispatch. Plugin install records now include `name`, `version`, `spec`, integrity, and shasum (`--pin` flag for npm plugins).
+>
+> **v2026.3.12 additions:** `channels.slack.capabilities.interactiveReplies` (bool) opts into Block Kit interactive replies. `agents.defaults.compaction.postIndexSync` (bool) triggers post-compaction memory sync. `agents.defaults.memorySearch.sync.sessions.postCompactionForce` (bool) forces session reindexing after compaction. Per-model `service_tier` fast-mode config for OpenAI and Anthropic.
+>
+> **v2026.3.13 additions:** `agents.defaults.compaction.customInstructions` (string) — per-agent instructions for compaction to preserve language/style continuity. `OPENCLAW_TZ` environment variable for Docker timezone pinning. `agents.list[].params`, `tools.web.fetch.readability`, `tools.web.fetch.firecrawl`, `channels.signal.groups`, `discovery.wideArea.domain` are now accepted config keys (previously Zod-rejected as unknown).
 
 ### How to Add a New Config Key
 
@@ -585,7 +626,7 @@ src/<module>/
 
 | Adding a...            | Put it in...                                                           |
 | ---------------------- | ---------------------------------------------------------------------- |
-| New tool               | `src/agents/tools/<tool-name>.ts` + register in `openclaw-tools.ts`    |
+| New tool               | `src/agents/tools/<tool-name>.ts` + register in `openclaw-tools.ts` (e.g. `src/agents/tools/sessions-yield-tool.ts` for `sessions_yield`) |
 | New channel            | `src/<channel>/` + `extensions/<channel>/` for plugin                  |
 | New CLI command        | `src/cli/<command>-cli.ts` + `src/commands/<command>.ts`               |
 | New config type        | `src/config/types.<section>.ts` + `src/config/zod-schema.<section>.ts` |

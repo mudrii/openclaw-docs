@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-12 | **Version:** v2026.3.11
-**Codebase:** OpenClaw release tag `v2026.3.11`
+**Updated:** 2026-03-15 | **Version:** v2026.3.13-1
+**Codebase:** OpenClaw release tag `v2026.3.13-1`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -359,6 +359,7 @@ openclaw.json → io.ts (read) → parseConfigJson5 → merge-config (includes) 
 
 ### Recent Changes
 
+- **v2026.3.13:** Config/validation: four previously rejected config keys are now accepted in strict validation: `agents.list[].params` (per-agent `cacheRetention`, `temperature`, `maxTokens` overrides) (#41171); `tools.web.fetch.readability` and `tools.web.fetch.firecrawl` (#42583); `channels.signal.groups` (#27199); `discovery.wideArea.domain` (#35615). Source: `src/config/zod-schema.agent-runtime.ts`, `src/config/zod-schema.ts`.
 - **v2026.2.22:** `channels.modelByChannel` allowlisted in config validation (previously caused "unknown channel id" errors). `bindings[].comment` field now optional in strict validation. Array-valued config paths compared structurally during diffing (fixes false restart-required reloads for QMD paths).
 - **v2026.2.23:** Config write operations apply `unsetPaths` with immutable path-copy updates. Path traversal hardening for `config get/set/unset` rejects prototype-key segments.
 - **v2026.3.1:** Gateway bind host alias normalization migration (`gateway.bind.host-alias->bind-mode`) maps raw bind values like `0.0.0.0`, `::`, `[::]`, `*` to `"lan"` and `127.0.0.1`, `localhost`, `::1` to `"loopback"`. New `gateway-control-ui-origins.ts` module handles `allowedOrigins` seeding for non-loopback bind and startup guard. Legacy migration in `part-3` auto-seeds `gateway.controlUi.allowedOrigins` for existing non-loopback installs to prevent crash loops on upgrade (#29385).
@@ -678,6 +679,8 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 
 ### Recent Changes
 
+- **v2026.3.13:** Control UI/insecure auth: explicit shared token and password auth preserved on plain-HTTP Control UI connects so LAN and reverse-proxy sessions no longer drop shared auth before the first WebSocket handshake (#45088). Gateway/Control UI: operator-only device-auth bypass restored; browser connect failures now classified so origin and device-identity problems no longer surface as generic auth errors in Control UI and web chat (#45512).
+- **v2026.3.12:** Control UI/dashboard-v2: gateway dashboard refreshed with modular overview, chat, config, agent, and session views, plus command palette, mobile bottom tabs, and richer chat tools.
 - **v2026.2.22:** Full cron edit parity (clone, validation, run history with pagination/search/sort). Tools panel data-driven from `tools.catalog`. Version status pill in web header. WS: stop/clear browser gateway client on teardown; stable per-tab `instanceId` in connect frames.
 
 ---
@@ -770,3 +773,58 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 
 ### Git / Runtime State
 - **`.dev-state` ignored (#41848):** `.dev-state` added to `.gitignore` so local runtime state does not appear as untracked repo noise. This is also noted in the core-engine delta for completeness. Source: `chore: add .dev-state to .gitignore`.
+
+---
+
+## v2026.3.12 Changes
+
+### Gateway / Session Discovery (#44176)
+- **Disk-only and retired ACP session stores discovered under custom `session.store` roots:** `src/gateway/sessions-resolve.ts` (and related session resolution helpers) now walk custom templated `session.store` roots to find stores that are present on disk but no longer registered as active. This keeps ACP reconciliation, session-id/session-label targeting, and run-id fallback working correctly after gateway restart when non-default store path templates are configured.
+
+### Gateway / Main-Session Routing (#43918)
+- **TUI and UI main-session sends kept on internal surface when `deliver` is enabled:** When a session has a persisted Telegram, WhatsApp, or other channel route and `deliver` is enabled, sends originating from TUI (`mode:TUI`) and Control UI (`mode:UI`) main-session connections are now kept on the internal delivery surface. Previously they could inherit the persisted external channel route, causing unexpected external delivery.
+
+### Gateway / Hooks (Auth bucketing + Idempotency)
+- **Hook auth failures bucketed by client IP behind trusted proxies:** When the gateway is behind a trusted reverse proxy, hook authentication failures are now attributed to the forwarded client IP (from `X-Forwarded-For` or equivalent), not the proxy IP. A startup warning is emitted when `hooks.allowedAgentIds` is unset or set to `['*']`, since this leaves hook routing unrestricted to any configured agent ID. Source: `src/gateway/hooks.ts`.
+- **Hook request deduplication by idempotency key (#44438):** Repeated hook requests carrying a matching idempotency key (via `idempotency-key` or `x-openclaw-idempotency-key` HTTP header, or `payload.idempotencyKey`) reuse the first completed run instead of launching duplicate agent executions. Source: `src/gateway/hooks.ts`.
+
+### Gateway / Session Stores (#44266)
+- **Swift push-test protocol models regenerated:** Swift bindings in `Sources/OpenClawKit/` regenerated after session-store schema updates. **Windows native session-store realpath:** realpath handling aligned on Windows so session-store path comparisons use resolved paths consistently.
+
+### Security / Bootstrap Tokens (v2026.3.12 phase)
+- **Setup codes switched to short-lived bootstrap tokens:** `/pair` and `openclaw qr` setup codes no longer embed shared gateway credentials. They now carry short-lived bootstrap tokens generated at pairing-request time. The token is consumed on first use (`src/infra/device-bootstrap.ts`). Full single-use enforcement lands in v2026.3.13.
+
+### Config / Gateway
+- No new config keys in the `src/config/` or `src/gateway/` modules specific to this release window beyond those noted above.
+
+---
+
+## v2026.3.13 Changes
+
+### Gateway / RPC Timeout (#45689)
+- **Unanswered RPC calls rejected after bounded timeout:** `GatewayClient.request()` calls that receive no response within a configured timeout are now rejected and their pending state cleared. Previously a stalled or disconnected WebSocket could leave hanging promises indefinitely. Source: `src/gateway/client.ts`.
+
+### Gateway / Session Reset (#44773)
+- **`lastAccountId` and `lastThreadId` preserved across session resets:** `src/config/sessions/store.ts` now carries `lastAccountId` and `lastThreadId` through the reset path. Previously a `/reset` could clear these fields, causing replies to route to the wrong account or thread.
+
+### Gateway / Status (`--require-rpc`)
+- **`openclaw gateway status --require-rpc` flag added:** `src/cli/daemon-cli/status.ts` accepts a new `requireRpc` flag. When set and the RPC probe is not successful, the command exits non-zero. This allows automation to fail hard on RPC probe misses instead of treating a printed error as a green result. Clearer failure messages also added for Linux non-interactive daemon-install scenarios.
+
+### Gateway / Control UI (#45512)
+- **Operator-only device-auth bypass restored:** The Control UI WebSocket path's operator-only device-auth bypass was restored. Browser connect failures are now classified (origin error vs. device-identity error) so the Control UI and web chat surface actionable error types rather than generic auth failures.
+
+### Gateway / WebSocket Pairing Bypass (#42931)
+- **Device-pairing enforcement skipped when `gateway.auth.mode=none`:** Control UI connections behind reverse proxies no longer get stuck on `pairing required` (close code 1008) when gateway auth is explicitly disabled.
+
+### Config / Validation (#41171, #42583, #27199, #35615)
+- **Four undocumented-but-valid config paths now accepted in strict validation:**
+  - `agents.list[].params` — per-agent stream params (`cacheRetention`, `temperature`, `maxTokens`). Source: `src/config/types.agents.ts` line 85; schema in `src/config/zod-schema.agents.ts`.
+  - `tools.web.fetch.readability` — boolean, enables readability extraction. `tools.web.fetch.firecrawl` — object, enables Firecrawl fallback. Source: `src/config/zod-schema.agent-runtime.ts`.
+  - `channels.signal.groups` — per-group `requireMention`, `tools`, and `toolsBySender` overrides for Signal.
+  - `discovery.wideArea.domain` — unicast DNS-SD domain for wide-area gateway discovery. Source: `src/config/zod-schema.ts`.
+
+### Security / Bootstrap Tokens (single-use enforcement)
+- **Setup codes made single-use:** The bootstrap token record is consumed before the token is returned in `src/infra/device-bootstrap.ts`. This prevents a pending device pairing request from being replayed by a second device before the first device completes approval.
+
+### Daemon / Linux Non-Interactive Install
+- **Clearer failure reporting:** Linux daemon install failures in non-interactive environments now produce more actionable error messages, distinguishing between systemd unavailability and permission issues.

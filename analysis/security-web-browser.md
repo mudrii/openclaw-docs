@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11 | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1109,3 +1109,94 @@ canvas-host → (minimal, mostly standalone)
 ### Sandbox/FS Bridge Write Hardening
 
 - **Staged writes pinned to verified parent directory** — `fs-bridge-mutation-helper.ts` implements `write_atomic()` in the injected Python helper using `dir_fd`-anchored file operations throughout: the parent directory is opened with `O_RDONLY | O_DIRECTORY | O_NOFOLLOW`, temp files are created inside that fd with `O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW`, and `os.replace()` is issued with matching `src_dir_fd`/`dst_dir_fd` to atomically rename within the same directory. This prevents a temporary write file from materializing outside the allowed sandbox mount before the atomic replace, even if a symlink race replaces a directory component between path resolution and file creation.
+
+---
+
+## v2026.3.12 Delta Notes
+
+### Security — Exec Approval Hardening
+
+- **GHSA-pcqg-f7rg-xfvv: Invisible Unicode in exec approval prompts** — Invisible Unicode format characters are escaped to `\u{...}` visible notation in exec approval prompts before display, preventing approval UI spoofing via hidden directional or formatting codepoints (#43687).
+- **GHSA-9r3v-37xh-2cf6: Unicode normalization before obfuscation checks** — Unicode compatibility normalization and invisible formatting character stripping are applied before exec obfuscation detection, closing a bypass via Unicode confusable characters (#44091).
+- **GHSA-f8r2-vg7x-gh8m: POSIX glob matching hardening in exec allowlist** — Exec allowlist glob matching now preserves POSIX case sensitivity and constrains `?` to a single path segment, preventing pattern matches that could cross directory boundaries (#43798).
+- **GHSA-57jw-9722-6rf2, GHSA-jvqh-rfmh-jh27, GHSA-x7pp-23xv-mmr4, GHSA-jc5j-vg4r-j5jx: Exec approval hardening — inline loader, POSIX shell flags, pnpm/npm exec/npx runners** — Ambiguous inline loader/shell-payload detection hardened; POSIX shell flag bypass blocked; pnpm and npm exec/npx script runner forms unwrapped before approval matching (#44247).
+- **Exec approval: fail closed for Ruby `-r`/`--require`/`-I` flags** — Ruby exec approval fails closed on load-path injection flags.
+- **Exec approval: Mongolian selectors stripped in obfuscation detector** — Mongolian free variation selectors are stripped before obfuscation checks.
+- **GHSA-jf5v-pqgw-gm5m: `GIT_EXEC_PATH` blocked in host exec environments** — `GIT_EXEC_PATH` inheritance is blocked in sanitized host exec environments to prevent git exec-path injection (#43685).
+
+### Security — Authentication and Scoping
+
+- **GHSA-r7vr-gr74-94p8: Sender ownership required for `/config` and `/debug`** — Gateway `/config` and `/debug` endpoints now require sender ownership; non-owner requests are rejected (#44305).
+- **GHSA-rqpp-rjj8-7wv8: Unbound client-declared scopes cleared on shared-token WebSocket connects** — Prevents scope escalation via client-declared scope claims on shared-token connections (#44306).
+- **GHSA-2pwv-x786-56f8: Device-token scopes capped to approved baseline** — Device token scopes are now capped to the paired device's approved scope baseline (#43686).
+- **GHSA-wcxr-59v9-rxr8: Sandbox session-tree visibility enforced in `session_status`** — Cross-sandbox session reads and mutations are blocked by enforcing sandbox session-tree visibility checks (#43754).
+- **GHSA-2rqg-gjgv-84jm: Public spawned-run lineage fields rejected** — Public requests with spawned-run lineage fields are rejected; workspace inheritance only on internal paths (#43801).
+
+### Security — WebSocket and Handshake
+
+- **GHSA-jv4g-m82p-2j93 + GHSA-xwx2-ppv2-wx98: Handshake retention shortened; oversized pre-auth frames rejected** — Unauthenticated handshake retention window is shortened and oversized pre-auth frames are rejected before processing (#44089).
+
+### Security — Media Store
+
+- **GHSA-6rph-mmhp-h7h9: Shared media-store size cap restored for browser proxy files** — The size cap for the shared media store is restored for browser proxy files, preventing unbounded accumulation (#43684).
+
+### Security — Webhooks
+
+- **GHSA-g353-mgv3-8pcj: Feishu webhook requires `encryptKey`** — Feishu webhook ingress now requires `encryptKey`; unencrypted webhooks are rejected (#44087).
+- **GHSA-mhxh-9pjm-w7q5: LINE webhook requires signatures** — LINE webhook requests are rejected unless they carry a valid signature (#44090).
+- **GHSA-5m9r-p9g7-679c: Zalo webhook rate-limits invalid secrets** — Zalo webhook ingress rate-limits requests with invalid secrets (#44173).
+
+### Security — Plugins (v2026.3.12)
+
+- **GHSA-99qw-6mr3-36qr: Workspace plugin auto-load disabled without explicit trust** — Plugins discovered in cloned workspaces can no longer execute without an explicit trust decision (`plugins.allow`). Non-bundled workspace-discovered plugins emit a warning when `plugins.allow` is not configured (#44174).
+- **Plugin discovery/load cache and provenance tracking** — Discovery and load caches corrected for env-scoped roots; provenance tracking updated for workspace-relative roots (#44046).
+
+### Security — Pairing (v2026.3.12)
+
+- **Bootstrap tokens for `/pair` and `openclaw qr`** — Setup codes are now short-lived bootstrap tokens, reducing exposure window for intercepted pairing codes.
+
+### Browser — Existing Session (v2026.3.12)
+
+- **Stop reporting fake CDP ports/URLs for live attached Chrome** — When attaching to an existing Chrome session via Chrome DevTools MCP, no fake CDP port or URL is reported. The profile renders `transport: chrome-mcp` to accurately reflect the transport type.
+- **Transport-aware timeout diagnostics** — Browser operation timeout messages now reflect the active transport type (`chrome-mcp` vs. standard CDP), producing accurate diagnostic guidance.
+
+### Security Model Updates (v2026.3.12)
+
+The following entries are added to the Security Model section for `src/browser`:
+
+- **GHSA-vmhq-cqm9-6p7q: Persistent browser profile create/delete blocked via write-scoped `browser.request`** — Creating or deleting persistent browser profiles via write-scoped `browser.request` calls is now blocked (#43800).
+- **`nodes` tool marked owner-only** — The `nodes` system tool requires owner authorization.
+
+---
+
+## v2026.3.13 Delta Notes
+
+### Security — Exec Approval Hardening
+
+- **Single-use bootstrap token setup codes** — Setup codes are now invalidated after first redemption; captured codes cannot be replayed.
+- **Security/exec: fail closed for Perl `-M` and `-I` flags** — Exec approval for Perl fails closed on load-path and module injection flags.
+- **Security/exec: PowerShell `-File`/`-f` recognized as script-runner wrapper** — PowerShell script invocations via `-File`/`-f` now receive consistent approval treatment as script-runner forms.
+- **Security/exec: additional pnpm runner forms unwrapped** — `pnpm --reporter exec` and `pnpm node <file>` forms are unwrapped before approval matching.
+- **Security/exec: `env` dispatch wrappers unwrapped in shell-segment allowlist on macOS** — `env` wrappers inside shell-segment allowlist resolution are unwrapped on macOS so approval decisions reflect the effective executable.
+- **Security/exec: backslash-newline treated as shell line continuation on macOS** — Backslash-newline sequences are recognized as shell line continuations during macOS shell-chain parsing, closing a bypass via escaped newlines.
+- **Security/exec: macOS skill auto-allow trust bound to executable name and resolved path** — macOS skill auto-allow trust is bound to both the executable name and its realpath, preventing trust from incorrectly applying to a different binary at the same resolved path.
+- **macOS/exec approvals: per-agent exec approval settings respected in gateway prompter** — Gateway prompter respects per-agent exec approval settings for interactive approval requests (#13707).
+
+### Security — External Content
+
+- **Strip zero-width and soft-hyphen chars during boundary sanitization** — Zero-width characters and soft-hyphen (U+00AD) are stripped during external content boundary sanitization, closing a boundary-marker-splitting bypass.
+
+### Security — Webhooks and Channels
+
+- **iMessage: reject unsafe remote attachment paths before SCP** — iMessage remote attachment paths are validated before spawning SCP, rejecting paths that could escape the expected attachment directory.
+- **Telegram webhook validates secret before reading/parsing request body** — The webhook secret is validated before the request body is read or parsed, preventing parser-level exposure of unauthenticated input.
+
+### Browser — Chrome DevTools MCP Attach Mode (v2026.3.13)
+
+- **Official Chrome DevTools MCP attach mode** — The `existing-session` driver is the formalized Chrome DevTools MCP attach mode for live signed-in Chrome sessions. The driver communicates via the `chrome-devtools-mcp` package (spawned via `npx -y chrome-devtools-mcp@latest --autoConnect --experimentalStructuredContent --experimental-page-id-routing`). Tab IDs are numeric page IDs from the MCP structured content, mapped to `BrowserTab.targetId` strings.
+- **Built-in `profile="user"` for logged-in host browser** — The `user` profile is auto-injected into `browser.profiles` (driver `existing-session`, `attachOnly: true`, color `#00AA00`) when not explicitly configured. It provides attach-only access to the host's signed-in Chrome via Chrome DevTools MCP.
+- **Built-in `profile="chrome-relay"` for extension relay** — The `chrome-relay` profile is auto-injected (driver `extension`, `cdpUrl: http://127.0.0.1:<controlPort+1>`, color `#00AA00`) when not explicitly configured, providing extension-relay access.
+- **Profile capabilities: `usesChromeMcp` flag** — `BrowserProfileCapabilities` in `profile-capabilities.ts` gains `usesChromeMcp: boolean`. Profiles with driver `existing-session` have `usesChromeMcp: true`, `requiresRelay: false`, `usesPersistentPlaywright: false`, `supportsReset: false`.
+- **Browser act: batched actions, selector targeting, delayed clicks** — Browser act automation supports batched action sequences, explicit selector-based element targeting, and delayed click timing (contributed by @vincentkoc).
+- **Browser/existing-session: driver validation and session lifecycle hardened** — The Chrome DevTools MCP session lifecycle is validated more strictly; shared ARIA role sets are extracted to a shared module for consistent snapshot output (#45682).
+- **Browser/existing-session: text-only `list_pages`/`new_page` responses accepted** — The Chrome DevTools MCP integration accepts text-only (non-structured) responses from `list_pages` and `new_page` MCP tool calls, improving compatibility with different versions of the `chrome-devtools-mcp` package.

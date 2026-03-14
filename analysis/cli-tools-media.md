@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-12 | Version: v2026.3.11
+> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
 
 ## Overview
 
@@ -924,3 +924,39 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Agents
 
 - **Agents/context pruning — prune image-only tool results during soft-trim:** `src/agents/pi-extensions/context-pruning/` — image-only tool results are now pruned during soft-trim (replaced with placeholders), and historical image cleanup is extended to cover more cases where replayed image bytes are not needed. Reduces token usage and context pressure for vision-heavy sessions. Fixes #43045.
+
+## v2026.3.12 Changes <!-- v2026.3.12 -->
+
+### CLI <!-- v2026.3.12 -->
+
+- **Fast mode toggle — `/fast` TUI command:** `src/tui/commands.ts` registers `/fast <status|on|off>` as a TUI slash command. `src/tui/tui-command-handlers.ts` handles the toggle, emitting `fast mode: on/off` status lines. `src/tui/tui-session-actions.ts` persists the value in session state and syncs it to the gateway chat client via `src/tui/gateway-chat.ts`. The `fastMode` field in `src/tui/tui-types.ts` carries the session-level state.
+
+- **CLI/thinking help — `xhigh` level added to `cron add`, `cron edit`, and `agent`:** `src/cli/cron-cli/register.cron-add.ts` and `register.cron-edit.ts` now document `--thinking <level>` as `off|minimal|low|medium|high|xhigh`. `src/cli/program/register.agent.ts` likewise includes `xhigh`. The TUI launcher `src/cli/tui-cli.ts` also accepts `--thinking <level>` as an override.
+
+- **Terminal table rendering — grapheme display width:** `src/terminal/ansi.ts` adds `graphemeWidth()` backed by `Intl.Segmenter` (granularity `"grapheme"`) and per-codepoint Unicode East Asian width checking. Wide glyphs (CJK, full-width) and emoji are counted as 2 terminal columns. `src/terminal/table.ts` tokenizes plain cell text by grapheme and wraps by grapheme display width, preventing the one-column-too-narrow shrink that occurred with multi-byte characters. Emoji ZWJ sequences are preserved as single graphemes. Emoji presentation normalization (e.g. VS-15/VS-16 stripping) is applied in skills CLI output (`src/cli/skills-cli.format.ts`).
+
+- **Provider plugin architecture — Ollama, vLLM, SGLang onboarding:** Ollama, vLLM, and SGLang now use the provider plugin architecture (`src/commands/auth-choice.apply.plugin-provider.ts`) for onboarding, model discovery, and model picker flows.
+
+- **MiniMax auth — flatten to 4 direct choices, unify CN/Global:** `src/commands/auth-choice.apply.minimax.ts` routes to `minimax:cn` or `minimax:global` profiles under a single unified provider path (fixes #44284).
+
+- **Build — Node 24 default, Node 22 floor raised to 22.16:** `src/infra/runtime-guard.ts` requires Node `>=22.16.0`. Doctor and daemon runtime path messages recommend Node 24 as the preferred install.
+
+### TUI <!-- v2026.3.12 -->
+
+- **TUI/fast mode state sync:** `src/tui/gateway-chat.ts` exposes `fastMode` in the session info type so the TUI status bar can reflect current fast mode state. The session-actions reducer in `src/tui/tui-session-actions.ts` merges `fastMode` updates from server-side session records.
+
+## v2026.3.13 Changes <!-- v2026.3.13 -->
+
+### CLI <!-- v2026.3.13 -->
+
+- **Gateway/status — `--require-rpc` flag:** `src/cli/daemon-cli/register-service-commands.ts` adds `--require-rpc` (default `false`) to the `status` subcommand registered for both `openclaw gateway status` and `openclaw daemon status`. When set, the command exits non-zero if the RPC probe fails or cannot connect. Mutually exclusive with `--no-probe` (produces an explicit error). Covered by `src/cli/daemon-cli/status.test.ts` and `register-service-commands.test.ts`.
+
+- **Agents/memory bootstrap — single root memory file preference (`MEMORY.md` > `memory.md`):** `src/memory/internal.ts` and `src/memory/manager-sync-ops.ts` prefer `MEMORY.md` over `memory.md` as the single root memory file when both exist in the workspace (fixes #26054).
+
+- **Build/plugin-sdk bundling — bundle subpath entries in one pass:** plugin-sdk subpath entries are bundled in a single pass during build, preventing memory blow-up on large plugin graphs (fixes #45426).
+
+### macOS <!-- v2026.3.13 -->
+
+- **macOS/runtime locator — enforce Node >=22.16.0 during system Node discovery:** `src/daemon/runtime-paths.ts` rejects system Node installations below 22.16.0 during macOS runtime locator scans, with a message directing users to Node 24 or Node 22 LTS.
+
+- **macOS/onboarding — avoid self-restart of freshly bootstrapped launchd gateways:** the onboarding flow no longer issues a self-restart when it detects a gateway that was just bootstrapped in the same session.
