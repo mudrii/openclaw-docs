@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-15 (source package: 2026.3.13-1) | Release-only architecture snapshot for contributors
+> Updated: 2026-03-24 (docs snapshot: v2026.3.23-1) | Released baseline: GitHub `v2026.3.23` plus shipped correction tag `v2026.3.23-2`
 
 ---
 
@@ -272,7 +272,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 
 ```
 Step 1: TELEGRAM API → grammY Bot (long-poll or webhook)
-        └─ src/telegram/bot-handlers.ts registers middleware
+        └─ extensions/telegram/src/bot-handlers.ts registers middleware
 
 Step 2: bot-message.ts → Access check (allowlist, bot detection)
         └─ bot-message-context.ts → Build MsgContext (Body, From, ChatType, MediaPaths)
@@ -933,7 +933,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Extension packages (`extensions/*/package.json`) | 33 |
 | Bundled skills (`skills/*`) | 52 |
 
-> Current analyzed source package: `2026.3.13-1` (tag `v2026.3.13-1`). Counts measured from that released tag snapshot.
+> Current analyzed source package: released `v2026.3.23` with shipped correction tag `v2026.3.23-2`. Counts measured from the `v2026.3.23-2` released tree.
 
 ### Key External Dependencies
 
@@ -1320,7 +1320,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ### Browser, Tools, and Platforms
 
-- **Remote CDP parity** — direct `ws://` / `wss://` CDP endpoints are now first-class, wildcard debugger URLs from remote `/json/version` responses are rewritten to the external host/port, and `browser.relayBindHost` supports WSL2/cross-namespace relay access.
+- **Remote CDP parity** — direct `ws://` / `wss://` CDP endpoints are first-class, wildcard debugger URLs from remote `/json/version` responses are rewritten to the external host/port, and host-local signed-in browser attach now lives on Chrome MCP `existing-session` rather than the removed extension relay path.
 - **Strict browser SSRF redirect enforcement** — strict browser navigation flows now validate redirect hops and fail closed when remote tab-open flows cannot inspect them.
 - **Backup CLI** — new `openclaw backup create` / `openclaw backup verify` commands create and validate local state archives, including config-only mode and workspace exclusion controls.
 - **Talk/platform changes** — top-level `talk.silenceTimeoutMs` config landed with platform defaults (`700 ms` on macOS/Android, `900 ms` on iOS); macOS remote mode now exposes `gateway.remote.token`; Android Play-distributed builds remove self-update, background-location “always”, screen-record, and background mic capture behavior.
@@ -1392,63 +1392,33 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ---
 
-## v2026.3.13 Changes (2026-03-13)
+## v2026.3.22-v2026.3.23 Released Changes (2026-03-23 to 2026-03-24 docs snapshot)
 
-### Browser — Chrome DevTools MCP Attach Mode
+### Browser / Sandbox / Web
 
-- **`profile="user"` and `profile="chrome-relay"` built-in profiles** — attach to an existing signed-in live Chrome session via Chrome DevTools MCP rather than launching a new isolated browser. The `user` profile connects to a user's default Chrome profile; `chrome-relay` uses the built-in relay transport.
-- **Batched act automation** — browser automation actions can now be batched in MCP attach mode, reducing round-trips for multi-step sequences.
+- **Legacy Chrome extension relay removed in released code** — `v2026.3.22` removed `driver: "extension"`, bundled relay assets, and `browser.relayBindHost`. The current host-local attach path is Chrome MCP `existing-session`, with the built-in `user` profile and optional `browser.profiles.<name>.userDataDir` for Brave, Edge, Chromium, and non-default Chrome profiles.
+- **Chrome MCP readiness hardened** — `v2026.3.23` waits for attached tabs to become usable before treating an existing-session browser as ready, and reuses already-running loopback browsers more reliably on slower hosts.
+- **Control UI CSP hashes** — inline bootstrap scripts are now explicitly hashed and allowed via `script-src` SHA-256 entries instead of relying on looser treatment.
+- **Pluggable sandbox backends** — the released architecture now includes OpenShell and SSH sandbox backends alongside Docker-oriented flows.
 
-### Core Runtime
+### Plugins / Skills / Packaging
 
-- **`sessions_yield` safeguards** — compaction token sanity check now validates against full pre-compaction totals rather than partial counts; follow-up payload routing hardened.
-- **Memory bootstrap** — `MEMORY.md` is preferred over `memory.md` during agent workspace bootstrap; mixed-case filenames resolved deterministically.
-- **Compaction language continuity** — `agents.defaults.compaction.customInstructions` enables per-agent instructions for compaction to preserve language/style continuity across context resets.
-- **Thinking block replay** — replayed Anthropic and Bedrock thinking blocks are now dropped to prevent stale reasoning from polluting resumed turns.
-- **Tool warning distinction** — tool warnings now differentiate between gated core tools (available but restricted) and plugin-only tools (not loaded), improving agent error messages.
-- **Blank API key for loopback providers** — custom providers at loopback addresses now accept a blank API key, removing the requirement for a dummy key in local inference setups.
-- **Nested cron lane routing** — nested cron jobs route through their own lane, preventing cross-lane deadlocks in concurrent cron execution.
+- **ClawHub-first install surface** — bare `openclaw plugins install <package>` now prefers ClawHub before npm, and the stable CLI has first-class `openclaw skills search|install|update`.
+- **Plugin SDK migration** — the public released SDK surface is `openclaw/plugin-sdk/*`; `openclaw/extension-api` remains only as a deprecated compatibility bridge.
+- **Bundled runtime sidecars restored** — `v2026.3.23` restores packaged plugin runtime sidecars in published npm installs so bundled channel/provider plugins work from packed builds again.
+- **ClawHub compatibility is runtime-version aware** — the shipped correction build `v2026.3.23-2` validates package compatibility against the active runtime version instead of a stale fixed `1.2.0` constant.
 
-### Platforms
+### Gateway / Agents / Ops
 
-- **Android:** chat settings sheet redesigned; Google Code Scanner integration for QR-based gateway onboarding.
-- **iOS:** first-run welcome pager displayed before gateway setup step.
-- **Gateway RPC timeout** — unanswered RPC client requests now time out rather than hanging indefinitely.
-- **`--require-rpc` on `gateway status`** — flag to assert that an RPC-responding gateway is running; exits non-zero if gateway is unreachable.
-- **Session reset** — `lastAccountId` and `lastThreadId` are now preserved across session resets, maintaining channel context for the next conversation.
-- **Windows gateway** — install/stop/status command fixes; macOS onboarding self-restart avoidance; macOS runtime guard enforces Node >=22.16.0.
+- **Gateway auth tightened** — canvas routes now require auth and agent session reset requires admin scope.
+- **Channel auth UX fixed** — single-channel `channels login` / `logout` flows auto-select the configured login-capable channel and harden channel-id handling.
+- **Cron timezone correctness** — one-shot `--at ... --tz <iana>` scheduling now preserves the requested wall-clock time across DST and offset-less datetimes.
+- **Same-base correction-version handling** — configs written by `2026.3.23-2` no longer spuriously warn when read by `2026.3.23`.
 
-### Config Validation
+### Stats Update (v2026.3.23-1 docs snapshot)
 
-- `agents.list[].params`, `tools.web.fetch.readability`, `tools.web.fetch.firecrawl`, `channels.signal.groups`, and `discovery.wideArea.domain` are now accepted config keys (previously rejected by Zod validation as unknown keys).
-
-### Dependencies
-
-- pi packages bumped to 0.58.0.
-
-### Dashboard
-
-- Fixed full reload triggered on every live tool result.
-- Oversized plain-text replies now rendered as paragraphs rather than a single scrolling block.
-- `chat-new-messages` scroll pill styling corrected.
-
-### Security (8 exec approval hardening items)
-
-- pnpm exec paths hardened in approval pipeline
-- Perl `-M` and `-I` flag injection blocked
-- PowerShell `-File` and `-f` flag injection blocked
-- Env wrapper shims blocked (prevents env-based command substitution in exec approvals)
-- macOS line continuation (`\` at end of line) blocked in exec approval context
-- Skill auto-allow tightened — skills no longer implicitly widen exec approval scope
-- Single-use bootstrap pairing codes enforced (replaces shared credentials from v2026.3.12)
-- External content zero-width character stripping (Unicode ZWS/ZWNJ prompt injection hardening)
-- Telegram webhook authentication enforced before body is read
-- iMessage attachment path rejection tightened against path traversal
-
-### Stats Update (v2026.3.13-1)
-
-- **6,176 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`)
-- **200,794 lines of TypeScript** (same scope)
-- **45 extension directories**, **33 packages**, **52 skills**
+- **7,627 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`)
+- **504,909 lines of TypeScript** (same scope)
+- **75 extension packages** and **51 bundled skills** in the released tree
 
 ---

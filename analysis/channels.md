@@ -1,8 +1,10 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
-> Modules analyzed: `src/telegram` (141 files), `src/discord` (172 files), `src/signal` (32 files), `src/slack` (122 files), `src/whatsapp` (4 files), `src/imessage` (31 files), `src/line` (48 files), `src/channels` (175 files), `extensions/feishu` (98 files)
+> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+> Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, plus shared `src/channels` and `src/routing`
+
+> **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, and Matrix live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, and adjacent core modules.
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 
@@ -12,13 +14,13 @@
 
 1. [Architecture Overview](#architecture-overview)
 2. [src/channels — Shared Channel Infrastructure](#srcchannels)
-3. [src/telegram — Telegram Bot API](#srctelegram)
-4. [src/discord — Discord Bot (Carbon/Gateway)](#srcdiscord)
-5. [src/signal — Signal via signal-cli JSON-RPC](#srcsignal)
-6. [src/slack — Slack (Bolt Socket Mode + HTTP)](#srcslack)
-7. [src/whatsapp — WhatsApp Web (Baileys)](#srcwhatsapp)
-8. [src/imessage — iMessage (imsg RPC)](#srcimessage)
-9. [src/line — LINE Messaging API](#srcline)
+3. [extensions/telegram — Telegram Bot API](#extensionstelegram)
+4. [extensions/discord — Discord Bot (Carbon/Gateway)](#extensionsdiscord)
+5. [extensions/signal — Signal via signal-cli JSON-RPC](#extensionssignal)
+6. [extensions/slack — Slack (Bolt Socket Mode + HTTP)](#extensionsslack)
+7. [extensions/whatsapp — WhatsApp Web (Baileys)](#extensionswhatsapp)
+8. [extensions/imessage — iMessage (imsg RPC)](#extensionsimessage)
+9. [extensions/line — LINE Messaging API](#extensionsline)
 10. [Synology Chat Extension](#synology-chat-extension)
 11. [Cross-Channel Data Flow](#cross-channel-data-flow)
 
@@ -249,7 +251,7 @@ type ChatChannelId = "telegram" | "whatsapp" | "discord" | "irc" | "googlechat" 
 
 ---
 
-## src/telegram — Telegram Bot API {#srctelegram}
+## extensions/telegram — Telegram Bot API {#extensionstelegram}
 
 ### Module Overview
 Full-featured Telegram Bot API integration using **grammY** framework. Supports long polling and webhook modes, forum topics (threads), inline buttons, sticker understanding via vision, voice messages, draft streaming (live-edit messages as AI generates), media groups, native `/commands`, and reactions.
@@ -357,7 +359,7 @@ Tests cover: bot creation, message context building, dispatch, native commands, 
 
 ---
 
-## src/discord — Discord Bot (Carbon/Gateway) {#srcdiscord}
+## extensions/discord — Discord Bot (Carbon/Gateway) {#extensionsdiscord}
 
 ### Module Overview
 Discord integration using **@buape/carbon** (REST + Gateway) with the discord.js-compatible `discord-api-types`. Supports guilds, channels, threads, DMs, group DMs, reactions, polls, voice messages, PluralKit integration, presence/status, slash commands, exec approvals via buttons, and rich permission management.
@@ -471,7 +473,7 @@ Tests cover: API fetch, audit, chunking, gateway logging/registry, monitor (mess
 
 ---
 
-## src/signal — Signal via signal-cli JSON-RPC {#srcsignal}
+## extensions/signal — Signal via signal-cli JSON-RPC {#extensionssignal}
 
 ### Module Overview
 Signal integration via **signal-cli** JSON-RPC daemon over HTTP/SSE. Supports DMs, groups, reactions, media attachments, read receipts, typing indicators, and styled text (bold/italic/strikethrough/monospace/spoiler).
@@ -537,7 +539,7 @@ Tests cover: daemon log classification, format (chunking, links, visual), probe,
 
 ---
 
-## src/slack — Slack (Bolt Socket Mode + HTTP) {#srcslack}
+## extensions/slack — Slack (Bolt Socket Mode + HTTP) {#extensionsslack}
 
 ### Module Overview
 Slack integration using **@slack/bolt** (Socket Mode or HTTP Events API). Rich feature set including slash commands, channel/thread threading, reactions, pins, file uploads, member events, channel lifecycle events, and configurable reply-to-mode per chat type.
@@ -637,7 +639,7 @@ Tests cover: actions read, channel migration, client, format, monitor (threading
 
 ---
 
-## src/whatsapp — WhatsApp Web (Baileys) {#srcwhatsapp}
+## extensions/whatsapp — WhatsApp Web (Baileys) {#extensionswhatsapp}
 
 ### Module Overview
 Minimal utility module for WhatsApp target normalization. The actual WhatsApp Web implementation (Baileys socket, QR login, message monitoring) lives in `src/channel-web.ts` and `src/web/`, re-exported through `src/channels/web/index.ts`.
@@ -679,7 +681,7 @@ resolveWhatsAppOutboundTarget(params): WhatsAppOutboundTargetResolution
 
 ---
 
-## src/imessage — iMessage (imsg RPC) {#srcimessage}
+## extensions/imessage — iMessage (imsg RPC) {#extensionsimessage}
 
 ### Module Overview
 iMessage/SMS integration via the **imsg** CLI tool, communicating over JSON-RPC (stdin/stdout). Supports DMs, groups, media attachments, and multiple target addressing modes (chat_id, chat_guid, chat_identifier, handle with service prefix).
@@ -742,7 +744,7 @@ Tests cover: client RPC, monitor (group mention skipping), probe, send, targets.
 
 ---
 
-## src/line — LINE Messaging API {#srcline}
+## extensions/line — LINE Messaging API {#extensionsline}
 
 ### Module Overview
 LINE Messaging API integration with rich feature set including Flex Messages, Rich Menus, template messages, markdown→LINE conversion, webhook signature verification, and comprehensive message types. The most feature-rich of the newer channel implementations.
@@ -1423,12 +1425,13 @@ Agent tool call: message(action="send", target="...", message="...")
 
 ---
 
-## v2026.3.13 Delta Notes (2026-03-15)
+## v2026.3.22-v2026.3.23 Delta Notes (2026-03-24 docs snapshot)
 
-Changes in this release are recorded inline above under each channel section where they first appear. Summary of what landed in v2026.3.13 on top of v2026.3.12:
+Changes in the current released line are recorded inline above under each channel section where they first appear. Summary of what landed across `v2026.3.22`, `v2026.3.23`, and the shipped `v2026.3.23-2` correction build:
 
-- **Discord**: gateway startup transient error handling (#44397); raw `guild_id` allowlist fix.
-- **Slack**: `probeSlack()` bot/team metadata stabilization (#44775).
-- **Telegram**: media download transport policy threading (#44639); inbound media IPv4 fallback; file URL redaction in error logs; webhook secret validated before body read.
-- **iMessage**: reject unsafe remote attachment paths before SCP spawn.
-- **Signal**: `channels.signal.groups` schema support (#27199).
+- **Discord**: privileged native commands now reply explicitly on auth failure; `message` tool schema again permits optional `components`; packaged install/runtime surfaces were stabilized.
+- **Telegram**: per-account `apiRoot`, DM-topic auto-labeling, topic-edit, and `silentErrorReplies` landed in `v2026.3.22`; `v2026.3.23-2` now backfills `currentThreadTs` for DM topics and exposes `asDocument` as alias for `forceDocument`.
+- **Feishu**: structured approval/launcher cards, current-conversation ACP binding, reasoning-stream cards, and fixed outbound `message(..., media=...)` routing all landed on the released line.
+- **Matrix**: released plugin migration to `matrix-js-sdk`, `allowBots`, `allowPrivateNetwork`, and packaged-install runtime-api crash fixes.
+- **LINE**: runtime-api export ordering fixed in the correction build to avoid packaged-install startup crashes.
+- **Signal**: `channels.signal.groups` schema support remains in place on the current released line.

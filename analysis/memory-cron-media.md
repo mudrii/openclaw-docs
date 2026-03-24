@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
+> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
 
 ---
 
@@ -1088,7 +1088,13 @@ type ParsedFrontmatter = Record<string, string>;
 
 ---
 
-## v2026.3.13 Delta Notes
+## v2026.3.22-v2026.3.23 Delta Notes
+
+### Memory
+
+- **`memory_search` and `memory_get` register independently** (`v2026.3.22`) so one unavailable memory tool no longer suppresses the other.
+- **Memory plugins can inject their own system-prompt section** (`v2026.3.22`) through the released prompt-section builder path.
+- **`memory-lancedb` boots on first use in packaged installs** (`v2026.3.23`) so `plugins.slots.memory="memory-lancedb"` works again after global npm installs without moving LanceDB into core dependencies.
 
 ### Memory / Bootstrap
 
@@ -1097,5 +1103,9 @@ type ParsedFrontmatter = Record<string, string>;
 ### Cron / Isolated Sessions
 
 - **Nested cron-triggered embedded runner work routed onto nested lane**: `runCronIsolatedAgentTurn()` now calls `resolveNestedAgentLane(params.lane)` when launching the embedded runner. This routes any nested work triggered from inside a cron-isolated session (compaction, inner tool completions, etc.) onto a dedicated nested lane, preventing deadlocks that could arise when inner queued work competed with the outer cron session on the same lane.
+
+### Cron / CLI
+
+- **One-shot timezone scheduling fixed** (`v2026.3.23-2`) — `openclaw cron add|edit --at ... --tz <iana>` now honors the requested local wall-clock time for offset-less one-shot datetimes, including DST boundaries.
 
 ---

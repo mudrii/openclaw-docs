@@ -2,8 +2,9 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Latest upstream stable release: v2026.3.13 (published 2026-03-13 UTC).**
-**Current validated docs snapshot: v2026.3.13-1 (docs rerelease for upstream tag `v2026.3.13`).**
+**Latest published upstream release: v2026.3.23 (published 2026-03-23 UTC).**
+**Latest shipped correction build: npm `2026.3.23-2` / git tag `v2026.3.23-2` (no separate GitHub release page as of 2026-03-24).**
+**Current validated docs snapshot: v2026.3.23-1 (validated against `v2026.3.23` plus the shipped `v2026.3.23-2` correction delta).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -17,7 +18,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [AGENT_README.md](AGENT_README.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.3.13); tracks released upstream tags and synthesis status. |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.3.23); tracks released upstream tags and synthesis status. |
 | [AGENTS.md](AGENTS.md) | AI agent guidelines for working with the OpenClaw codebase — repo structure, build commands, testing, PR workflow, security practices. |
 
 ### Detailed Analysis
@@ -55,8 +56,9 @@ Both models independently confirmed the reference doc significantly reduced time
 
 ## Versioning
 
-Each documented release tracks an OpenClaw stable tag. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream tag:
-- `v2026.3.13-1` (2026-03-15, docs release) — Updated for v2026.3.12 → v2026.3.13 (1,189 files, +59,900/-32,153 lines): Chrome DevTools MCP attach mode for live signed-in Chrome sessions (`profile="user"`, `profile="chrome-relay"` built-ins) with batched act automation; Android chat settings redesign and Google Code Scanner QR onboarding; iOS first-run welcome pager; gateway RPC timeout and session-reset lastAccountId/lastThreadId preservation; 8 exec approval hardening items (pnpm, Perl, PowerShell, env wrappers, macOS line continuation, skill auto-allow); single-use bootstrap pairing codes; external content zero-width stripping; compaction safeguard language continuity (`agents.defaults.compaction.customInstructions`); nested cron lane deadlock prevention; Docker `OPENCLAW_TZ` timezone pinning; pi packages to 0.58.0; dashboard full-reload fix and plain-text paragraph rendering.
+Each documented release tracks an OpenClaw stable release line. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream release; same-base npm correction builds are noted inside the matching docs snapshot rather than treated as separate published GitHub releases:
+- `v2026.3.23-1` (2026-03-24, docs release) — Rebased the docs snapshot to the current released line: published GitHub release `v2026.3.23`, with validation of correction tag/package `v2026.3.23-2`. Major updates: `v2026.3.22` breaking changes (ClawHub-first bare installs, legacy Chrome extension relay removal, `image_generate` standardization, plugin SDK migration to `openclaw/plugin-sdk/*`, and removal of legacy `CLAWDBOT_*` / `MOLTBOT_*` env compatibility) plus `v2026.3.23` runtime changes (Qwen DashScope endpoints, Control UI CSP inline-script hashes and UI clarity pass, bundled plugin runtime sidecar repackaging, channel-auth auto-select hardening, ClawHub runtime-version compatibility checks, browser attach readiness fixes, one-shot cron `--tz` wall-clock handling, and canvas/auth fail-closed hardening).
+- `v2026.3.13-1` (2026-03-15, docs release) — Updated for v2026.3.12 → v2026.3.13 (1,189 files, +59,900/-32,153 lines): Chrome DevTools MCP attach mode for live signed-in Chrome sessions (`profile="user"`, `profile="chrome-relay"` built-ins) with batched act automation; Android chat settings redesign and Google Code Scanner QR onboarding; iOS first-run welcome pager; gateway RPC timeout and session-reset lastAccountId/lastThreadId preservation; 6 exec approval hardening items (pnpm, Perl, PowerShell, env wrappers, macOS line continuation, skill auto-allow); single-use bootstrap pairing codes; external content zero-width stripping; compaction safeguard language continuity (`agents.defaults.compaction.customInstructions`); nested cron lane deadlock prevention; Docker `OPENCLAW_TZ` timezone pinning; pi packages to 0.58.0; dashboard full-reload fix and plain-text paragraph rendering.
 - `v2026.3.12` (2026-03-12, released) — Updated for v2026.3.11 → v2026.3.12 (830 files, +48,951/-9,749 lines): `/fast` mode toggle for OpenAI and Anthropic (`service_tier`); Dashboard-v2 with modular overview/chat/config/agent/session views, command palette, mobile bottom tabs, and pinned messages; Ollama, vLLM, and SGLang modularized onto the provider-plugin architecture; new `sessions_yield` tool for cooperative turn-ending with hidden follow-up payload; 20+ GHSAs fixed (workspace plugin trust, exec hardening, Unicode normalization, WebSocket preauth limits, Feishu/LINE/Zalo security); Node 24 default with Node 22.16 minimum floor; post-compaction memory reindexing; `/pair` bootstrap tokens switched from shared credentials to short-lived tokens; starter Kubernetes install path.
 - `v2026.3.11` (2026-03-12, released) — Updated for v2026.3.8 → v2026.3.11 (235 commits, 977 files): multimodal memory indexing (images + audio) with `gemini-embedding-2-preview`, iOS Home canvas overhaul with live agent overview + docked toolbar, macOS chat model picker, first-class Ollama onboarding wizard (Local and Cloud + Local modes), OpenCode Go provider, Discord `autoArchiveDuration` for auto-created threads, Telegram HTML/final-preview delivery hardening, macOS remote onboarding shared-token detection, iOS TestFlight beta flow, ACP session resume via `resumeSessionId`, ACP `loadSession` session context replay, macOS/launchd v2 restart hardening (detached helper hand-off), node pending-work queue primitives, gateway runtime version in status, and 20+ security hardening fixes including GHSA-5wcw-8jjv-m286 (WebSocket cross-site hijack), symlink-safe secret reads, TAR extraction staging, exec SecretRef traversal rejection, fs-bridge write pinning, gateway auth fail-closed, session-reset auth split, plugin HTTP scope isolation, and session_status sandbox guards. **Breaking:** cron/doctor isolation — cron jobs can no longer send ad hoc notifications or fallback main-session summaries; run `openclaw doctor --fix` to migrate.
 - `v2026.3.8` (2026-03-09, released) — Updated for v2026.3.7 → v2026.3.8 (260 commits, 769 files): `openclaw backup create|verify` with manifest validation and recovery-focused flags, ACP provenance metadata/receipts, top-level `talk.silenceTimeoutMs`, direct WebSocket CDP support with WSL2/remote relay fixes, Brave `llm-context` web search mode, Perplexity native-search vs OpenRouter compatibility split, bundled-channel plugin precedence during onboarding/update sync, launchd restart/repair hardening, and Android Play policy cutbacks (no self-update/background location/screen recording background capture). No new stable-tag breaking config was introduced, but restart semantics and Android/macOS operator workflows changed materially.
@@ -77,10 +79,10 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **6,176 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; `v2026.3.13-1` tag)
-- **200,794 lines of TypeScript** covered (same scope as above)
-- **49 modules** documented, **45 extension directories** (**33 extension packages**), **52 bundled skills**
-- **~1.0MB** of documentation (5 core MD files + 10 analysis files)
+- **7,627 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against `v2026.3.23-2`)
+- **504,909 lines of TypeScript** covered (same scope as above)
+- **75 extension packages** and **51 bundled skills** reflected in the current released snapshot
+- **15 Markdown documents** in this repo (5 core docs + 10 analysis files)
 
 ## Contributing
 

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
+> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
 
 ## Overview
 
@@ -891,7 +891,7 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 - **CLI/backups:** the CLI now has first-class backup creation and verification commands, and recovery-oriented flows (`reset`, uninstall) point users at them before destructive actions.
 - **Web search routing:** Brave can now run in `llm-context` mode with source-grounded snippets, while Perplexity uses the native Search API for direct Perplexity auth but preserves the Sonar/OpenRouter path for legacy OpenRouter or explicit `baseUrl` / `model` setups.
-- **Browser/CDP remote tooling:** direct `ws://` / `wss://` CDP endpoints are supported as primary profiles, wildcard debugger URLs are rewritten back to the external host/port, and `browser.relayBindHost` supports WSL2/cross-namespace relay exposure.
+- **Browser/CDP remote tooling (historical for `v2026.3.8`):** direct `ws://` / `wss://` CDP endpoints are supported as primary profiles, wildcard debugger URLs are rewritten back to the external host/port, and this release line still exposed `browser.relayBindHost` for WSL2/cross-namespace relay use. That relay path was removed later in `v2026.3.22`.
 - **TUI/runtime UX:** the TUI can infer the active agent from the current workspace, and the light-terminal palette now auto-detects `COLORFGBG` with an `OPENCLAW_THEME=light|dark` override.
 - **Talk/platform behavior:** top-level `talk.silenceTimeoutMs` now controls pause-to-send thresholds, and Android Play-distributed builds drop self-update, background-location, screen-record, and background-mic capture behavior.
 

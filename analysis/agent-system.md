@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
+> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1177,7 +1177,19 @@ When event fires:
 
 ---
 
-## v2026.3.13 Delta Notes
+## v2026.3.22-v2026.3.23 Delta Notes
+
+### Agents / Runtime Defaults
+
+- **Per-agent reasoning defaults:** the released line now supports per-agent thinking, reasoning, and fast defaults, with disallowed model overrides reverting back to the agent default instead of drifting indefinitely.
+- **Default agent timeout raised to `48h`:** long-running ACP and agent sessions now inherit a much longer default timeout unless explicitly configured shorter.
+
+### Agents / Runtime Resolution
+
+- **Active runtime `web_search` provider selection fixed** (`v2026.3.23`) — agent turns now use the configured runtime provider instead of a stale/default selection.
+- **Skill SecretRef/env injection fixed** (`v2026.3.23`) — embedded skill config now resolves from the active runtime snapshot, so `skills.entries.<skill>.apiKey` SecretRefs reach the runtime correctly.
+- **Malformed assistant replay canonicalization** (`v2026.3.23-2`) — corrupted assistant transcript content is normalized before replay so follow-up turns stop crashing recovery paths.
+- **Transient `api_error` classification tightened** (`v2026.3.23`) — generic API errors only trigger retry/failover when they actually look transient.
 
 ### Agents / Custom Providers
 

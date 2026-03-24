@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.3.13-1 (2026-03-15).** Latest upstream stable release: v2026.3.13 (published 2026-03-13).
+> **Current docs version: v2026.3.23-1 (2026-03-24).** Latest published upstream release: v2026.3.23 (published 2026-03-23); shipped correction build: npm `2026.3.23-2` / git tag `v2026.3.23-2` with no separate GitHub release page as of 2026-03-24.
 
 ---
 
@@ -61,7 +61,17 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 | 7     | `cli/`        | `config/`, `commands/`, `infra/`, `agents/`, `plugins/`                         | Package entry point                        | 🟡          |
 | 7     | `commands/`   | `config/`, `cli/`, `infra/`, `agents/`, `channels/`, `daemon/`                  | `cli/`                                     | 🟡          |
 
-Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, `imessage/`, `web/`) are leaf modules with 🟢 risk.
+Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, etc.); `src/channels/`, `src/routing/`, and `src/web/` remain the shared/core channel surfaces. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
+
+**v2026.3.22-v2026.3.23 additions (current release line):**
+
+- **Chrome MCP existing-session only:** the released host-local attach path is `driver="existing-session"` with the built-in `user` profile; the legacy `chrome-relay` profile and `browser.relayBindHost` were removed in `v2026.3.22`.
+- **Browser profile targeting:** `browser.profiles.<name>.userDataDir` now supports attaching Chrome MCP to Brave, Edge, Chromium, and non-default Chrome profiles.
+- **ClawHub-first skills/plugins:** bare plugin installs prefer ClawHub, `openclaw skills search|install|update` is first-class, and `v2026.3.23` / `v2026.3.23-2` fix auth-path handling and runtime-version compatibility checks.
+- **Plugin SDK migration:** current released plugin guidance is `openclaw/plugin-sdk/<subpath>`; `openclaw/extension-api` is deprecated compatibility only.
+- **Gateway auth tightening:** canvas routes now require auth, and agent session reset now requires admin scope.
+- **Cron timezone fix:** one-shot `openclaw cron add|edit --at ... --tz <iana>` now honors requested local wall-clock time for offset-less datetimes, including DST boundaries.
+- **Packaged runtime sidecars restored:** bundled plugin runtime sidecars are present again in published npm installs after the `v2026.3.23` packaging fixes.
 
 **v2026.2.21 additions (historical):**
 
@@ -76,14 +86,14 @@ Channel implementations (`telegram/`, `discord/`, `slack/`, `signal/`, `line/`, 
 
 - No new top-level modules were added in this release window; feature and security changes are in existing modules, including `cli/`, `channels/`, `agents/`, `gateway/`, `security/`, `plugins/`, and `extensions/`.
 
-**v2026.3.13 additions (runtime/ops):**
+**v2026.3.13 additions (historical runtime/ops):**
 
-- **Chrome DevTools MCP attach mode:** new `profile="user"` and `profile="chrome-relay"` built-in browser profiles attach to a signed-in live Chrome session rather than launching an isolated browser. Batched act automation is also supported. Key files: `src/browser/cdp-profiles.ts`, `src/browser/mcp-attach.ts`.
+- **Chrome DevTools MCP attach mode:** `v2026.3.13` introduced live signed-in Chrome attach flows that were later simplified in `v2026.3.22` to the current released `existing-session` / `user` path. Current released files to inspect are `src/browser/config.ts`, `src/browser/chrome-mcp.ts`, `src/browser/profile-capabilities.ts`, and `src/browser/server-context.availability.ts`.
 - **`sessions_yield` safeguards:** compaction token sanity check validates against full pre-compaction totals; follow-up payload routing hardened. Key file: `src/agents/tools/sessions-yield-tool.ts`.
 - **Compaction language continuity:** `agents.defaults.compaction.customInstructions` allows per-agent instructions to preserve language/style across compaction resets. Key file: `src/agents/pi-extensions/compaction-instructions.ts`.
 - **Memory bootstrap preference:** `MEMORY.md` is now preferred over `memory.md` during workspace bootstrap. No config change needed.
 - **Nested cron lane routing:** nested cron jobs route through their own lane to prevent cross-lane deadlocks.
-- **Security — 8 exec hardening items:** pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, skill auto-allow all hardened; single-use bootstrap pairing codes enforced; external content ZWS stripping added.
+- **Security — 6 exec hardening items:** pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, skill auto-allow all hardened; single-use bootstrap pairing codes enforced; external content ZWS stripping added.
 
 **v2026.3.12 additions (runtime/ops):**
 
@@ -415,8 +425,16 @@ pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 - **Single-use bootstrap pairing codes:** `/pair` pairing codes are now single-use (v2026.3.12 introduced short-lived tokens; v2026.3.13 enforces single-use). Automated pairing flows that reuse codes must be updated.
 - **Memory bootstrap:** `MEMORY.md` is preferred over `memory.md`. If your workspace uses `memory.md` as the primary bootstrap file, rename it or ensure `MEMORY.md` exists.
 - **`agents.defaults.compaction.customInstructions`:** add per-agent compaction instructions to preserve language/style across context resets. Key file: `src/agents/pi-extensions/compaction-instructions.ts`.
-- **Chrome DevTools MCP:** browser profiles `user` and `chrome-relay` attach to a live signed-in Chrome session. If you use browser automation in agent tooling, be aware that these profiles share browser state with the user's active session.
+- **Chrome DevTools MCP (historical note):** `v2026.3.13` introduced live signed-in attach flows; by the current released line (`v2026.3.22+`), the supported host-local path is `driver: "existing-session"` with the built-in `user` profile. `chrome-relay` is no longer a built-in/current profile.
 - **Windows gateway:** install/stop/status behavior changed on Windows. Verify gateway lifecycle commands after upgrading on Windows deployments.
+
+### Release-window Workflow Additions (v2026.3.22-v2026.3.23)
+
+- **Legacy Chrome relay removed:** `driver: "extension"` and `browser.relayBindHost` were removed in `v2026.3.22`. Current released browser guidance is Chrome MCP `existing-session`, optionally with `browser.profiles.<name>.userDataDir`.
+- **ClawHub is the default first-party marketplace path:** bare `openclaw plugins install <package>` now prefers ClawHub before npm, and `openclaw skills search|install|update` is the released skills workflow.
+- **Plugin SDK guidance changed:** plugin imports should target `openclaw/plugin-sdk/<subpath>`; treat `openclaw/extension-api` as deprecated compatibility only.
+- **Canvas/session-reset auth tightened:** canvas routes require auth and agent session reset requires admin scope in the released gateway.
+- **One-shot cron timezone semantics changed:** `openclaw cron add|edit --at ... --tz <iana>` now preserves the requested local wall-clock time for offset-less datetimes.
 
 ### Release-window Workflow Additions (v2026.3.12)
 
@@ -442,7 +460,7 @@ pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 - **Back up before destructive maintenance:** `openclaw backup create` / `openclaw backup verify` now exist specifically for state recovery. Use them before `reset`, uninstall, or risky config surgery.
 - **launchd restart semantics changed:** supervised macOS restart now exits and relies on launchd `KeepAlive`; LaunchAgent repair/restart also `enable`s before `bootstrap`, and `XPC_SERVICE_NAME` now counts as a supervision hint.
 - **Bundled channel plugins outrank duplicate npm installs during onboarding/update sync:** if a bundled plugin and an npm-installed plugin share the same ID, the bundled channel plugin now wins unless the operator intentionally overrides via explicit config paths.
-- **Browser remote relay / WSL2 support changed:** `browser.relayBindHost` can expose the extension relay off-loopback for cross-namespace setups; direct WS CDP profiles and wildcard-host rewrites are now part of the supported remote-browser path.
+- **Browser remote relay / WSL2 support changed (historical):** `browser.relayBindHost` existed in this release line, but it was removed in `v2026.3.22`. For the current released line, use Chrome MCP `existing-session` locally and direct WS/CDP profiles for remote/browserless setups.
 
 ### Release-window Workflow Additions (v2026.3.7)
 
@@ -1109,8 +1127,9 @@ openclaw/
 Core built-in channels (leaf modules, 🟢 risk):
 
 ```
-src/telegram/    src/discord/    src/slack/      src/signal/
-src/imessage/    src/web/        src/line/       src/whatsapp/
+extensions/telegram/   extensions/discord/   extensions/slack/      extensions/signal/
+extensions/imessage/   extensions/whatsapp/  extensions/feishu/     extensions/matrix/
+src/channels/          src/routing/          src/web/               src/line/
 ```
 
 Additional source modules beyond §1's map:

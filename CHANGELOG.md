@@ -6,9 +6,95 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.13 — Latest Documented Release Summary
+## OpenClaw v2026.3.23 — Latest Documented Release Summary
 
-> **Released:** 2026-03-15 (docs release) | upstream tag `v2026.3.13` published 2026-03-13 | **Policy note:** latest *documented* released section stays at top.
+> **Released:** 2026-03-24 (docs release) | upstream GitHub release `v2026.3.23` published 2026-03-23 | npm `latest` correction build `2026.3.23-2` / git tag `v2026.3.23-2` has no separate GitHub release page as of 2026-03-24 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.22..v2026.3.23` | **Scan stats:** 458 files changed, +13,208 / -3,773 lines
+> **Correction delta also audited:** `v2026.3.23..v2026.3.23-2` | **Delta stats:** 119 files changed, +5,016 / -1,297 lines
+
+## Highlights
+
+- **Qwen / ModelStudio:** standard DashScope endpoints added for China and global API keys; provider group relabeled to `Qwen (Alibaba Cloud Model Studio)`.
+- **Control UI:** inline `<script>` blocks are now covered by computed SHA-256 hashes in CSP; the UI clarity pass also shipped the updated Knot theme, icon polish, and better accessibility labels.
+- **Packaging:** published npm installs once again include bundled plugin runtime sidecars such as WhatsApp `light-runtime-api.js` and Matrix `runtime-api.js`.
+- **Channel auth:** `channels login` / `logout` now auto-select the single configured login-capable channel and harden channel-id handling against prototype-chain and control-character abuse.
+- **ClawHub:** install/uninstall/browse flows are aligned with the active runtime version; macOS auth-path handling and gateway skill browsing were fixed across `v2026.3.23` and the shipped `v2026.3.23-2` correction build.
+- **Browser:** Chrome MCP existing-session attach now waits for tabs to become usable and reuses a running loopback browser more reliably on slower hosts.
+- **Agents / runtime:** active runtime `web_search` provider selection fixed; generic transient `api_error` payloads now fall back more accurately; malformed assistant replay content is canonicalized before reuse.
+- **Ops:** one-shot cron jobs now honor `--tz` wall-clock time for offset-less `--at` datetimes, including DST boundaries; same-base correction-version warnings no longer complain when `2026.3.23-2` config is read by `2026.3.23`.
+- **Gateway security:** canvas routes now require auth, and agent session reset now requires admin scope.
+- **Models:** Mistral max-token defaults are repaired to safe output budgets and `doctor --fix` can repair persisted over-large Mistral settings.
+
+For full detail, see the upstream release notes for `v2026.3.23` and the shipped correction-tag changelog delta for `v2026.3.23-2` in `openclaw/openclaw`.
+
+## Breaking / Behavior Shifts
+
+1. **No new stable-tag breaking config changes were introduced in `v2026.3.23`.** The notable operator-facing behavior shifts in the shipped correction build are same-base version warning suppression (`2026.3.23-2` vs `2026.3.23`) and the cron one-shot timezone fix.
+
+## Major Features
+
+- DashScope standard endpoint support for Qwen / ModelStudio
+- Control UI CSP inline-script hashes
+- Restored bundled plugin runtime sidecars in published npm installs
+- Channel-auth auto-select for single-channel setups
+- ClawHub compatibility checks tied to the active runtime version
+- Chrome MCP existing-session attach readiness fix
+- Loopback browser reuse after short reachability misses
+- Cron one-shot `--tz` wall-clock handling for offset-less datetimes
+- Gateway auth required for canvas routes; admin scope required for agent session reset
+
+## Maintainer Upgrade Checklist (v2026.3.23)
+
+1. **Review browser configs:** Chrome extension relay settings were already removed in `v2026.3.22`; current released guidance is `driver: "existing-session"` with optional `browser.profiles.<name>.userDataDir`.
+2. **Check packaged installs:** if you distribute or validate npm builds, confirm bundled plugin runtime sidecars are present in the published package.
+3. **Audit ClawHub workflows:** plugin compatibility now binds to the active runtime version, and macOS auth-path fixes should be validated on default and XDG-style setups.
+4. **Re-test cron one-shots:** if you use `openclaw cron add|edit --at ... --tz <iana>`, verify local wall-clock scheduling behavior after upgrading.
+5. **Re-test Control UI/operator auth:** canvas routes are auth-protected and session reset is admin-scoped; stale under-scoped operator tokens should now produce clearer fallback messaging.
+
+---
+
+## OpenClaw v2026.3.22 — Historical Release Summary
+
+> **Released:** upstream tag `v2026.3.22` published 2026-03-23 | **Policy note:** historical section.
+> **Window analyzed:** `v2026.3.13-1..v2026.3.22` | **Scan stats:** 5,917 files changed, +555,370 / -200,641 lines
+
+## Highlights
+
+- **ClawHub-first plugin installs:** bare `openclaw plugins install <package>` now prefers ClawHub before npm for npm-safe package names, and native `openclaw skills search|install|update` flows landed.
+- **Browser breaking change:** the legacy Chrome extension relay path was removed; `driver: "extension"` and `browser.relayBindHost` are gone, and host-local attach now uses Chrome MCP `existing-session`.
+- **Image generation:** the stock image path is standardized on the core `image_generate` tool; bundled `nano-banana-pro` was removed.
+- **Plugin SDK:** the released public SDK surface is `openclaw/plugin-sdk/*`; `openclaw/extension-api` remains only as a deprecated compatibility bridge.
+- **Legacy env/state migration:** `CLAWDBOT_*` and `MOLTBOT_*` compatibility env names, plus `.moltbot` state-dir fallback, were removed from the released runtime.
+- **Platform and runtime:** pluggable sandbox backends landed (`OpenShell`, SSH), `browser.profiles.<name>.userDataDir` was added for existing-session attach, and bundled provider/plugin flows expanded across ClawHub, marketplaces, and model plugins.
+
+## Breaking / Behavior Shifts
+
+1. **ClawHub-first installs:** bare `openclaw plugins install <package>` now prefers ClawHub before npm.
+2. **Legacy Chrome relay removed:** `driver: "extension"`, bundled extension assets, and `browser.relayBindHost` were removed; run `openclaw doctor --fix` to migrate to `existing-session`.
+3. **Legacy env/state compatibility removed:** `CLAWDBOT_*`, `MOLTBOT_*`, `.moltbot`, and `moltbot.json` fallbacks are gone from released code.
+4. **Plugin SDK migration:** plugin authors should use `openclaw/plugin-sdk/*`; legacy monolithic import guidance is stale.
+
+## Major Features
+
+- Native ClawHub skill and plugin flows
+- Plugin marketplace/bundle installs
+- OpenShell and SSH sandbox backends
+- `browser.profiles.<name>.userDataDir` for existing-session attach
+- OpenAI `gpt-5.4`, `gpt-5.4-mini`, and `gpt-5.4-nano` released defaults/catalog support
+- Expanded provider-plugin architecture, including Chutes, Tavily, Firecrawl, and additional bundled providers
+
+## Maintainer Upgrade Checklist (v2026.3.22)
+
+1. **Migrate browser configs:** run `openclaw doctor --fix` if any profile still uses `driver: "extension"` or `browser.relayBindHost`.
+2. **Review plugin install docs:** ClawHub is now the default first-party marketplace path for bare plugin install flows.
+3. **Audit env/state references:** remove any lingering `CLAWDBOT_*`, `MOLTBOT_*`, `.moltbot`, or `moltbot.json` assumptions from tooling and docs.
+4. **Update plugin guidance:** prefer `openclaw/plugin-sdk/<subpath>` imports and treat `openclaw/extension-api` as deprecated compatibility only.
+
+---
+
+## OpenClaw v2026.3.13 — Historical Release Summary
+
+> **Released:** 2026-03-15 (docs release) | upstream tag `v2026.3.13-1` published 2026-03-13 | **Policy note:** historical section.
 > **Window analyzed:** `v2026.3.12..v2026.3.13-1` | **Scan stats:** 1,189 files changed, +59,900 / -32,153 lines
 
 ## Highlights
@@ -17,7 +103,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 - **Android:** redesigned chat settings sheet; Google Code Scanner integration for QR-based onboarding flows.
 - **iOS:** first-run welcome pager displayed before gateway setup, improving initial onboarding UX.
 - **Gateway:** RPC timeout for unanswered client requests; `--require-rpc` flag on `gateway status`; session reset now preserves `lastAccountId` and `lastThreadId`.
-- **Security — 8 exec approval hardening items (v2026.3.13):** pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, and skill auto-allow are all hardened in the exec approval pipeline. Single-use bootstrap pairing codes are now enforced. External content zero-width character stripping added. Telegram webhook auth now happens before body read. iMessage attachment path rejection tightened.
+- **Security — 6 exec approval hardening items (v2026.3.13):** pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrappers, macOS line continuation, and skill auto-allow are all hardened in the exec approval pipeline. Single-use bootstrap pairing codes are now enforced. External content zero-width character stripping added. Telegram webhook auth now happens before body read. iMessage attachment path rejection tightened.
 - **Agents:** blank API key accepted for loopback custom providers; compaction token sanity check validates against full pre-compaction totals; compaction safeguard language continuity via `agents.defaults.compaction.customInstructions`; memory bootstrap now prefers `MEMORY.md` over `memory.md`; replayed Anthropic/Bedrock thinking blocks are dropped; tool warning distinction between gated-core and plugin-only.
 - **Cron:** nested cron lane routing prevents cross-lane deadlocks.
 - **Config validation:** `agents.list[].params`, `tools.web.fetch.readability`/`firecrawl`, `channels.signal.groups`, `discovery.wideArea.domain` are now accepted config keys (previously rejected by Zod validation).
@@ -26,7 +112,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 - **Dependencies:** pi packages bumped to 0.58.0.
 - **Dashboard:** fixed full reload on every live tool result; oversized plain-text replies now rendered as paragraphs; `chat-new-messages` scroll pill styling corrected.
 
-For full detail, see the v2026.3.13 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.13`).
+For full detail, see the v2026.3.13 notes in the upstream release changelog (`openclaw/openclaw` tag `v2026.3.13-1`).
 
 ## Change Distribution (By Top-Level Area)
 
@@ -45,7 +131,7 @@ For full detail, see the v2026.3.13 notes in the upstream release changelog (`op
 
 ## Breaking / Behavior Shifts
 
-1. **No new stable-tag breaking config changes in v2026.3.13.** Exec approval hardening may reject previously-allowed commands that relied on pnpm, Perl `-M`/`-I`, PowerShell `-File`/`-f`, env wrapper shims, or macOS line continuation in system.run calls; review any custom exec allowlist entries if commands stop passing the preflight guard.
+1. **One stable-tag breaking config change in v2026.3.13:** `MEMORY.md` now wins over `memory.md` during workspace bootstrap. Review any custom bootstrap workflows that relied on the lowercase file taking precedence.
 
 ## Major Features
 

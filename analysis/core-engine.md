@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
+> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
 > Modules: agents (850 files), gateway (360 files), sessions (12 files), routing (11 files), providers (11 files), hooks (48 files), context-engine (6 files)
 
 ---
@@ -1394,7 +1394,18 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ---
 
-## v2026.3.13 Delta Notes
+## v2026.3.22-v2026.3.23 Delta Notes
+
+### Gateway / Auth
+
+- **Canvas routes now require auth** (`v2026.3.23`) — anonymous canvas access is no longer allowed on the released gateway path.
+- **Agent session reset now requires admin scope** (`v2026.3.23`) — reset paths fail closed for non-admin callers.
+- **Control UI/operator scope fallback clarified** (`v2026.3.23`) — stale under-scoped operator tokens are ignored and read-only scope failures now surface as explicit `operator.read` fallback messaging instead of ambiguous auth errors.
+
+### Routing / Thread Context
+
+- **Telegram DM-topic tool context now backfills `currentThreadTs`** (`v2026.3.23-2`) so thread-aware tools receive the active topic context even when primary thread metadata is missing.
+- **Same-base correction-version warnings suppressed** (`v2026.3.23-2`) — configs written by `2026.3.23-2` no longer trigger misleading “newer OpenClaw” warnings when read by `2026.3.23`.
 
 ### Gateway / RPC Timeout (#45689)
 - Unanswered gateway RPC calls are now rejected after a bounded timeout and their pending state is cleared from `GatewayClient`. Previously, a stalled connection could leave hanging `request()` promises indefinitely. Source: `src/gateway/client.ts` area.

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1`
+> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -362,7 +362,7 @@ Utility library re-exported for plugin authors. Provides helpers without couplin
 Imports from: `channels/plugins/`, `config/`, `routing/`, `wizard/`
 
 ### Dependents
-Used by: All `extensions/` plugins import from `@openclaw/plugin-sdk` (mapped to this)
+Used by: released `extensions/` plugins import from `openclaw/plugin-sdk/<subpath>`; root-level compatibility aliases still exist, but new imports should target focused subpaths.
 
 ---
 
@@ -957,7 +957,7 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 ---
 
-## v2026.3.13 Delta Notes
+## v2026.3.22-v2026.3.23 Delta Notes
 
 ### Security — Exec Approval Hardening
 
@@ -983,11 +983,12 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 - No additional provider-plugin changes in v2026.3.13 beyond the v2026.3.12 architecture migration.
 
-### Browser — Chrome DevTools MCP Attach Mode (v2026.3.13)
+### Browser — Chrome DevTools MCP Existing-Session (released line)
 
 - **Official Chrome DevTools MCP attach mode for signed-in live Chrome sessions** — The `existing-session` driver is formalized as Chrome DevTools MCP attach mode. The `user` built-in profile (driver `existing-session`, `attachOnly: true`) provides attach-only access to the host's signed-in Chrome via the `chrome-devtools-mcp` package, without launching a separate browser process.
 - **Built-in `profile="user"` for logged-in host browser** — The `user` browser profile is now a built-in profile (auto-injected if not explicitly configured) that routes through Chrome DevTools MCP for existing signed-in sessions.
-- **Built-in `profile="chrome-relay"` for extension relay** — The `chrome-relay` browser profile is now a built-in profile (auto-injected if not explicitly configured) that routes to the local extension relay CDP endpoint (`controlPort + 1`), providing attach-style access via the Chrome extension.
+- **Legacy extension relay removed** — `v2026.3.22` removed the built-in/current `chrome-relay` path and the `browser.relayBindHost` setting. The current released attach path is `existing-session` with the built-in `user` profile and optional `userDataDir`.
+- **ClawHub released behavior changed materially** — ClawHub is now the default first-party plugin/skill marketplace path, macOS auth-path handling was fixed in `v2026.3.23`, and the shipped `v2026.3.23-2` correction build validates compatibility against the active runtime version instead of a stale fixed constant.
 - **Browser act automation: batched actions, selector targeting, delayed clicks** — The browser act tool supports batched action sequences, explicit selector-based element targeting, and delayed click timing for more robust automation workflows (contributed by @vincentkoc).
 - **Browser/existing-session: hardened driver validation and session lifecycle** — The `existing-session` driver validates its MCP session lifecycle more strictly and extracts shared ARIA role sets for consistent snapshot output across sessions (#45682).
 - **Browser/existing-session: accept text-only `list_pages` and `new_page` responses** — The Chrome DevTools MCP integration now accepts text-only (non-structured) responses from `list_pages` and `new_page` tool calls, improving compatibility with variants of the `chrome-devtools-mcp` package.

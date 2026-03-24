@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-15 | Version: v2026.3.13-1 | Codebase: OpenClaw release tag `v2026.3.13-1` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -655,7 +655,7 @@ Browser automation module providing a local HTTP control server for Playwright a
 - `browser.evaluateEnabled` — Enable/disable JS evaluation (default: true)
 - `browser.profiles.*` — Profile definitions (`cdpUrl`, color, managed)
 - `browser.defaultProfile` — Default profile name (default: "chrome")
-- `browser.relayBindHost` — Optional non-loopback bind host for the extension relay in WSL2/cross-namespace setups
+- `browser.profiles.<name>.userDataDir` — Optional user-data directory override for Chrome MCP existing-session attachment to Brave, Edge, Chromium, or non-default Chrome profiles
 - Browser control auth token stored in state dir
 
 ### Test Coverage (47 test files)
@@ -1094,7 +1094,7 @@ canvas-host → (minimal, mostly standalone)
 
 - Direct `ws://` / `wss://` CDP endpoints are now supported as first-class browser profiles, with loopback WS endpoints normalized back to HTTP(S) for `/json/*` tab operations.
 - Remote `/json/version` debugger URLs like `ws://0.0.0.0` and `ws://[::]` are rewritten back to the externally reachable host/port, fixing Browserless-style container endpoints.
-- `browser.relayBindHost` allows the extension relay to bind non-loopback addresses for WSL2 and other cross-namespace setups while keeping loopback-only defaults.
+- Current released browser attach guidance is Chrome MCP `existing-session` with optional `browser.profiles.<name>.userDataDir`; the legacy extension relay path and `browser.relayBindHost` were removed in `v2026.3.22`.
 - Strict browser navigation now validates redirect hops and fails closed when remote tab-open flows cannot inspect the chain.
 - Control UI bundled/package-proven static roots may use hardlinked assets in auto-detected installs, while configured/custom roots remain on the strict hardlink boundary.
 
@@ -1169,7 +1169,7 @@ The following entries are added to the Security Model section for `src/browser`:
 
 ---
 
-## v2026.3.13 Delta Notes
+## v2026.3.22-v2026.3.23 Delta Notes
 
 ### Security — Exec Approval Hardening
 
@@ -1191,11 +1191,13 @@ The following entries are added to the Security Model section for `src/browser`:
 - **iMessage: reject unsafe remote attachment paths before SCP** — iMessage remote attachment paths are validated before spawning SCP, rejecting paths that could escape the expected attachment directory.
 - **Telegram webhook validates secret before reading/parsing request body** — The webhook secret is validated before the request body is read or parsed, preventing parser-level exposure of unauthenticated input.
 
-### Browser — Chrome DevTools MCP Attach Mode (v2026.3.13)
+### Browser — Chrome DevTools MCP Existing-Session (released line)
 
 - **Official Chrome DevTools MCP attach mode** — The `existing-session` driver is the formalized Chrome DevTools MCP attach mode for live signed-in Chrome sessions. The driver communicates via the `chrome-devtools-mcp` package (spawned via `npx -y chrome-devtools-mcp@latest --autoConnect --experimentalStructuredContent --experimental-page-id-routing`). Tab IDs are numeric page IDs from the MCP structured content, mapped to `BrowserTab.targetId` strings.
 - **Built-in `profile="user"` for logged-in host browser** — The `user` profile is auto-injected into `browser.profiles` (driver `existing-session`, `attachOnly: true`, color `#00AA00`) when not explicitly configured. It provides attach-only access to the host's signed-in Chrome via Chrome DevTools MCP.
-- **Built-in `profile="chrome-relay"` for extension relay** — The `chrome-relay` profile is auto-injected (driver `extension`, `cdpUrl: http://127.0.0.1:<controlPort+1>`, color `#00AA00`) when not explicitly configured, providing extension-relay access.
+- **Legacy extension relay removed** — `v2026.3.22` removed `driver: "extension"`, bundled relay assets, and `browser.relayBindHost`. The current built-in attach profile is `user` on `driver: "existing-session"`.
+- **`userDataDir` support for Chromium-family browsers** — `v2026.3.22` added `browser.profiles.<name>.userDataDir` so existing-session attach can target Brave, Edge, Chromium, and non-default Chrome profiles.
+- **Attach readiness hardened** — `v2026.3.23` waits for attached tabs to become usable before reporting the browser ready, reducing attach-time failures on slower systems.
 - **Profile capabilities: `usesChromeMcp` flag** — `BrowserProfileCapabilities` in `profile-capabilities.ts` gains `usesChromeMcp: boolean`. Profiles with driver `existing-session` have `usesChromeMcp: true`, `requiresRelay: false`, `usesPersistentPlaywright: false`, `supportsReset: false`.
 - **Browser act: batched actions, selector targeting, delayed clicks** — Browser act automation supports batched action sequences, explicit selector-based element targeting, and delayed click timing (contributed by @vincentkoc).
 - **Browser/existing-session: driver validation and session lifecycle hardened** — The Chrome DevTools MCP session lifecycle is validated more strictly; shared ARIA role sets are extracted to a shared module for consistent snapshot output (#45682).

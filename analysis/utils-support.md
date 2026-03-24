@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-15 | **Version:** v2026.3.13-1 | **Codebase:** OpenClaw release tag `v2026.3.13-1`
+**Updated:** 2026-03-24 | **Version:** v2026.3.23-1 | **Codebase:** OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** release-tag snapshot across 14 modules: 501 tracked support-module files plus 353 Swift files in `apps/macos`
 
