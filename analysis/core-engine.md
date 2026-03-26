@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
-> Modules: agents (850 files), gateway (360 files), sessions (12 files), routing (11 files), providers (11 files), hooks (48 files), context-engine (6 files)
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
+> Modules: agents (850 files), gateway (360 files), sessions (15 files), routing (11 files), hooks (48 files), context-engine (6 files)
 
 ---
 
@@ -10,7 +10,7 @@
 
 1. [Module: sessions](#1-module-sessions)
 2. [Module: routing](#2-module-routing)
-3. [Module: providers](#3-module-providers)
+3. [Module: providers (distributed)](#3-module-providers-distributed)
 4. [Module: hooks](#4-module-hooks)
 5. [Module: agents](#5-module-agents)
 6. [Module: gateway](#6-module-gateway)
@@ -23,7 +23,7 @@
 ### Overview
 Lightweight utility module for session metadata, key parsing, transcript events, and policy enforcement. No classes — pure functions. Provides the foundational vocabulary (types + helpers) that the routing and gateway modules build on.
 
-### File Inventory (7 source, 2 tests)
+### File Inventory (10 source, 5 tests)
 
 | File | Description |
 |------|-------------|
@@ -34,6 +34,9 @@ Lightweight utility module for session metadata, key parsing, transcript events,
 | `session-key-utils.ts` | Parse agent session keys, detect cron/subagent/ACP/thread keys |
 | `session-label.ts` | Validate session labels (max 64 chars) |
 | `transcript-events.ts` | Pub/sub for session transcript file updates (observer pattern) |
+| `session-id.ts` | Session ID generation and validation |
+| `session-id-resolution.ts` | Session ID resolution from keys and context |
+| `session-lifecycle-events.ts` | Session lifecycle event types and emitters |
 
 ### Key Types & Interfaces
 
@@ -105,13 +108,16 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 ### Overview
 Maps incoming channel messages to agent sessions. Given a channel, account, peer (group/DM), guild, and roles, resolves which agent handles it and builds the canonical session key. Central to multi-agent, multi-channel routing.
 
-### File Inventory (5 source, 5 tests)
+### File Inventory (6 source, 5 tests)
 
 | File | Description |
 |------|-------------|
 | `bindings.ts` | Config-driven channel→agent account bindings |
 | `resolve-route.ts` | Main routing engine — resolves agent + session key from input |
 | `session-key.ts` | Session key construction, normalization, identity linking |
+| `default-account-warnings.ts` | Warnings for default account routing fallback |
+| `account-id.ts` | Account ID normalization and validation |
+| `account-lookup.ts` | Account lookup from config bindings |
 
 ### Key Types & Interfaces
 
@@ -197,60 +203,28 @@ None
 
 ---
 
-## 3. Module: providers
+## 3. Module: providers (distributed)
 
 ### Overview
-Provider-specific authentication and model discovery for GitHub Copilot and Qwen Portal. These are specialized OAuth/token-exchange flows that don't fit the general auth-profiles system.
+Provider-specific authentication and model discovery. The original `src/providers/` directory no longer exists as a standalone module. Its files have been distributed across other modules:
 
-### File Inventory (6 source, 5 tests)
+- `github-copilot-token.ts` is now at `src/agents/github-copilot-token.ts` and `src/plugin-sdk/github-copilot-token.ts`
+- `qwen-portal-oauth.ts` has been removed
+- Provider-specific OAuth flows, model definitions, and auth logic are now located in `src/agents/` (auth-profiles, model management), `src/plugin-sdk/`, and `extensions/` (provider plugins)
 
-| File | Description |
-|------|-------------|
-| `github-copilot-auth.ts` | Interactive CLI device-code OAuth flow for GitHub Copilot |
-| `github-copilot-models.ts` | Default Copilot model definitions (gpt-4o, gpt-4.1, o1, etc.) |
-| `github-copilot-token.ts` | Token exchange: GitHub OAuth → Copilot API token with caching |
-| `google-shared.test-helpers.ts` | Test helpers for Google provider tests |
-| `qwen-portal-oauth.ts` | OAuth refresh flow for Qwen Portal (chat.qwen.ai) |
+### Key Functions (now in `src/agents/`)
 
-### Key Types
-
-| Type | File | Description |
-|------|------|-------------|
-| `CachedCopilotToken` | github-copilot-token.ts | `{ token, expiresAt, updatedAt }` — cached API token |
-| `DeviceCodeResponse` | github-copilot-auth.ts | GitHub device flow response (device_code, user_code, verification_uri) |
-
-### Key Functions
-
-| Function | File | Purpose |
-|----------|------|---------|
-| `githubCopilotLoginCommand` | github-copilot-auth.ts | Full interactive login flow: device code → poll → save profile |
-| `getDefaultCopilotModelIds` | github-copilot-models.ts | Returns list of default model IDs |
-| `buildCopilotModelDefinition` | github-copilot-models.ts | Build ModelDefinitionConfig for a Copilot model |
-| `resolveCopilotApiToken` | github-copilot-token.ts | Exchange GitHub token → Copilot token (with disk cache) |
-| `deriveCopilotApiBaseUrlFromToken` | github-copilot-token.ts | Extract API base URL from semicolon-delimited token |
-| `refreshQwenPortalCredentials` | qwen-portal-oauth.ts | Refresh Qwen OAuth access token using refresh token |
-
-### Internal Dependencies
-- `agents/auth-profiles.ts` — `ensureAuthProfileStore`, `upsertAuthProfile`
-- `commands/models/shared.ts` — `updateConfig`
-- `commands/onboard-auth.ts` — `applyAuthProfileConfig`
-- `config/config.ts` — `OpenClawConfig`, `ModelDefinitionConfig`
-- `config/paths.ts` — `resolveStateDir`
-- `infra/json-file.ts` — `loadJsonFile`, `saveJsonFile`
-- `cli/command-format.ts` — `formatCliCommand`
-
-### External Dependencies
-- `@clack/prompts` — Interactive CLI prompts (intro, note, outro, spinner)
-- Node `fetch` — HTTP requests
-
-### Configuration
-- Token cache stored at: `<stateDir>/credentials/github-copilot.token.json`
-- Auth profiles saved via `upsertAuthProfile`
+| Function | Location | Purpose |
+|----------|----------|---------|
+| `githubCopilotLoginCommand` | agents/github-copilot-auth.ts | Full interactive login flow: device code → poll → save profile |
+| `getDefaultCopilotModelIds` | agents/github-copilot-models.ts | Returns list of default model IDs |
+| `buildCopilotModelDefinition` | agents/github-copilot-models.ts | Build ModelDefinitionConfig for a Copilot model |
+| `resolveCopilotApiToken` | agents/github-copilot-token.ts | Exchange GitHub token → Copilot token (with disk cache) |
+| `deriveCopilotApiBaseUrlFromToken` | agents/github-copilot-token.ts | Extract API base URL from semicolon-delimited token |
 
 ### Test Coverage
 - `github-copilot-token.test.ts` — Token exchange, caching, expiry, base URL derivation
 - `google-shared.*.test.ts` (2 files) — Google function call ordering, parameter preservation
-- `qwen-portal-oauth.test.ts` — Refresh flow, error handling
 
 ### Known Patterns
 - **Device Code Flow** — GitHub OAuth device authorization grant
@@ -300,7 +274,7 @@ Event-driven extensibility system. Hooks are triggered on lifecycle events (comm
 | `llm-slug-generator.ts` | Generate filename slugs via LLM for session memory |
 | `loader.ts` | Load and register hooks from directories + legacy config |
 | `src/plugins/hooks.ts` | Plugin hook runner (lifecycle/tool/message/subagent hooks) |
-| `types.ts` | All hook type definitions |
+| `types.ts` | All hook type definitions — includes `before_dispatch` hook (lines 1705-1731 in `src/plugins/types.ts`): first `handled: true` wins, reply routes through final-delivery path |
 | `workspace.ts` | Discover hooks from bundled/managed/workspace/extra directories |
 
 ### Key Types
@@ -1456,3 +1430,20 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ### Delivery / Dedupe (#44666)
 - Completed direct-cron delivery cache trimmed correctly; mirrored transcript dedupe kept active even when transcript files contain malformed lines.
+
+---
+
+## v2026.3.24 Delta Notes
+
+### Gateway — New HTTP Endpoints
+
+- **`/v1/models` via `models-http.ts`** — New HTTP endpoint exposes available models through the gateway.
+- **`/v1/embeddings` via `embeddings-http.ts`** — New HTTP endpoint for embedding generation through the gateway.
+
+### Gateway — Restart Sentinel
+
+- **Restart sentinel heartbeat-wake in `server-restart-sentinel.ts`** — The restart sentinel now supports heartbeat-based wake to enable zero-downtime restarts.
+
+### Hooks — `before_dispatch` Hook
+
+- **New `before_dispatch` hook in `src/plugins/types.ts` (lines 1705-1731)** — A new plugin hook that fires before message dispatch. First handler returning `handled: true` wins; the reply routes through the final-delivery path. Enables plugins to intercept and handle messages before they reach the agent runtime.

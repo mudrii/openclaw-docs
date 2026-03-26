@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -128,10 +128,16 @@ The core engine of OpenClaw. Handles LLM agent execution (the "PI embedded runne
 | `tools/web-shared.ts` | Shared web utilities |
 | `tools/web-fetch-utils.ts` | Fetch utilities |
 | `tools/agent-step.ts` | Agent step tracking |
-| `tools/discord-actions*.ts` | Discord-specific actions (guild, messaging, moderation, presence) |
-| `tools/slack-actions.ts` | Slack-specific actions |
-| `tools/telegram-actions.ts` | Telegram-specific actions |
-| `tools/whatsapp-actions.ts` | WhatsApp-specific actions |
+| `tools/image-generate-tool.ts` | Image generation tool |
+| `tools/pdf-tool.ts` | PDF reading/extraction tool |
+| `tools/pdf-tool.helpers.ts` | PDF tool helper utilities |
+| `tools/web-search-citation-redirect.ts` | Web search citation redirect resolution |
+| `tools/web-search-provider-config.ts` | Web search provider configuration |
+| `tools/web-guarded-fetch.ts` | SSRF-guarded web fetch |
+| `tools/sessions-resolution.ts` | Session resolution for tools |
+| `tools/sessions-access.ts` | Session access control for tools |
+
+> **Note:** Channel-specific actions (Discord, Slack, Telegram, WhatsApp) live in `src/channels/plugins/actions/`, not in `src/agents/tools/`.
 
 #### Model Management
 | File | Role |
@@ -565,8 +571,12 @@ Semantic memory system. Indexes workspace files (MEMORY.md, memory/*.md, session
 |------|------|
 | `search-manager.ts` | `getMemorySearchManager()` — factory for search managers, caching |
 | `manager-search.ts` | `searchKeyword()`, `searchVector()` — actual search implementations |
-| `manager-cache-key.ts` | Cache key generation for manager instances |
 | `hybrid.ts` | Hybrid search: BM25 ranking, FTS query building, result merging |
+| `temporal-decay.ts` | Time-based relevance decay for search results |
+| `mmr.ts` | Maximal Marginal Relevance diversification |
+| `prompt-section.ts` | Memory prompt section builder |
+| `multimodal.ts` | Multimodal memory content handling |
+| `query-expansion.ts` | Query expansion for improved recall |
 | `status-format.ts` | Format memory status for display |
 
 #### Embedding Providers
@@ -576,13 +586,12 @@ Semantic memory system. Indexes workspace files (MEMORY.md, memory/*.md, session
 | `embeddings-openai.ts` | OpenAI embedding client |
 | `embeddings-gemini.ts` | Gemini embedding client |
 | `embeddings-voyage.ts` | Voyage embedding client |
+| `embeddings-ollama.ts` | Ollama local embedding client |
 | `node-llama.ts` | Local llama.cpp embeddings |
 | `embedding-chunk-limits.ts` | Per-provider chunk size limits |
 | `embedding-input-limits.ts` | Input length limits |
 | `embedding-model-limits.ts` | Model-specific dimension limits |
 | `manager-embedding-ops.ts` | Embedding operations on the manager |
-| `provider-key.ts` | Provider key resolution |
-| `headers-fingerprint.ts` | Auth header fingerprinting for cache invalidation |
 
 #### Batch Embedding
 | File | Role |
@@ -597,11 +606,7 @@ Semantic memory system. Indexes workspace files (MEMORY.md, memory/*.md, session
 #### Sync & Indexing
 | File | Role |
 |------|------|
-| `manager-sync-ops.ts` | Sync operations (index files, detect changes) |
-| `sync-index.ts` | File indexing pipeline |
-| `sync-memory-files.ts` | Sync memory markdown files |
-| `sync-session-files.ts` | Sync session transcript files |
-| `sync-stale.ts` | Detect and remove stale entries |
+| `manager-sync-ops.ts` | Sync operations — consolidated sync logic (index files, detect changes, memory/session sync, stale entry removal) |
 | `session-files.ts` | Session file discovery for indexing |
 | `memory-schema.ts` | SQLite schema definitions |
 
@@ -1228,5 +1233,31 @@ When event fires:
 ### Dependencies
 
 - **pi packages bumped to `0.58.0`**: All `@mariozechner/pi-*` packages (`pi-agent-core`, `pi-ai`, `pi-coding-agent`, `pi-tui`) are at `0.58.0` in `package.json`.
+
+---
+
+## v2026.3.24 Delta Notes
+
+### Skills — Install Recipes
+
+- **`SkillInstallSpec` type in `src/agents/skills/types.ts`** — New type for one-click skill install recipes, encapsulating install source, config, and dependencies.
+- **`skills-install.ts` orchestration** — New skill install orchestration module handles end-to-end skill installation from install specs.
+- **Skills CLI: "needs setup" label in `skills-cli.format.ts`** — Skills that require post-install configuration are now surfaced with a "needs setup" label in CLI output.
+
+### Cron — Heartbeat Suppression
+
+- **Embedded run heartbeat-prompt suppression for non-cron sessions** — Heartbeat prompts are no longer injected into embedded runs that are not cron-triggered, reducing unnecessary prompt noise in interactive sessions.
+
+### Compaction — Late Auto-Compaction Reconciliation
+
+- **`sessions.json.compactionCount` reconciliation after late embedded auto-compaction** — When an embedded auto-compaction completes after the session has already been updated, the `compactionCount` field in `sessions.json` is reconciled to reflect the actual compaction state.
+
+### Embedded — SecretRef Crash Fix
+
+- **SecretRef crash fix** — Fixed a crash in the embedded runner when resolving SecretRef entries from the active runtime snapshot.
+
+### Agents `/tools` — Available Right Now
+
+- **`/tools` shows currently usable tools with "Available Right Now" section** — The `/tools` command now displays an "Available Right Now" section listing tools that are currently usable in the active session context.
 
 ---

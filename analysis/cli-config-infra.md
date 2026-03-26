@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -53,7 +53,7 @@ The CLI module is the **entry point and command registration layer** for the `op
 | File | Description |
 |------|-------------|
 | `program/build-program.ts` | Creates Commander program, sets context, registers commands |
-| `program/command-registry.ts` | Core command registry with lazy loading of ~10 command groups |
+| `program/command-registry.ts` | Core command registry with lazy loading of 12 command groups |
 | `program/context.ts` | `createProgramContext()` — version, agent channel options |
 | `program/program-context.ts` | Get/set program context on Commander instance |
 | `program/help.ts` | Custom help formatting for Commander |
@@ -62,7 +62,7 @@ The CLI module is the **entry point and command registration layer** for the `op
 | `program/action-reparse.ts` | Re-parse argv after lazy command load |
 | `program/config-guard.ts` | Ensure config is valid before command execution |
 | `program/routes.ts` | Route specs for fast-path commands (health, status, sessions, agents list, etc.) |
-| `program/register.subclis.ts` | 25+ subcli entries (gateway, daemon, nodes, browser, etc.) with lazy loading |
+| `program/register.subclis.ts` | 28 subcli entries (gateway, daemon, nodes, browser, etc.) with lazy loading |
 | `program/register.setup.ts` | `setup` command registration |
 | `program/register.onboard.ts` | `onboard` command registration |
 | `program/register.configure.ts` | `configure` command registration |
@@ -259,7 +259,7 @@ type RouteSpec = {
 | `openclaw setup` | Setup helpers |
 | `openclaw onboard` | Onboarding wizard |
 | `openclaw configure` | Configuration wizard |
-| `openclaw config` | Config get/set/edit/unset/file |
+| `openclaw config` | Config get/set/edit/unset/file/schema/validate |
 | `openclaw doctor` | Health checks + quick fixes |
 | `openclaw dashboard` | Open Control UI |
 | `openclaw reset` | Reset local config/state |
@@ -297,6 +297,11 @@ type RouteSpec = {
 | `openclaw update` | CLI update |
 | `openclaw completion` | Shell completion script generation |
 | `openclaw acp` | Agent Control Protocol tools |
+| `openclaw backup` | Backup create/verify |
+| `openclaw mcp` | MCP server management |
+| `openclaw qr` | iOS pairing QR code generation |
+| `openclaw clawbot` | Legacy aliases |
+| `openclaw secrets` | Secrets reload |
 
 ### Internal Dependencies
 - `src/config` — config loading, paths, types, schema
@@ -497,17 +502,10 @@ The commands module contains **business logic implementations** for all CLI comm
 | `status.agent-local.ts` | Agent local status |
 | `status.link-channel.ts` | Channel link status |
 | `status.update.ts` | Update status section |
-| `status-all.ts` | Comprehensive status (`--all`) |
-| `status-all/agents.ts` | Agent status section |
-| `status-all/channels.ts` | Channel status section |
-| `status-all/diagnosis.ts` | Diagnostic section |
-| `status-all/format.ts` | Status-all formatting |
-| `status-all/gateway.ts` | Gateway status section |
-| `status-all/report-lines.ts` | Report line builders |
+| `status-all.ts` | Comprehensive status (`--all`) — single flat file covering agents, channels, diagnosis, formatting, gateway, and report lines |
 | `health.ts` | `healthCommand()` — health check |
 | `health-format.ts` | Health output formatting |
-| `gateway-status.ts` | Gateway-specific status |
-| `gateway-status/helpers.ts` | Gateway status helpers |
+| `gateway-status.ts` | Gateway-specific status — single flat file (no subdirectory) |
 | `gateway-presence.ts` | Gateway presence management |
 | `sessions.ts` | `sessionsCommand()` — session management |
 
@@ -1261,11 +1259,11 @@ The wizard module implements the **interactive onboarding wizard** flow that gui
 
 | File | Description |
 |------|-------------|
-| `onboarding.ts` | Main wizard orchestration |
-| `onboarding.types.ts` | Wizard flow types |
-| `onboarding.finalize.ts` | Finalization step (write config, install daemon) |
-| `onboarding.gateway-config.ts` | Gateway configuration step |
-| `onboarding.completion.ts` | Completion message/summary |
+| `setup.ts` | Main wizard orchestration |
+| `setup.types.ts` | Wizard flow types |
+| `setup.finalize.ts` | Finalization step (write config, install daemon) |
+| `setup.gateway-config.ts` | Gateway configuration step |
+| `setup.completion.ts` | Completion message/summary |
 | `prompts.ts` | `WizardPrompter` interface + `WizardCancelledError` |
 | `clack-prompter.ts` | Clack-based terminal prompter implementation |
 | `session.ts` | Wizard session state management |
@@ -1306,9 +1304,9 @@ type QuickstartGatewayDefaults = {
 ### Test Coverage
 | Test File | Covers |
 |-----------|--------|
-| `onboarding.test.ts` | Main wizard flow |
-| `onboarding.completion.test.ts` | Completion output |
-| `onboarding.gateway-config.test.ts` | Gateway config step |
+| `setup.test.ts` | Main wizard flow |
+| `setup.completion.test.ts` | Completion output |
+| `setup.gateway-config.test.ts` | Gateway config step |
 | `session.test.ts` | Wizard session state |
 
 ---
@@ -1325,7 +1323,9 @@ The TUI module implements a **terminal-based chat interface** for interacting wi
 
 | File | Description |
 |------|-------------|
-| `tui.ts` | Main TUI entry: `createTui()`, editor submit handler |
+| `tui.ts` | Main TUI entry: `runTui(opts: TuiOptions)`, editor submit handler |
+| `tui-submit.ts` | `createEditorSubmitHandler()` — editor submit handling |
+| `osc8-hyperlinks.ts` | OSC-8 terminal hyperlink support |
 | `tui-types.ts` | TUI types (TuiOptions, SessionInfo, AgentSummary, etc.) |
 | `gateway-chat.ts` | `GatewayChatClient` — WebSocket client for gateway |
 | `commands.ts` | Slash command definitions (`/help`, `/clear`, `/agent`, `/model`, etc.) |
@@ -1347,6 +1347,9 @@ The TUI module implements a **terminal-based chat interface** for interacting wi
 | `components/selectors.ts` | Selection helpers |
 | `components/tool-execution.ts` | Tool execution display component |
 | `components/user-message.ts` | User message rendering component |
+| `components/hyperlink-markdown.ts` | Hyperlink-aware markdown rendering |
+| `components/markdown-message.ts` | Markdown message component |
+| `components/btw-inline-message.ts` | BTW inline message component |
 | `theme/theme.ts` | TUI color theme |
 | `theme/syntax-theme.ts` | Syntax highlighting theme |
 
@@ -1422,6 +1425,8 @@ The terminal module provides **low-level terminal rendering primitives**: ANSI h
 | `prompt-style.ts` | Prompt styling helpers |
 | `health-style.ts` | Health status coloring |
 | `stream-writer.ts` | Buffered stream writer |
+| `prompt-select-styled.ts` | Styled prompt selection helpers |
+| `safe-text.ts` | Safe text rendering utilities |
 | `restore.ts` | Terminal state restoration (cursor, alternate screen) |
 
 ### Key Functions
@@ -1851,3 +1856,15 @@ User types: openclaw <command> [args]
 - **macOS/runtime locator — require Node >=22.16.0 during macOS runtime discovery:** `src/daemon/runtime-paths.ts` enforces the Node 22.16+ floor when scanning system Node installations on macOS.
 
 - **macOS/onboarding — avoid self-restarting freshly bootstrapped launchd gateways:** onboarding no longer triggers a self-restart on a gateway that was just bootstrapped by the same onboarding flow.
+
+## v2026.3.24 Delta Notes
+
+### CLI
+
+- **`--container` / `OPENCLAW_CONTAINER` global flag:** new global CLI flag routing CLI commands into Docker/Podman containers via `src/cli/container-target.ts`. When set, CLI commands are forwarded to a running container instead of executing locally.
+
+- **CLI update preflight — `nodeVersionSatisfiesEngine()` check:** the update flow now checks `nodeVersionSatisfiesEngine()` before applying updates, preventing updates that target a Node.js version the current runtime does not satisfy.
+
+- **Node 22.14 floor change:** the minimum supported Node.js version floor has been raised to 22.14.
+
+- **CLI logging — timezone offset in timestamps:** CLI log timestamps now include the timezone offset for unambiguous time references across environments.

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
 
 ## Overview
 
@@ -65,7 +65,7 @@ Entry point for the `openclaw` CLI binary. Handles argument parsing, command rou
 | `channels-cli.ts` | Channel management CLI |
 | `channel-auth.ts` | Channel authentication |
 | `channel-options.ts` | Channel option definitions |
-| `config-cli.ts` | `openclaw config` subcommand |
+| `config-cli.ts` | `openclaw config` subcommand (get/set/edit/unset/file/schema/validate) |
 | `completion-cli.ts` | Shell completion generation |
 | `devices-cli.ts` | Device management |
 | `directory-cli.ts` | Directory/contacts CLI |
@@ -201,7 +201,7 @@ The actual business logic for all CLI commands: `agent`, `doctor`, `onboard`, `c
 |------|------|
 | `status.ts` | Status types and shared logic |
 | `status.command.ts` | `openclaw status` command |
-| `status-all.ts` + subdir | Comprehensive status report |
+| `status-all.ts` | Comprehensive status report (single flat file) |
 | `status.agent-local.ts` | Local agent status |
 | `status.daemon.ts` | Daemon status |
 | `status.format.ts` | Status formatting |
@@ -272,7 +272,9 @@ Interactive terminal chat interface using `@mariozechner/pi-tui`. Provides a ful
 
 | File | Role |
 |------|------|
-| `tui.ts` | Main TUI setup: `createEditorSubmitHandler()`, `shouldEnableWindowsGitBashPasteFallback()` |
+| `tui.ts` | Main TUI entry: `runTui(opts: TuiOptions)`, `shouldEnableWindowsGitBashPasteFallback()` |
+| `tui-submit.ts` | `createEditorSubmitHandler()` — editor submit handling |
+| `osc8-hyperlinks.ts` | OSC-8 terminal hyperlink support |
 | `tui-types.ts` | Types: `TuiOptions`, `SessionInfo`, `AgentSummary`, `TuiStateAccess`, `SessionScope` |
 | `tui-command-handlers.ts` | Slash command handlers (`/model`, `/agent`, `/session`, etc.) |
 | `tui-event-handlers.ts` | Event handlers for TUI events |
@@ -290,6 +292,9 @@ Interactive terminal chat interface using `@mariozechner/pi-tui`. Provides a ful
 | `components/assistant-message.ts` | Assistant message rendering |
 | `components/user-message.ts` | User message rendering |
 | `components/tool-execution.ts` | Tool execution display |
+| `components/hyperlink-markdown.ts` | Hyperlink-aware markdown rendering |
+| `components/markdown-message.ts` | Markdown message component |
+| `components/btw-inline-message.ts` | BTW inline message component |
 | `components/filterable-select-list.ts` | Filterable selection list |
 | `components/searchable-select-list.ts` | Searchable selection list |
 | `components/fuzzy-filter.ts` | Fuzzy text filtering |
@@ -298,7 +303,8 @@ Interactive terminal chat interface using `@mariozechner/pi-tui`. Provides a ful
 | `theme/syntax-theme.ts` | Syntax highlighting theme |
 
 ### Key Exports
-- `createEditorSubmitHandler()` — creates the submit handler for the editor
+- `runTui(opts: TuiOptions)` — main TUI entry point
+- `createEditorSubmitHandler()` — creates the submit handler for the editor (in `tui-submit.ts`)
 - `resolveFinalAssistantText()` — extracts final assistant text from stream
 - `TuiOptions` type
 
@@ -501,7 +507,7 @@ Processes inbound media attachments (images, audio, video) through AI providers 
 |------|------|
 | `index.ts` | Barrel exports: `applyMediaUnderstanding`, `formatMediaUnderstandingBody`, `resolveMediaUnderstandingScope` |
 | `types.ts` | Core types: `MediaAttachment`, `MediaUnderstandingOutput`, `MediaUnderstandingProvider`, `MediaUnderstandingKind` |
-| `runner.ts` | Main runner: `runCapability()`, `buildProviderRegistry()`, provider/CLI entry execution |
+| `runner.ts` | Main runner: `runCapability()`, `buildMediaUnderstandingRegistry()`, provider/CLI entry execution |
 | `runner.entries.ts` | `runProviderEntry()`, `runCliEntry()`, `buildModelDecision()` |
 | `apply.ts` | `applyMediaUnderstanding()` — orchestrates full media understanding pipeline |
 | `resolve.ts` | Resolves model entries, scope decisions, timeouts |
@@ -515,24 +521,16 @@ Processes inbound media attachments (images, audio, video) through AI providers 
 | `audio-preflight.ts` | Audio pre-processing checks |
 | `video.ts` | Video processing utilities |
 
-#### Providers
+#### Provider Files (flat structure, no `providers/` subdirectory)
 | File | Role |
 |------|------|
-| `providers/index.ts` | Provider registry, `buildMediaUnderstandingRegistry()` |
-| `providers/shared.ts` | Shared provider utilities |
-| `providers/image.ts` | Generic image description provider |
-| `providers/anthropic/index.ts` | Anthropic vision provider |
-| `providers/google/index.ts` | Google (Gemini) provider |
-| `providers/google/audio.ts` | Google audio transcription |
-| `providers/google/video.ts` | Google video description |
-| `providers/google/inline-data.ts` | Google inline data handling |
-| `providers/openai/index.ts` | OpenAI provider |
-| `providers/openai/audio.ts` | OpenAI Whisper transcription |
-| `providers/deepgram/index.ts` | Deepgram provider |
-| `providers/deepgram/audio.ts` | Deepgram audio transcription |
-| `providers/groq/index.ts` | Groq (Whisper) provider |
-| `providers/minimax/index.ts` | MiniMax provider |
-| `providers/zai/index.ts` | xAI provider |
+| `shared.ts` | Shared provider utilities |
+| `image.ts` | Generic image description provider |
+| `image-runtime.ts` | Image runtime resolution |
+| `openai-compatible-audio.ts` | OpenAI-compatible audio transcription |
+| `transcribe-audio.ts` | Audio transcription orchestration |
+| `provider-registry.ts` | Provider registry, `buildMediaUnderstandingRegistry()` |
+| `provider-id.ts` | Provider ID types and constants |
 
 ### Data Flow
 1. Inbound message with attachments arrives
@@ -960,3 +958,15 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 - **macOS/runtime locator — enforce Node >=22.16.0 during system Node discovery:** `src/daemon/runtime-paths.ts` rejects system Node installations below 22.16.0 during macOS runtime locator scans, with a message directing users to Node 24 or Node 22 LTS.
 
 - **macOS/onboarding — avoid self-restart of freshly bootstrapped launchd gateways:** the onboarding flow no longer issues a self-restart when it detects a gateway that was just bootstrapped in the same session.
+
+## v2026.3.24 Delta Notes
+
+### Media
+
+- **MiniMax image generation:** new `src/image-generation/` directory with a provider for the MiniMax `image-01` model, enabling agent-driven image generation.
+
+### Skills
+
+- **Skills "needs setup" label:** `src/cli/skills-cli.format.ts` now displays a "needs setup" label for skills that require configuration before they can be used.
+
+- **Skills one-click install recipes:** `SkillInstallSpec` type added to support one-click install recipes for skill marketplace entries.

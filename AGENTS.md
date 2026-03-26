@@ -8,10 +8,11 @@
 
 ## Project Structure & Module Organization
 
-- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web provider in `src/channel-web.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`). Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity).
+- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web channel in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`). Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity).
 - Tests: colocated `*.test.ts`.
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
+- Compatibility shims: `packages/` workspace contains legacy package name shims (clawdbot, moltbot) for downstream consumers that still reference old package names.
 - Plugins: install runs `npm install --omit=dev` in plugin dir; runtime deps must live in `dependencies`. Avoid `workspace:*` in `dependencies` (npm install breaks); put `openclaw` in `devDependencies` or `peerDependencies` instead (runtime resolves `openclaw/plugin-sdk` via jiti alias).
 - Installers served from `https://openclaw.ai/*`: live in the sibling repo `../openclaw.ai` (`public/install.sh`, `public/install-cli.sh`, `public/install.ps1`).
 - Messaging channels: always consider **all** built-in + extension channels when refactoring shared logic (routing, allowlists, pairing, command gating, onboarding, docs).
@@ -53,7 +54,7 @@
 
 ## Build, Test, and Development Commands
 
-- Runtime baseline: Node **22.16+** (keep Node + Bun paths working; Node 24 is the default for fresh installs; minimum floor is Node 22.16.0).
+- Runtime baseline: Node **22.14+** (keep Node + Bun paths working; Node 24 is the default for fresh installs; minimum floor is Node 22.14.0).
 - Install deps: `pnpm install`
 - If deps are missing (for example `node_modules` missing, `vitest not found`, or `command not found`), run the repo’s package-manager install command (prefer lockfile/README-defined PM), then rerun the exact requested command once. Apply this to test/build/lint/typecheck/dev commands; if retry still fails, report the command and first actionable error.
 - Pre-commit hooks: `prek install` (runs same checks as CI)
@@ -95,8 +96,8 @@
 - Naming: match source names with `*.test.ts`; e2e in `*.e2e.test.ts`.
 - Run `pnpm test` (or `pnpm test:coverage`) before pushing when you touch logic.
 - Do not set test workers above 16; tried already.
-- If local Vitest runs cause memory pressure (common on non-Mac-Studio hosts), use `OPENCLAW_TEST_PROFILE=low OPENCLAW_TEST_SERIAL_GATEWAY=1 pnpm test` for land/gate runs.
-- Live tests (real keys): `CLAWDBOT_LIVE_TEST=1 pnpm test:live` (OpenClaw-only) or `LIVE=1 pnpm test:live` (includes provider live tests). Docker: `pnpm test:docker:live-models`, `pnpm test:docker:live-gateway`. Onboarding Docker E2E: `pnpm test:docker:onboard`.
+- If local Vitest runs cause memory pressure (common on non-Mac-Studio hosts), use `OPENCLAW_TEST_PROFILE=serial OPENCLAW_TEST_SERIAL_GATEWAY=1 pnpm test` for land/gate runs.
+- Live tests (real keys): `OPENCLAW_LIVE_TEST=1 pnpm test:live` (OpenClaw-only) or `LIVE=1 pnpm test:live` (includes provider live tests). Docker: `pnpm test:docker:live-models`, `pnpm test:docker:live-gateway`. Onboarding Docker E2E: `pnpm test:docker:onboard`.
 - Full kit + what’s covered: `docs/help/testing.md`.
 - Changelog: in maintainer workflow, changelog updates are required for every PR (including internal/test-only changes). Use `(#<PR>)` and `thanks @<author>` when author metadata is available.
 - Mobile: before using a simulator, check for connected real devices (iOS + Android) and prefer them when available.
@@ -143,7 +144,7 @@
 - **`gateway.auth.mode` is now required** when both `gateway.auth.token` and `gateway.auth.password` are configured. Omitting it causes a startup error (introduced v2026.3.7). Run `openclaw doctor --fix` to auto-migrate.
 - Web provider stores creds at `~/.openclaw/credentials/`; rerun `openclaw channels login --channel web` if logged out.
 - Pi sessions live under `~/.openclaw/sessions/` by default; the base directory is not configurable.
-- Environment variables: see `~/.profile`.
+- Environment variables: see `~/.profile`. Container runtime: set `OPENCLAW_CONTAINER` or use CLI `--container` flag for Docker/Podman container commands.
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 

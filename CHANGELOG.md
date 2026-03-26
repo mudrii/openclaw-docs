@@ -6,9 +6,47 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.23 — Latest Documented Release Summary
+## OpenClaw v2026.3.24 — Release Summary
 
-> **Released:** 2026-03-24 (docs release) | upstream GitHub release `v2026.3.23` published 2026-03-23 | npm `latest` correction build `2026.3.23-2` / git tag `v2026.3.23-2` has no separate GitHub release page as of 2026-03-24 | **Policy note:** latest *documented* released section stays at top.
+> **Released:** 2026-03-27 (docs release) | upstream GitHub release `v2026.3.24` published 2026-03-26 | **Policy note:** latest *documented* released section stays at top.
+
+### Features
+
+- **Gateway OpenAI compat:** `/v1/models`, `/v1/embeddings` endpoints, model override forwarding through `/v1/chat/completions` and `/v1/responses`
+- **Microsoft Teams:** official Teams SDK migration with streaming 1:1 replies, welcome cards, prompt starters, feedback/reflection, typing indicators, native AI labeling (PR #51808). Message edit and delete support (PR #49925).
+- **Skills:** one-click install recipes for bundled skills (coding-agent, gh-issues, openai-whisper-api, session-logs, tmux, trello, weather). `SkillInstallSpec` with kind brew/node/go/uv/download.
+- **Control UI/skills:** status-filter tabs (All / Ready / Needs Setup / Disabled) with counts, click-to-detail dialog
+- **Slack interactive replies:** restored rich parity, auto-render `Options:` lines as buttons/selects (PR #53389)
+- **CLI `--container` / `OPENCLAW_CONTAINER`:** for Docker/Podman container commands (PR #52651)
+- **Discord `autoThreadName: "generated"`:** for LLM-generated thread titles (PR #43366)
+- **Plugin hook `before_dispatch`:** with canonical inbound metadata and final-delivery routing (PR #50444)
+- **Control UI:** agent workspace expandable `<details>` with lazy-loaded markdown preview
+- **macOS app:** collapsible tree sidebar replacing pill navigation
+- **Node 22.14 minimum floor** (lowered from 22.16). CLI update preflight node engine check.
+- **Agents `/tools`:** now shows currently usable tools with "Available Right Now" UI section
+
+### Security
+
+- **Sandbox media dispatch:** closed `mediaUrl`/`fileUrl` alias bypass (PR #54034)
+- **Outbound media policy:** aligned with fs `workspaceOnly` setting
+
+### Fixes (key ones)
+
+- **Gateway restart sentinel:** heartbeat-wake instead of best-effort note; thread/topic routing preserved (PR #53940)
+- **Gateway channels:** sequential startup with per-channel failure isolation (PR #54215)
+- **Docker setup:** avoid pre-start namespace loop (PR #53385)
+- **WhatsApp:** group echo ID tracking (PR #53624), botInvokeMessage unwrap for reply-to-bot detection, selfLid from creds.json
+- **Telegram:** forum topic #General routing recovery (PR #53699), 403 error preservation (PR #53635), photo dimension preflight (PR #52545)
+- **Discord:** gateway supervision centralization, timeout replies (PR #53823), slash-command description truncation (PR #54118)
+- **ACP:** terminal result delivery when TTS has no audio (PR #53692)
+- **Embedded runs:** SecretRef crash fix (Fixes #45838)
+- **Compaction:** sessions.json.compactionCount reconciliation (PR #45493)
+
+---
+
+## OpenClaw v2026.3.23 — Historical Release Summary
+
+> **Released:** 2026-03-24 (docs release) | upstream GitHub release `v2026.3.23` published 2026-03-23 | npm `latest` correction build `2026.3.23-2` / git tag `v2026.3.23-2` has no separate GitHub release page as of 2026-03-24 | **Policy note:** historical section.
 > **Window analyzed:** `v2026.3.22..v2026.3.23` | **Scan stats:** 458 files changed, +13,208 / -3,773 lines
 > **Correction delta also audited:** `v2026.3.23..v2026.3.23-2` | **Delta stats:** 119 files changed, +5,016 / -1,297 lines
 

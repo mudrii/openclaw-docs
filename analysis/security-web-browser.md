@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -126,17 +126,26 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Non-network navigation schemes blocked** — `fix(browser)`: non-network navigation schemes blocked in browser module (e.g., `file://`, `javascript:`, `data:` URIs)
 - **noVNC observer tokens** — `fix(sandbox)`: noVNC observer sessions now require one-time token auth plus mandatory password auth
 
-### File Inventory (29 TypeScript files in `v2026.3.1`: 19 source + 10 tests)
+### File Inventory (38 TypeScript files in `v2026.3.24`: 24 source + 14 tests)
 
 | File | Description |
 |------|-------------|
 | `audit.ts` | Main security audit orchestrator — `runSecurityAudit()` collects findings from all sub-collectors |
+| `audit.runtime.ts` | Runtime-phase audit checks |
+| `audit.deep.runtime.ts` | Deep runtime audit checks |
+| `audit.nondeep.runtime.ts` | Non-deep runtime audit checks |
 | `audit-channel.ts` | Channel-specific security findings (allowFrom, groupPolicy, DM policy per channel) |
+| `audit-channel.allow-from.runtime.ts` | Channel allowFrom runtime audit |
+| `audit-channel.collect.runtime.ts` | Channel collection runtime audit |
+| `audit-channel.discord.runtime.ts` | Discord-specific channel audit |
+| `audit-channel.telegram.runtime.ts` | Telegram-specific channel audit |
+| `audit-channel.zalouser.runtime.ts` | ZaloUser-specific channel audit |
 | `audit-extra.ts` | Re-export barrel for sync and async audit collectors |
 | `audit-extra.sync.ts` | Synchronous config-based audit checks (attack surface, secrets, hooks, sandbox, models, exposure matrix) |
 | `audit-extra.async.ts` | Async I/O-based audit checks (file permissions, plugin trust, skill code safety) |
 | `audit-fs.ts` | Filesystem permission inspection (POSIX mode bits, symlink detection, Windows ACL) |
-| `audit-tool-policy.ts` | Resolves sandbox tool allow/deny policies for audit |
+| `audit-tool-policy.ts` | One-line re-export barrel for sandbox tool policy (implementation is elsewhere) |
+| `config-regex.ts` | Configuration regex patterns for security validation |
 | `channel-metadata.ts` | Safely wraps untrusted channel metadata (truncation, dedup, external content wrapping) |
 | `dangerous-config-flags.ts` | Detects dangerous configuration flags and surfaces audit findings |
 | `dangerous-tools.ts` | Shared constants for high-risk tool names (gateway HTTP deny list, ACP dangerous tools) |
@@ -528,7 +537,6 @@ Browser automation module providing a local HTTP control server for Playwright a
 | `client-actions-state.ts` | State actions (cookies, storage, offline, headers, geolocation, media) |
 | `client-actions-types.ts` | Client action result types |
 | **Extension & Bridge** | |
-| `extension-relay.ts` | Chrome extension relay server (WebSocket bridge for Chrome extension) |
 | `bridge-server.ts` | Browser bridge WebSocket server |
 | `bridge-auth-registry.ts` | Auth registry for bridge connections |
 | **Other** | |
@@ -538,6 +546,12 @@ Browser automation module providing a local HTTP control server for Playwright a
 | `screenshot.ts` | Screenshot normalization (resize, byte limit) |
 | `output-atomic.ts` | Atomic write-via-rename for browser download/trace output files |
 | `resolved-config-refresh.ts` | Hot-reload browser config from disk |
+| `navigation-guard.ts` | Navigation guard for browser URL validation |
+| `session-tab-registry.ts` | Tab registry tracking per browser session |
+| `profile-capabilities.ts` | Browser profile capabilities (`usesChromeMcp`, `requiresRelay`, etc.) |
+| `chrome-mcp.ts` | Chrome DevTools MCP integration driver |
+| `chrome-mcp.snapshot.ts` | Chrome MCP snapshot handling |
+| `routes/agent.snapshot.plan.ts` | Agent snapshot planning route |
 
 ### Key Types & Interfaces
 
@@ -565,7 +579,7 @@ Browser automation module providing a local HTTP control server for Playwright a
 | `ActKind` | routes/agent.act.shared.ts | Union of all action kinds (click, type, press, hover, drag, select, fill, etc.) |
 | `BrowserRequest` / `BrowserResponse` | routes/types.ts | Route handler request/response types |
 | `BrowserRouteRegistrar` | routes/types.ts | Route registration interface |
-| `ChromeExtensionRelayServer` | extension-relay.ts | Relay server instance type |
+| `BrowserProfileCapabilities` | profile-capabilities.ts | Profile capability flags (`usesChromeMcp`, `requiresRelay`, etc.) |
 | `AriaSnapshotNode` / `RawAXNode` | cdp.ts | CDP accessibility tree node types |
 | `DomSnapshotNode` | cdp.ts | DOM snapshot node type |
 | `PageState` / `ContextState` | pw-session.ts | Playwright page/context state tracking |
@@ -598,7 +612,6 @@ Browser automation module providing a local HTTP control server for Playwright a
 | `clickViaPlaywright(opts)` | pw-tools-core.interactions.ts | Click element by ref |
 | `typeViaPlaywright(opts)` | pw-tools-core.interactions.ts | Type text into element |
 | `evaluateViaPlaywright(opts)` | pw-tools-core.interactions.ts | Evaluate JS in page context |
-| `ensureChromeExtensionRelayServer(opts)` | extension-relay.ts | Start/ensure Chrome extension relay |
 | `registerBrowserRoutes(app, ctx)` | routes/index.ts | Register all HTTP routes |
 | `createBrowserRouteDispatcher(ctx)` | routes/dispatcher.ts | Programmatic route dispatcher |
 | `shouldRejectBrowserMutation(params)` | csrf.ts | CSRF check for mutations |
@@ -1074,7 +1087,7 @@ canvas-host → (minimal, mostly standalone)
 ### Total Counts
 | Module | Source Files | Test Files | Exported Types | Exported Functions |
 |--------|-------------|------------|----------------|-------------------|
-| security | 19 | 10 | 16 | ~30 |
+| security | 24 | 14 | 16 | ~30 |
 | web | ~35 | ~35 | ~14 | ~40 |
 | browser | ~78 | ~47 | ~30 | ~80 |
 | canvas-host | 3 | 2 | 5 | 6 |
@@ -1202,3 +1215,15 @@ The following entries are added to the Security Model section for `src/browser`:
 - **Browser act: batched actions, selector targeting, delayed clicks** — Browser act automation supports batched action sequences, explicit selector-based element targeting, and delayed click timing (contributed by @vincentkoc).
 - **Browser/existing-session: driver validation and session lifecycle hardened** — The Chrome DevTools MCP session lifecycle is validated more strictly; shared ARIA role sets are extracted to a shared module for consistent snapshot output (#45682).
 - **Browser/existing-session: text-only `list_pages`/`new_page` responses accepted** — The Chrome DevTools MCP integration accepts text-only (non-structured) responses from `list_pages` and `new_page` MCP tool calls, improving compatibility with different versions of the `chrome-devtools-mcp` package.
+
+---
+
+## v2026.3.24 Delta Notes
+
+### Browser — Default Detection
+
+- **Edge bundle IDs recognized on macOS** — Browser default detection now recognizes Microsoft Edge bundle IDs on macOS, enabling correct browser identification when Edge is the system default.
+
+### Security — Sandbox Fixes
+
+- See `security-plugins.md` v2026.3.24 delta for sandbox `alsoAllow`/re-allows fix and sandbox explain hints sanitization (`shellEscapeSingleArg()` session key redaction).

@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.3.23-1 (2026-03-24).** Latest published upstream release: v2026.3.23 (published 2026-03-23); shipped correction build: npm `2026.3.23-2` / git tag `v2026.3.23-2` with no separate GitHub release page as of 2026-03-24.
+> **Current docs version: v2026.3.24-1 (2026-03-27).** Latest published upstream release: v2026.3.24 (published 2026-03-26).
 
 ---
 
@@ -63,7 +63,20 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, etc.); `src/channels/`, `src/routing/`, and `src/web/` remain the shared/core channel surfaces. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.3.22-v2026.3.23 additions (current release line):**
+**v2026.3.24 additions (current release line):**
+
+- **Gateway OpenAI compat:** `/v1/models`, `/v1/embeddings` endpoints, model override forwarding through `/v1/chat/completions` and `/v1/responses`
+- **Microsoft Teams:** official Teams SDK migration with streaming 1:1 replies, welcome cards, prompt starters, feedback/reflection, typing indicators, native AI labeling (PR #51808). Message edit and delete support (PR #49925).
+- **Skills:** one-click install recipes for bundled skills. `SkillInstallSpec` with kind brew/node/go/uv/download.
+- **Control UI/skills:** status-filter tabs (All / Ready / Needs Setup / Disabled) with counts, click-to-detail dialog
+- **Slack interactive replies:** restored rich parity, auto-render `Options:` lines as buttons/selects (PR #53389)
+- **CLI `--container` / `OPENCLAW_CONTAINER`:** for Docker/Podman container commands (PR #52651)
+- **Discord `autoThreadName: "generated"`:** for LLM-generated thread titles (PR #43366)
+- **Plugin hook `before_dispatch`:** canonical inbound metadata and final-delivery routing (PR #50444)
+- **Node 22.14 minimum floor** (lowered from 22.16). CLI update preflight node engine check.
+- **Agents `/tools`:** now shows currently usable tools with "Available Right Now" UI section
+
+**v2026.3.22-v2026.3.23 additions (historical):**
 
 - **Chrome MCP existing-session only:** the released host-local attach path is `driver="existing-session"` with the built-in `user` profile; the legacy `chrome-relay` profile and `browser.relayBindHost` were removed in `v2026.3.22`.
 - **Browser profile targeting:** `browser.profiles.<name>.userDataDir` now supports attaching Chrome MCP to Brave, Edge, Chromium, and non-default Chrome profiles.
@@ -100,7 +113,7 @@ Released channel implementations mostly live in `extensions/` (`telegram/`, `dis
 - **`sessions_yield` tool (new):** cooperative turn-ending primitive. Calling `sessions_yield` ends the turn immediately, skips queued tool work, and optionally carries a hidden follow-up payload. Key file: `src/agents/tools/sessions-yield-tool.ts`.
 - **Provider plugins for Ollama/vLLM/SGLang:** these providers are now managed as plugins (`extensions/ollama/`, `extensions/vllm/`, `extensions/sglang/`). No behavioral change for existing configs.
 - **`/fast` mode:** `service_tier` fast mode for OpenAI and Anthropic; per-model config defaults; TUI/ACP support; cron runs can use fast mode.
-- **Node 24 default; Node 22.16 minimum:** upgrade runtime before upgrading OpenClaw on hosts below Node 22.16.
+- **Node 24 default; Node 22.14 minimum:** upgrade runtime before upgrading OpenClaw on hosts below Node 22.14.
 - **Security — 20+ GHSAs:** see CHANGELOG.md v2026.3.12 section for full list. Exec allowlist hardening (GHSA-pcqg, GHSA-f8r2, GHSA-57jw, GHSA-jvqh, GHSA-x7pp, GHSA-jc5j) is the most impactful for agent tooling workflows.
 
 **v2026.3.11 additions (runtime/ops):**
@@ -173,8 +186,8 @@ Released channel implementations mostly live in `extensions/` (`telegram/`, `dis
 
 ```
 Channel SDK event (grammY/Carbon/Bolt/SSE/RPC)
-→ src/<channel>/bot-handlers.ts or monitor/*.ts
-→ src/<channel>/bot-message-context.ts         # normalize to MsgContext
+→ extensions/<channel>/bot-handlers.ts or monitor/*.ts
+→ extensions/<channel>/bot-message-context.ts   # normalize to MsgContext
 → src/auto-reply/dispatch.ts                   # dispatchInboundMessage()
 → src/routing/resolve-route.ts                 # resolveAgentRoute() → {agentId, sessionKey}
 → src/auto-reply/reply/dispatch-from-config.ts # dispatchReplyFromConfig()
@@ -438,7 +451,7 @@ pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 
 ### Release-window Workflow Additions (v2026.3.12)
 
-- **Node 22.16 minimum runtime:** upgrade to Node 22.16+ before upgrading OpenClaw. Node 24 is the new default for fresh installs.
+- **Node 22.14 minimum runtime:** upgrade to Node 22.14+ before upgrading OpenClaw. Node 24 is the new default for fresh installs.
 - **`sessions_yield` tool added:** orchestrators can now call `sessions_yield` to end a turn immediately and skip queued tool work. Key file: `src/agents/tools/sessions-yield-tool.ts`. Update any orchestration logic that depends on queued tools completing before `end_turn`.
 - **Provider plugins for Ollama/vLLM/SGLang:** these providers are now plugin-managed. Ensure no hardcoded references to old inline provider paths remain in config or tooling.
 - **Exec allowlist GHSAs (20+):** multiple exec approval hardening advisories were fixed in this release (GHSA-pcqg, GHSA-f8r2, GHSA-57jw, GHSA-jvqh, GHSA-x7pp, GHSA-jc5j, and others). Review exec allowlists carefully after upgrading.

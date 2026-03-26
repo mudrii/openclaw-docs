@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
 
 ---
 
@@ -34,7 +34,7 @@ The memory module provides **semantic search over markdown files and session tra
 - **Unicode tokens in FTS query builder** — `buildFtsQuery()` now supports non-ASCII tokens
 - **Inject runtime date-time into memory flush prompt** — memory flush gets current timestamp for temporal context
 - **Verify QMD index artifact after manual reindex** — validates index integrity post-reindex
-- **New `sync-progress.ts`** — typed sync progress state & reporting callback
+- **`MemorySyncProgressUpdate` in `types.ts`** — typed sync progress state & reporting callback; progress infra is in `manager-sync-ops.ts`
 - **New `batch-utils.ts`** — shared batch HTTP client config types
 
 ### v2026.2.21 Changes <!-- v2026.2.21 -->
@@ -122,6 +122,12 @@ The memory module provides **semantic search over markdown files and session tra
 | `embeddings-voyage.ts` | Voyage AI embedding provider |
 | `embeddings-mistral.ts` | Mistral embedding provider |
 | `embeddings-remote-provider.ts` | Shared factory for remote embedding providers (OpenAI, Voyage, Gemini, Mistral) |
+| `embeddings-ollama.ts` | Ollama embedding provider |
+| `temporal-decay.ts` | TTL decay scoring for memory results |
+| `mmr.ts` | Maximum Marginal Relevance reranking |
+| `query-expansion.ts` | Query expansion for improved recall |
+| `prompt-section.ts` | Memory prompt section builder |
+| `read-file.ts` | Memory file reading utilities |
 | `node-llama.ts` | Dynamic import wrapper for node-llama-cpp |
 | `batch-http.ts` | Generic HTTP POST with retry for batch APIs |
 | `batch-output.ts` | Shared batch output line parser |
@@ -186,7 +192,7 @@ interface MemorySearchManager {
 
 // embeddings.ts
 type EmbeddingProvider = { id, model, maxInputTokens?, embedQuery, embedBatch };
-type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage" | "mistral";
+type EmbeddingProviderId = "openai" | "local" | "gemini" | "voyage" | "mistral" | "ollama";
 type EmbeddingProviderRequest = EmbeddingProviderId | "auto";
 
 // internal.ts
@@ -706,22 +712,13 @@ type OutboundMediaLoadOptions = { maxBytes?; localRoots?: readonly string[] };
 | `audio-preflight.ts` | Pre-mention audio transcription for voice notes in groups |
 | `output-extract.ts` | Extract text from Gemini JSON responses |
 | `video.ts` | Base64 size estimation for video uploads |
-| `providers/index.ts` | Provider registry builder |
-| `providers/shared.ts` | Shared fetch utilities with timeout and SSRF guard |
-| `providers/image.ts` | `describeImageWithModel()` — pi-ai based image description |
-| `providers/anthropic/index.ts` | Anthropic provider (image only) |
-| `providers/openai/index.ts` | OpenAI provider (image + audio) |
-| `providers/openai/audio.ts` | OpenAI-compatible audio transcription |
-| `providers/google/index.ts` | Google provider (image + audio + video) |
-| `providers/google/audio.ts` | Gemini audio transcription |
-| `providers/google/video.ts` | Gemini video description |
-| `providers/google/inline-data.ts` | Gemini inline data API helper |
-| `providers/groq/index.ts` | Groq provider (audio via OpenAI-compatible API) |
-| `providers/deepgram/index.ts` | Deepgram provider (audio) |
-| `providers/deepgram/audio.ts` | Deepgram Nova transcription |
-| `providers/minimax/index.ts` | MiniMax provider (image) |
-| `providers/zai/index.ts` | ZAI/GLM provider (image) |
-| `providers/audio.test-helpers.ts` | Shared audio test helpers for provider tests |
+| `shared.ts` | Shared fetch utilities with timeout and SSRF guard |
+| `image.ts` | `describeImageWithModel()` — pi-ai based image description |
+| `image-runtime.ts` | Image runtime resolution |
+| `openai-compatible-audio.ts` | OpenAI-compatible audio transcription |
+| `transcribe-audio.ts` | Audio transcription orchestration |
+| `provider-registry.ts` | Provider registry builder, `buildMediaUnderstandingRegistry()` |
+| `provider-id.ts` | Provider ID types and constants |
 | `media-understanding-misc.test.ts` | Miscellaneous integration tests |
 | + 10 test files | Tests for apply, attachments SSRF, format, resolve, scope, runner, providers |
 
@@ -753,7 +750,7 @@ type MediaUnderstandingDecision = { capability; outcome; attachments: MediaUnder
 | `formatMediaUnderstandingBody` | `(params) → string` | Format outputs into message body |
 | `resolveMediaUnderstandingScope` | `(params) → "allow" \| "deny"` | Check scope rules |
 | `transcribeFirstAudio` | `(params) → Promise<string \| undefined>` | Pre-mention audio transcription |
-| `buildProviderRegistry` | `(overrides?) → Map<string, Provider>` | Build provider registry |
+| `buildMediaUnderstandingRegistry` | `(overrides?) → Map<string, Provider>` | Build provider registry |
 | `normalizeAttachments` | `(ctx) → MediaAttachment[]` | Extract attachments from message context |
 | `transcribeOpenAiCompatibleAudio` | `(params) → Promise<result>` | OpenAI Whisper API |
 | `transcribeDeepgramAudio` | `(params) → Promise<result>` | Deepgram Nova API |
@@ -771,6 +768,9 @@ type MediaUnderstandingDecision = { capability; outcome; attachments: MediaUnder
 | Anthropic | image | claude-opus-4-6 |
 | MiniMax | image | MiniMax-VL-01 |
 | ZAI | image | glm-4.6v |
+| Moonshot | video | moonshot-v1-8k |
+| Mistral | image | pixtral-large |
+| MiniMax Portal | image | MiniMax-VL-01 |
 
 ### Internal Dependencies
 - `src/auto-reply/templating.ts` — MsgContext type
@@ -1107,5 +1107,21 @@ type ParsedFrontmatter = Record<string, string>;
 ### Cron / CLI
 
 - **One-shot timezone scheduling fixed** (`v2026.3.23-2`) — `openclaw cron add|edit --at ... --tz <iana>` now honors the requested local wall-clock time for offset-less one-shot datetimes, including DST boundaries.
+
+---
+
+## v2026.3.24 Delta Notes
+
+### Memory
+
+- **Compaction timeout recovery:** `src/agents/pi-embedded-runner/run/compaction-timeout.ts` adds recovery logic for compaction operations that exceed their timeout, preventing agent sessions from hanging indefinitely during context compaction.
+
+- **Memory builtin SQLite — reduced sync/status query churn:** the builtin SQLite memory backend reduces unnecessary sync and status query frequency, lowering database contention during normal operation.
+
+- **Memory-lancedb — HTTP/HTTPS proxy dispatcher bootstrap:** the `memory-lancedb` extension now bootstraps an HTTP/HTTPS proxy dispatcher on startup, enabling LanceDB connections through corporate proxy environments.
+
+### Agents / Cooldowns
+
+- **Cooldown per-model scoping:** `src/agents/auth-profiles/usage.ts` now scopes cooldown tracking per-model rather than per-profile, so a rate limit on one model does not unnecessarily cool down other models on the same auth profile.
 
 ---

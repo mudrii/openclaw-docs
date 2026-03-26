@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-24 (docs snapshot: v2026.3.23-1) | Released baseline: GitHub `v2026.3.23` plus shipped correction tag `v2026.3.23-2`
+> Updated: 2026-03-27 (docs snapshot: v2026.3.24-1) | Released baseline: GitHub `v2026.3.24`
 
 ---
 
@@ -164,15 +164,15 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `infra/` | 297 | ~53,000+ | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
 | `channels/` | 137 | ~17,000+ | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
 | `channels/status-reactions.ts` | 2 | ~850 | Shared lifecycle reaction controller for Telegram and Discord status events | channels, config, infra |
-| `telegram/` | 96 | ~24,000+ | Telegram Bot API via grammY: long-poll/webhook, topics (including per-DM topics with routing/authorization), reactions, streaming | grammY, config, auto-reply, channels |
-| `discord/` | 120 | ~30,000+ | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
-| `discord/voice/` | ~6 | ~800 | Discord voice channel join/leave management, auto-join, realtime conversation | discord, config, channels |
-| `discord/monitor/thread-bindings/` | ~4 | ~500 | Thread-bound subagent session management with inactivity lifecycle (`idleHours` default 24h, `maxAgeHours`) for Discord | discord, sessions, config |
-| `slack/` | 84 | ~14,500+ | Slack via Socket Mode: channels, threads, slash commands, file uploads | @slack/web-api, config, auto-reply |
-| `signal/` | 31 | ~5,000+ | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
-| `line/` | 45 | ~7,800+ | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
-| `imessage/` | 22 | ~3,000+ | iMessage via custom `imsg` CLI (JSON-RPC over stdin/stdout) | config, auto-reply, channels |
-| `whatsapp/` | 4 | ~500+ | WhatsApp target normalization (bulk via src/web/) | utils, infra |
+| `extensions/telegram/` | 96 | ~24,000+ | Telegram Bot API via grammY: long-poll/webhook, topics (including per-DM topics with routing/authorization), reactions, streaming | grammY, config, auto-reply, channels |
+| `extensions/discord/` | 120 | ~30,000+ | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
+| `extensions/discord/voice/` | ~6 | ~800 | Discord voice channel join/leave management, auto-join, realtime conversation | discord, config, channels |
+| `extensions/discord/monitor/thread-bindings/` | ~4 | ~500 | Thread-bound subagent session management with inactivity lifecycle (`idleHours` default 24h, `maxAgeHours`) for Discord | discord, sessions, config |
+| `extensions/slack/` | 84 | ~14,500+ | Slack via Socket Mode: channels, threads, slash commands, file uploads | @slack/web-api, config, auto-reply |
+| `extensions/signal/` | 31 | ~5,000+ | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
+| `extensions/line/` | 45 | ~7,800+ | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
+| `extensions/imessage/` | 22 | ~3,000+ | iMessage via custom `imsg` CLI (JSON-RPC over stdin/stdout) | config, auto-reply, channels |
+| `extensions/whatsapp/` | 4 | ~500+ | WhatsApp target normalization (bulk via src/web/) | utils, infra |
 | `web/` | 80 | ~12,600+ | WhatsApp Web via Baileys: session, QR login, media, auto-reply | @whiskeysockets/baileys, config |
 | `memory/` | 84 | ~17,000+ | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
 | `cron/` | 71 | ~14,800+ | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
@@ -206,9 +206,10 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `compat/` | 1 | ~20 | Legacy project name constants | — |
 | `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
 | `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | ~40 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including new `diffs` diff-viewer plugin) | plugin-sdk |
+| `extensions/` | 80+ dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including new `diffs` diff-viewer plugin) | plugin-sdk |
 | `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
+| `packages/` | — | — | Workspace compatibility shims (clawdbot, moltbot) for legacy package name consumers | — |
 | `context-engine/` | — | — | Plugin slot for custom context management strategies; wraps core context assembly, compaction, and subagent spawn hooks | config, agents |
 
 ---
@@ -685,13 +686,13 @@ Parsed by `plugins/manifest.ts`.
 - Priority ordering of hook handlers
 - Error isolation (one hook failure doesn't crash others)
 - Async support
-- Lifecycle events: `onLoad`, `onUnload`, `onConfigChange`, `onSessionStart`, `onSessionEnd`, `onAgentBootstrap`
+- Lifecycle events: `onLoad`, `onUnload`, `onConfigChange`, `onSessionStart`, `onSessionEnd`, `onAgentBootstrap`, `before_dispatch`
 
 ### Extension Types
 
 | Type | Count | Examples |
 |------|-------|---------|
-| **Channel plugins** | 21 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams, nostr, twitch, zalo |
+| **Channel plugins** | 21 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams (official Teams SDK), nostr, twitch, zalo |
 | **Provider plugins** | 7 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, qwen-portal-auth, ollama, vllm, sglang |
 | **Tool/Feature plugins** | 11 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership, diffs |
 
@@ -743,7 +744,7 @@ OpenClaw delegates LLM API calls to `@mariozechner/pi-ai` — the external AI ag
 
 ### Supported Providers
 
-Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax**, **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, **Mistral**, **SiliconFlow**, and any OpenAI-compatible API.
+Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax** (including image generation), **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, **Mistral**, **SiliconFlow**, and any OpenAI-compatible API.
 
 ### Provider-Specific Auth
 
@@ -1364,7 +1365,7 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ### Operations
 
-- **Node 24 default; Node 22.16 minimum** — fresh installs default to Node 24; minimum supported runtime is now Node 22.16.0
+- **Node 24 default; Node 22.14 minimum** — fresh installs default to Node 24; minimum supported runtime is now Node 22.14.0 (lowered from 22.16 in v2026.3.24)
 - **Bootstrap `/pair` tokens** — `/pair` setup codes switched from shared credentials to short-lived tokens; previous shared-credential pairing codes are no longer accepted
 - **Kubernetes starter path** — raw Kubernetes manifests for a minimal OpenClaw deployment added to `docs/install/kubernetes/`
 - **`OPENCLAW_TZ` Docker timezone** — container deployments can pin timezone via `OPENCLAW_TZ` environment variable
@@ -1415,10 +1416,10 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - **Cron timezone correctness** — one-shot `--at ... --tz <iana>` scheduling now preserves the requested wall-clock time across DST and offset-less datetimes.
 - **Same-base correction-version handling** — configs written by `2026.3.23-2` no longer spuriously warn when read by `2026.3.23`.
 
-### Stats Update (v2026.3.23-1 docs snapshot)
+### Stats Update (v2026.3.24-1 docs snapshot)
 
 - **7,627 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`)
 - **504,909 lines of TypeScript** (same scope)
-- **75 extension packages** and **51 bundled skills** in the released tree
+- **80+ extension packages** and **51 bundled skills** in the released tree
 
 ---

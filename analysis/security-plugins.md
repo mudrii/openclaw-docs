@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -204,12 +204,20 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 | File | Role |
 |------|------|
 | `audit.ts` | Main `SecurityAuditReport` orchestrator — runs all checks, probes gateway, aggregates findings |
+| `audit.runtime.ts` | Runtime-phase audit checks |
+| `audit.deep.runtime.ts` | Deep runtime audit checks |
+| `audit.nondeep.runtime.ts` | Non-deep runtime audit checks |
 | `audit-channel.ts` | Channel-specific security findings (open DMs, group policies, allowFrom validation) |
+| `audit-channel.allow-from.runtime.ts` | Channel allowFrom runtime audit |
+| `audit-channel.collect.runtime.ts` | Channel collection runtime audit |
+| `audit-channel.discord.runtime.ts` | Discord-specific channel audit |
+| `audit-channel.telegram.runtime.ts` | Telegram-specific channel audit |
+| `audit-channel.zalouser.runtime.ts` | ZaloUser-specific channel audit |
 | `audit-extra.ts` | Re-export barrel splitting sync/async collectors |
 | `audit-extra.sync.ts` | Config-only checks: secrets in config, sandbox docker noop, small model risk, gateway HTTP key overrides, hooks hardening, exposure matrix |
 | `audit-extra.async.ts` | I/O checks: file permissions, installed skill code safety, plugin trust/code scanning |
 | `audit-fs.ts` | Filesystem permission inspection (`inspectPathPermissions`, `safeStat`) — POSIX mode bits + Windows ACL |
-| `audit-tool-policy.ts` | Sandbox tool policy allow/deny merging (`pickSandboxToolPolicy`) |
+| `audit-tool-policy.ts` | One-line re-export barrel for sandbox tool policy (implementation is elsewhere) |
 | `channel-metadata.ts` | Wraps untrusted channel metadata (usernames, bios) in safety boundaries |
 | `dangerous-tools.ts` | Centralized constants: `DEFAULT_GATEWAY_HTTP_TOOL_DENY`, `DANGEROUS_ACP_TOOLS` — tools requiring approval |
 | `external-content.ts` | Prompt injection defense: `detectSuspiciousPatterns`, `wrapExternalContent` with boundary markers |
@@ -217,6 +225,7 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 | `scan-paths.ts` | Path traversal guard: `isPathInside`, extension scanner path checks |
 | `secret-equal.ts` | Timing-safe string comparison via `crypto.timingSafeEqual` |
 | `skill-scanner.ts` | Static analysis scanner for skill/plugin code — detects dangerous patterns (eval, exec, fetch) |
+| `config-regex.ts` | Configuration regex patterns for security validation |
 | `windows-acl.ts` | Windows-specific ACL inspection via `icacls` |
 | **New (src/infra/)** | |
 | `install-safe-path.ts` | Sanitize skill/plugin install target paths — `unscopedPackageName()`, `safeDirName()`, `safePathSegmentHashed()` |
@@ -351,7 +360,7 @@ Utility library re-exported for plugin authors. Provides helpers without couplin
 | `allow-from.ts` | `formatAllowFromLowercase()` — normalize allowFrom lists |
 | `config-paths.ts` | `resolveChannelAccountConfigBasePath()` — config path resolution for channel accounts |
 | `file-lock.ts` | File-based mutex lock (PID-aware, stale detection, reentrant) |
-| `onboarding.ts` | `promptAccountId()` — interactive account selection for setup wizards |
+| `onboarding.ts` | Re-export shim — `promptAccountId()` implementation is in `src/channels/plugins/setup-wizard-helpers.ts` |
 | `text-chunking.ts` | `chunkTextForOutbound()` — split long messages at word/line boundaries |
 | `status-helpers.ts` | `createDefaultChannelRuntimeState()`, `buildBaseChannelStatusSummary()` — standardized channel status (new) |
 | `webhook-path.ts` | `normalizeWebhookPath()`, `resolveWebhookPath()` — webhook URL/path handling (new) |
@@ -385,8 +394,7 @@ Implements the ACP (Agent Client Protocol) server and client for IDE/editor inte
 
 | File | Role |
 |------|------|
-| `index.ts` | Barrel: exports `serveAcpGateway`, `createInMemorySessionStore` |
-| `server.ts` | ACP server — connects to gateway WebSocket as a client, bridges ACP ↔ gateway |
+| `server.ts` | ACP server — connects to gateway WebSocket as a client, bridges ACP ↔ gateway; exports `serveAcpGateway` |
 | `client.ts` | ACP client — permission resolver that auto-approves safe tools, prompts for dangerous ones; <!-- v2026.3.1 --> now injects `OPENCLAW_SHELL=acp-client` into spawned bridge env |
 | `translator.ts` | `AcpGatewayAgent` — translates between ACP protocol events and gateway methods |
 | `session.ts` | In-memory session store with abort controller tracking |
@@ -407,6 +415,8 @@ Used by: CLI `openclaw acp` command
 IDE/Editor → ACP SDK (stdin/stdout ndjson) → AcpGatewayAgent → GatewayClient (WebSocket)
   → Gateway processes request → response flows back through translator → ACP client
 ```
+
+> **Note (v2026.3.24):** `src/acp/` has expanded to 55+ files including a `control-plane/` subdirectory. The functions previously attributed to `index.ts` are distributed across `server.ts` and `session.ts`.
 
 ---
 
@@ -992,3 +1002,28 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 - **Browser act automation: batched actions, selector targeting, delayed clicks** — The browser act tool supports batched action sequences, explicit selector-based element targeting, and delayed click timing for more robust automation workflows (contributed by @vincentkoc).
 - **Browser/existing-session: hardened driver validation and session lifecycle** — The `existing-session` driver validates its MCP session lifecycle more strictly and extracts shared ARIA role sets for consistent snapshot output across sessions (#45682).
 - **Browser/existing-session: accept text-only `list_pages` and `new_page` responses** — The Chrome DevTools MCP integration now accepts text-only (non-structured) responses from `list_pages` and `new_page` tool calls, improving compatibility with variants of the `chrome-devtools-mcp` package.
+
+---
+
+## v2026.3.24 Delta Notes
+
+### Security — Sandbox Fixes
+
+- **Sandbox `alsoAllow`/re-allows fix** — Fixed sandbox `alsoAllow` and re-allow logic to correctly apply accumulated permission grants.
+- **Sandbox explain hints sanitization** — Session keys in sandbox explain hints are now redacted with `shellEscapeSingleArg()` to prevent information leakage.
+
+### Security — Media/File URL Bypass
+
+- **`mediaUrl`/`fileUrl` alias bypass closed** — A bypass where `mediaUrl` and `fileUrl` aliases could circumvent URL validation has been closed.
+
+### Security — Plugin SDK
+
+- **Plugin-sdk `moduleUrl` threading fix for external plugins** — Fixed `moduleUrl` threading for external plugins so the plugin SDK correctly resolves module paths across external plugin boundaries.
+
+### Security — Context Engine
+
+- **Context engine retry for legacy `assemble()`** — Added retry logic for the legacy `assemble()` path in the context engine to improve resilience.
+
+### Hooks — `before_dispatch`
+
+- **New `before_dispatch` hook added to plugin hooks** — `src/plugins/types.ts` (lines 1705-1731) defines the `before_dispatch` plugin hook. First handler returning `handled: true` wins; the reply routes through the final-delivery path. This enables plugins to intercept messages before they reach the agent runtime.

@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-24 | Version: v2026.3.23-1 | Codebase: OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, and Matrix live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, and adjacent core modules.
@@ -68,20 +68,14 @@ The shared channel framework that all channel implementations depend on. Contain
 | File | Description |
 |------|-------------|
 | `registry.ts` | Core channel ID registry, meta definitions, normalization, `CHAT_CHANNEL_ORDER` |
-| `dock.ts` | Lightweight channel behavior proxies (capabilities, threading, mentions) for shared code |
 | `session.ts` | `recordInboundSession()` — persists session metadata on inbound messages |
 | `ack-reactions.ts` | Ack reaction gating (scope: all/direct/group-all/group-mentions/off) |
 | `allowlist-match.ts` | `AllowlistMatch` type and `formatAllowlistMatchMeta()` |
 | `channel-config.ts` | Per-channel/group config resolution with key candidate matching |
-| `chat-type.ts` | `ChatType` enum (`direct`/`group`/`channel`) + normalization |
 | `command-gating.ts` | Command authorization from access groups |
 | `conversation-label.ts` | Human-readable conversation label builder |
-| `location.ts` | `NormalizedLocation` type + `formatLocationText()` |
-| `logging.ts` | Inbound drop/typing/ack failure log helpers |
 | `mention-gating.ts` | Mention gating logic (requireMention + bypass) |
 | `reply-prefix.ts` | Response prefix context (model name, agent name) |
-| `sender-identity.ts` | Sender identity validation |
-| `sender-label.ts` | `resolveSenderLabel()` from name/username/tag/e164/id |
 | `targets.ts` | `MessagingTarget` type, `buildMessagingTarget()`, target parsing |
 | `typing.ts` | `createTypingCallbacks()` — typing indicator lifecycle |
 | `account-summary.ts` | `buildChannelAccountSnapshot()` for status display |
@@ -122,8 +116,6 @@ The shared channel framework that all channel implementations depend on. Contain
 
 | File | Description |
 |------|-------------|
-| `telegram.ts` | `normalizeTelegramMessagingTarget()` — strips `telegram:`/`tg:` prefixes, resolves t.me links |
-| `discord.ts` | `normalizeDiscordMessagingTarget()`, `looksLikeDiscordTargetId()` |
 | `signal.ts` | `normalizeSignalMessagingTarget()` — strips `signal:` prefix, handles group: |
 | `slack.ts` | `normalizeSlackMessagingTarget()`, `looksLikeSlackTargetId()` |
 | `whatsapp.ts` | `normalizeWhatsAppMessagingTarget()`, `looksLikeWhatsAppTargetId()` |
@@ -206,7 +198,7 @@ type ChannelCapabilities = {
 
 type ChannelDock = { /* lightweight subset of ChannelPlugin for shared code */ };
 
-type ChatChannelId = "telegram" | "whatsapp" | "discord" | "irc" | "googlechat" | "slack" | "signal" | "imessage";
+type ChatChannelId = "telegram" | "whatsapp" | "discord" | "irc" | "googlechat" | "slack" | "signal" | "imessage" | "line";
 ```
 
 ### Internal Dependencies
@@ -642,7 +634,7 @@ Tests cover: actions read, channel migration, client, format, monitor (threading
 ## extensions/whatsapp — WhatsApp Web (Baileys) {#extensionswhatsapp}
 
 ### Module Overview
-Minimal utility module for WhatsApp target normalization. The actual WhatsApp Web implementation (Baileys socket, QR login, message monitoring) lives in `src/channel-web.ts` and `src/web/`, re-exported through `src/channels/web/index.ts`.
+Full WhatsApp Web integration using Baileys. The implementation has moved to `extensions/whatsapp/src/` with 50+ files covering Baileys socket management, QR login, message monitoring, media handling, group support, and gateway delivery. `src/channels/web/index.ts` is a legacy re-export shim.
 
 ### File Inventory
 
@@ -1152,7 +1144,7 @@ Agent tool call: message(action="send", target="...", message="...")
 
 ### Feishu (Lark)
 
-- **Docx tables + uploads** (#20304): New `feishu_doc` tool actions: `create_table`, `write_table_cells`, `upload_image`, `upload_file`. Markdown tables and positional insert are also supported. New files: `docx-table-ops.ts`, `docx-batch-insert.ts`, `docx-color-text.ts`.
+- **Docx tables + uploads** (#20304): New `feishu_doc` tool actions: `create_table`, `write_table_cells`, `upload_image`, `upload_file`. Markdown tables and positional insert are also supported. New file: `docx-batch-insert.ts`.
 - **Reactions** (#16716, thanks @schumilin): Inbound `im.message.reaction.created_v1` events are now handled. New file: `monitor.reaction.test.ts`. Reaction notifications configurable via `reactionNotifications` (`off`/`own`/`all`).
 - **Chat tooling** (#14674): New `feishu_chat` tool provides chat info and member listing.
 - **Doc permissions** (#28295, thanks @zhoulongchao77): Document creation can optionally grant owner-level permission to the requesting user. Permission grants are now bound to trusted requester context (#31184).
@@ -1435,3 +1427,44 @@ Changes in the current released line are recorded inline above under each channe
 - **Matrix**: released plugin migration to `matrix-js-sdk`, `allowBots`, `allowPrivateNetwork`, and packaged-install runtime-api crash fixes.
 - **LINE**: runtime-api export ordering fixed in the correction build to avoid packaged-install startup crashes.
 - **Signal**: `channels.signal.groups` schema support remains in place on the current released line.
+
+---
+
+## v2026.3.24 Delta Notes
+
+### Microsoft Teams
+
+- **SDK migration**: migrated to official Teams SDK (`@microsoft/teams.apps`/`@microsoft/teams.api`). New files in `extensions/msteams/src/`: `streaming-message.ts`, `welcome-card.ts`, `feedback-reflection.ts`, `monitor-handler.ts`. Features: streaming 1:1 replies, welcome cards, prompt starters, feedback/reflection, typing indicators, AI labeling. Message edit/delete support via `graph-messages.ts`, `graph-thread.ts`.
+
+### Discord
+
+- **`autoThreadName: "generated"`**: optional config for LLM-generated thread titles in `extensions/discord/src/monitor/threading.ts`.
+- **Gateway supervision**: new `gateway-supervisor.ts` with `DiscordGatewaySupervisor`, event classification, buffering/drain phases.
+- **Timeout replies**: visible timeout when inbound worker times out before final reply.
+
+### WhatsApp
+
+- **Group echo tracking**: tracks gateway-sent message IDs, suppresses only matching echoes (preserves owner commands).
+- **Reply-to-bot**: restored via `botInvokeMessage` unwrap + `selfLid` from `creds.json` in `extensions/whatsapp/src/identity.ts`.
+
+### Telegram
+
+- **Forum topics**: `#General` topic 1 routing recovery when Telegram omits forum metadata.
+- **Outbound errors**: 403 details preserved, `bot not a member` as permanent failure.
+- **Photos**: dimension/aspect-ratio preflight, document-send fallback.
+
+### Slack
+
+- **Interactive replies**: rich parity restored, `Options:` auto-render as buttons/selects.
+
+### Gateway / Shared
+
+- **Channel startup**: sequential with per-channel failure isolation.
+
+### ACP
+
+- **Direct chats**: terminal result delivery when TTS produces no audio.
+
+### Feishu (Lark)
+
+- **WebSocket**: connection cleanup on monitor stop.

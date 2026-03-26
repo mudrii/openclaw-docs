@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-24 | **Version:** v2026.3.23-1 | **Codebase:** OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+**Updated:** 2026-03-26 | **Version:** v2026.3.24 | **Codebase:** OpenClaw release tag `v2026.3.24`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** release-tag snapshot across 14 modules: 501 tracked support-module files plus 353 Swift files in `apps/macos`
 
@@ -371,6 +371,11 @@ General-purpose utility functions used across the codebase. Small, focused helpe
 | `shell-argv.ts` | `splitShellArgs()` — shell argument parsing with quote handling |
 | `transcript-tools.ts` | `extractToolCallNames()`, `hasToolCall()`, `countToolResults()` — transcript analysis |
 | `usage-format.ts` | `formatTokenCount()`, `formatUsd()`, `estimateUsageCost()`, `resolveModelCostConfig()` |
+| `chunk-items.ts` | `chunkItems()` — splits arrays into fixed-size chunks |
+| `with-timeout.ts` | `withTimeout()` — generic async timeout wrapper |
+| `run-with-concurrency.ts` | `runWithConcurrency()` — concurrent task execution with limits |
+| `mask-api-key.ts` | `maskApiKey()` — masks API keys for safe display |
+| `parse-json-compat.ts` | `parseJsonCompat()` — lenient JSON parsing with trailing comma / comment tolerance |
 
 ### Key Types
 
@@ -413,9 +418,9 @@ None (pure Node.js utilities).
 
 ### Module Overview
 
-Shared utilities used across both gateway and CLI/node-host contexts. Designed to be import-safe without heavy side effects.
+Shared utilities used across both gateway and CLI/node-host contexts. Designed to be import-safe without heavy side effects. The module has expanded to 80+ files.
 
-### File Inventory
+### File Inventory (selected key files)
 
 | File | Description |
 |------|-------------|
@@ -431,6 +436,12 @@ Shared utilities used across both gateway and CLI/node-host contexts. Designed t
 | `usage-aggregates.ts` | `buildUsageAggregateTail()` — aggregates usage data by channel, latency, model, daily |
 | `net/ipv4.ts` | `validateIPv4AddressInput()` — IPv4 address validation |
 | `text/reasoning-tags.ts` | `stripReasoningTagsFromText()` — strips `<think>`, `<thinking>`, `<thought>`, `<antthinking>`, `<final>` tags while preserving code blocks |
+| `device-auth-store.ts` | Device auth token store with atomic JSON read/write |
+| `assistant-error-format.ts` | Assistant error formatting utilities |
+| `text/join-segments.ts` | Text segment joining utilities |
+| `text/code-regions.ts` | Code region detection and extraction |
+| `text/auto-linked-file-ref.ts` | Auto-linked file reference resolution |
+| `text/strip-markdown.ts` | Markdown stripping for plain-text contexts |
 
 ### Key Types
 
@@ -543,7 +554,6 @@ Structured logging system with file + console output, subsystem filtering, redac
 ### Test Coverage
 
 - `console-capture.test.ts` — console patching, stderr routing, timestamp prefix
-- `console-prefix.test.ts` — redundant subsystem prefix stripping
 - `console-settings.test.ts` — console settings resolution
 - `console-timestamp.test.ts` — ISO timestamp formatting
 - `diagnostic.test.ts` — session state pruning and eviction
@@ -570,6 +580,9 @@ Process execution, command queuing with lane-based concurrency, child process li
 | `child-process-bridge.ts` | `attachChildProcessBridge()` — forwards signals (SIGTERM, SIGINT, SIGHUP) to child processes |
 | `spawn-utils.ts` | `spawnWithFallback()`, `resolveCommandStdio()` — spawn with EBADF retry and fallback options |
 | `restart-recovery.ts` | `createRestartIterationHook()` — distinguishes first boot from restart iterations |
+| `windows-command.ts` | Windows command resolution and `.cmd` shim handling |
+| `kill-tree.ts` | Process tree termination |
+| `supervisor/` | Process supervisor subsystem (new subdirectory) |
 
 ### Key Types
 
@@ -1072,3 +1085,13 @@ Shared test utilities and mock factories.
 - **macOS/onboarding — avoid self-restarting freshly bootstrapped launchd gateways:** the onboarding flow no longer triggers a gateway self-restart immediately after a fresh launchd bootstrap, preventing a double-restart loop on new installs.
 
 - **macOS/runtime locator — Node >=22.16.0 enforced during system discovery:** `src/daemon/runtime-paths.ts` rejects system Node versions below 22.16.0 during macOS runtime locator scans.
+
+## v2026.3.24 Delta Notes
+
+### General Utilities
+
+- **Cooldown per-model scoping:** `src/agents/auth-profiles/usage.ts` now scopes cooldown tracking per-model rather than per-profile, preventing a rate limit on one model from unnecessarily cooling down other models on the same auth profile.
+
+- **Embedded transport error classification improvements:** embedded transport error classification is improved to better distinguish transient from permanent errors, reducing false-positive cooldown escalation.
+
+- **`src/process/supervisor/` new subsystem:** a new process supervisor subsystem has been added under `src/process/supervisor/`, providing structured process lifecycle management for child processes.

@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-24 | **Version:** v2026.3.23-1
-**Codebase:** OpenClaw release tag `v2026.3.23` plus correction tag `v2026.3.23-2`
+**Updated:** 2026-03-26 | **Version:** v2026.3.24
+**Codebase:** OpenClaw release tag `v2026.3.24`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -145,7 +145,6 @@
 | `session-utils.ts` / `session-utils.fs.ts` | Session file I/O, history |
 | `sessions-resolve.ts` | Session resolution logic |
 | `sessions-patch.ts` | Session metadata patching |
-| `chat-abort.ts` | Abort in-flight chat requests |
 | `chat-attachments.ts` | Attachment handling |
 | `chat-sanitize.ts` | Input sanitization |
 | **Server Methods (WS RPC)** | |
@@ -165,7 +164,6 @@
 | `server-maintenance.ts` | Maintenance mode |
 | `server-model-catalog.ts` | Model discovery/catalog |
 | `server-plugins.ts` | Plugin initialization |
-| `server-broadcast.ts` | WS broadcast to connected clients |
 | `server-discovery.ts` / `server-discovery-runtime.ts` | Bonjour/mDNS discovery |
 | `server-mobile-nodes.ts` | Mobile node management |
 | `server-node-events.ts` / `server-node-events-types.ts` | Node event bus |
@@ -173,6 +171,10 @@
 | `server-tailscale.ts` | Tailscale integration |
 | `server-wizard-sessions.ts` | Setup wizard |
 | `server-ws-runtime.ts` | WS runtime state |
+| `channel-health-monitor.ts` | Channel health monitoring |
+| `events.ts` | Gateway events system |
+| `control-plane-audit.ts` | Control plane audit trail |
+| `control-plane-rate-limit.ts` | Control plane rate limiting |
 | **Auth & Security** | |
 | `auth.ts` | Token auth |
 | `auth-rate-limit.ts` | Rate limiting |
@@ -186,6 +188,8 @@
 | `device-metadata-normalization.ts` | Device metadata normalization for auth payloads |
 | **OpenAI Compatibility** | |
 | `openai-http.ts` | OpenAI-compatible HTTP API (`/v1/chat/completions`) |
+| `models-http.ts` | GET `/v1/models` and `/v1/models/:id` endpoint |
+| `embeddings-http.ts` | POST `/v1/embeddings` proxy endpoint |
 | `openresponses-http.ts` | Open Responses API |
 | `open-responses.schema.ts` | Schema for Open Responses |
 | **Misc** | |
@@ -828,3 +832,22 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 
 ### Daemon / Linux Non-Interactive Install
 - **Clearer failure reporting:** Linux daemon install failures in non-interactive environments now produce more actionable error messages, distinguishing between systemd unavailability and permission issues.
+
+---
+
+## v2026.3.24 Changes
+
+### Gateway / OpenAI-Compatible Endpoints
+- **`/v1/models` and `/v1/embeddings`**: new OpenAI-compatible endpoints. `models-http.ts` serves GET `/v1/models` and `/v1/models/:id`; `embeddings-http.ts` proxies POST `/v1/embeddings`.
+
+### Gateway / Restart Sentinel
+- **Heartbeat-wake replacing best-effort note**: gateway restart sentinel now uses heartbeat-wake instead of best-effort note, with thread/topic routing preserved across restarts.
+
+### Gateway / Channel Startup
+- **Sequential startup with per-channel failure isolation**: channels start sequentially; a failure in one channel no longer prevents other channels from starting.
+
+### Docker
+- **Avoid pre-start namespace loop**: Docker setup fix to prevent a namespace loop during pre-start initialization.
+
+### Runtime
+- **Node 22.14 floor**: minimum Node.js version raised to 22.14.
