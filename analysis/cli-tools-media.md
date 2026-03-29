@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
+> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
 
 ## Overview
 
@@ -970,3 +970,34 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 - **Skills "needs setup" label:** `src/cli/skills-cli.format.ts` now displays a "needs setup" label for skills that require configuration before they can be used.
 
 - **Skills one-click install recipes:** `SkillInstallSpec` type added to support one-click install recipes for skill marketplace entries.
+
+## v2026.3.28 Delta Notes
+
+### Tools
+
+- **OpenAI/apply_patch enabled by default for OpenAI and OpenAI Codex models** — `src/agents/pi-tools.ts` function `isOpenAIProvider()` covers both `"openai"` and `"openai-codex"` provider IDs. `apply_patch` is now included in the default tool set when the active model provider is `openai` or `openai-codex`. The sandbox policy access for these providers is aligned with `write` permissions. Other providers (e.g. `anthropic`) do not get `apply_patch` by default. The behaviour is confirmed by the test file `src/agents/pi-tools.create-openclaw-coding-tools.adds-claude-style-aliases-schemas-without-dropping-b.test.ts`.
+
+### Image Tools
+
+- **OpenAI Codex media understanding registration** — `src/media-understanding/image.ts` + `src/media-understanding/image.test.ts`: Codex models (`openai-codex` provider) are now handled in the generic image runtime. Image prompts are routed through `systemPrompt` (Codex instructions format) inside `buildImageContext()` so that image analysis no longer fails due to missing provider-specific registration. Test: `"passes image prompt as system instructions for codex image requests"`. Issue #54829.
+
+- **Generic image-runtime fallback restored for unregistered providers** — `src/agents/tools/image-tool.ts`: when no provider-specific `MediaUnderstandingProvider` is registered for a given provider (e.g. `openrouter`, `minimax-portal`), the tool now falls back to the generic `describeImageWithModel` / `describeImagesWithModel` runtime from `src/media-understanding/image-runtime.ts`. This restores working image analysis for `openrouter` and `minimax-portal` configurations. Tests: `"falls back to the generic image runtime when openrouter has no media provider registration"` and `"falls back to the generic image runtime when minimax-portal has no media provider registration"` in `src/agents/tools/image-tool.test.ts`. Issue #54858.
+
+- **MiniMax image generation provider** — `extensions/minimax/image-generation-provider.ts`: new image generation provider for the MiniMax `image-01` model. Supports text-to-image generation and image-to-image editing (via `subject_reference`). Aspect ratio control: `1:1`, `16:9`, `4:3`, `3:2`, `2:3`, `3:4`, `9:16`, `21:9`. Maximum 9 images per request. Provider IDs registered: `minimax` and `minimax-portal`. Capabilities: `generate` and `edit` (single input image). Issue #54487.
+
+### File/Upload Tools
+
+- **Slack explicit `upload-file` action** — `extensions/slack/src/message-action-dispatch.ts` + `extensions/slack/src/message-actions.ts`: a new explicit `upload-file` action is registered for Slack. Parameters: `filePath`/`path`/`media` (required), `filename` (optional), `title` (optional), `initialComment`/`message` (optional comment), and `threadId`/`replyTo` for thread targeting. Supports both channels and DMs.
+
+- **Unified `upload-file` for Microsoft Teams, Google Chat, and BlueBubbles** — File-first sends across channel plugins are now unified under the canonical `upload-file` action:
+  - `extensions/msteams/src/channel.ts`: Teams registers and dispatches `upload-file`.
+  - `extensions/googlechat/src/actions.ts`: Google Chat registers and dispatches `upload-file`.
+  - `src/channels/plugins/bluebubbles-actions.ts` / `src/infra/outbound/message-action-params.ts`: the legacy `sendAttachment` alias is kept for BlueBubbles; hydration logic in `message-action-params.ts` handles both `sendAttachment` and the BlueBubbles `upload-file` path (`params.channel === "bluebubbles"`).
+
+### TTS / Media
+
+- **Matrix TTS auto-replies as native voice bubbles** — `extensions/speech-core/src/tts.ts`: `OPUS_CHANNELS` set (previously `telegram`, `feishu`, `whatsapp`) now also includes `"matrix"`. When auto-TTS is active and the reply channel is Matrix, `maybeApplyTtsToPayload()` sets `shouldVoice = true` so the outbound delivery path sends the audio as a native Matrix voice bubble (`org.matrix.msc3245.voice`) via `extensions/matrix/src/matrix/send/media.ts:buildMediaContent()`, rather than a generic audio attachment. Issue #37080.
+
+### Auto-Reply
+
+- **Suppress JSON-wrapped `{"action":"NO_REPLY"}` control envelopes** — `src/auto-reply/tokens.ts`: `isSilentReplyEnvelopeText()` detects JSON objects that are exactly `{"action":"NO_REPLY"}` (single key, `action` field equals the silent token) and treats them as silent replies. The strict single-key detector ensures that payloads containing both an action envelope and media attachments are not suppressed — only the text part is identified as a silent envelope and swallowed before channel delivery. Issue #56612.

@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
+> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
 
 ---
 
@@ -1125,3 +1125,40 @@ type ParsedFrontmatter = Record<string, string>;
 - **Cooldown per-model scoping:** `src/agents/auth-profiles/usage.ts` now scopes cooldown tracking per-model rather than per-profile, so a rate limit on one model does not unnecessarily cool down other models on the same auth profile.
 
 ---
+
+## v2026.3.28 Delta Notes
+
+### Memory / QMD — CJK Chunking (#40271)
+
+- **CJK-aware chunk size estimation:** `packages/memory-host-sdk/src/host/internal.ts` now calls `estimateStringChars()` from the new `src/utils/cjk-chars.ts` helper when deciding whether a coarsely-sliced line segment is within the token budget. Each non-Latin (CJK, Hangul, Hiragana, Katakana, CJK Extension B+) character is counted as `CHARS_PER_TOKEN_ESTIMATE` (4) chars so the `chars / 4` token estimate stays accurate for CJK-heavy notes.
+- **Surrogate-pair guard during fine splits:** when a CJK-heavy segment requires a second fine-grained split, the splitter now checks whether the split point falls on a UTF-16 high surrogate (range `0xD800–0xDBFF`) and advances one position to include the paired low surrogate. This prevents breaking CJK Extension B+ characters (U+20000–U+2FA1F) that are encoded as surrogate pairs.
+- **Latin line boundary preservation:** the first-pass coarse slice still runs at `maxChars` (tokens × `CHARS_PER_TOKEN_ESTIMATE`) unchanged, so Latin content continues to use the original `chars`-based chunk boundaries and is unaffected by the CJK re-split path.
+
+The helper module `src/utils/cjk-chars.ts` exports `estimateStringChars(text)`, `CHARS_PER_TOKEN_ESTIMATE = 4`, and `estimateTokensFromChars(chars)`. The regex `NON_LATIN_RE` covers CJK Unified Ideographs, Extension A/B, CJK Compatibility Ideographs, Hangul Syllables, Hiragana, and Katakana.
+
+### Memory / QMD — Slugified Path Resolution (#50313)
+
+- **Search hit path de-slugification:** `extensions/memory-core/src/memory/qmd-manager.ts` now resolves `qmd://`-scheme file references returned by the qmd search binary back to the actual indexed filesystem path stored in the QMD SQLite database. Previously, QMD slugified collection-relative paths (e.g. `extra-docs/category/sub-category/topic-name/topic-name.md`) and returned them as `qmd://<collection>/<slugified-path>`, which did not match the original mixed-case or space-containing path used by `memory_get`.
+- **Resolution flow:** after `search()` receives results, `resolveHintedDocPath()` performs an exact SQLite lookup (`documents WHERE collection = ? AND path = ? AND active = 1`) using the normalized slugified path. On miss it falls back to a fuzzy `matchesPreferredFileHint()` scan over all active documents in the collection. The resolved original path is substituted into the result so downstream `readFile()` calls hit the correct file.
+- **New test file:** `extensions/memory-core/src/memory/qmd-manager.slugified-paths.test.ts` covers workspace and extra-collection slug resolution end-to-end.
+
+### Memory / QMD — embedInterval (#37326)
+
+- **Dedicated embed-cadence timer:** `extensions/memory-core/src/memory/qmd-manager.ts` now arms a separate `embedTimer` (`setInterval`) when `shouldScheduleEmbedTimer()` returns true. This happens when `memory.qmd.update.embedInterval` is configured and the regular update interval is either disabled (`intervalMs <= 0`) or slower than the embed interval (`updateIntervalMs > embedIntervalMs`). Previously the embed pass only ran as a side-effect of the regular update cycle, so setting `embedInterval` shorter than `interval` had no effect.
+- **Deduplication guard:** `shouldScheduleEmbedTimer()` returns false when the regular update timer is already firing at least as frequently as the requested embed cadence, preventing a redundant second timer.
+- **`shouldRunEmbed()` logic unchanged:** the existing guard (`lastEmbedAt === null || now - lastEmbedAt > embedIntervalMs`) still gates each embed pass independently of which timer triggered it.
+
+### Memory Flush — Append-Only (#53725)
+
+- **Append-only enforcement for embedded flush attempts:** `src/agents/pi-tools.read.ts` `wrapToolMemoryFlushAppendOnlyWrite()` enforces that during a memory flush run the write tool can only append to the configured daily file (`memory/YYYY-MM-DD.md`). Writes to any other path throw immediately. The core `appendMemoryFlushContent()` function uses `appendFileWithinRoot()` (non-sandbox path) or reads the existing file and concatenates new content before writing (sandbox path), ensuring earlier notes in the same file are never overwritten.
+- **Flush plan prompt hints:** `extensions/memory-core/src/flush-plan.ts` injects `MEMORY_FLUSH_APPEND_ONLY_HINT` ("If memory/YYYY-MM-DD.md already exists, APPEND new content only and do not overwrite existing entries.") into both the user prompt and system prompt for every flush turn, making the append-only constraint explicit to the model as well as enforced by the tool wrapper.
+
+### Memory / Plugins — Flush Plan Contract (#52709 area / v2026.3.28)
+
+- **Flush plan owned by `memory-core`:** the pre-compaction memory flush plan (prompt text, system prompt, target `relativePath`, soft-threshold tokens, force-flush byte threshold) is now registered through the active memory plugin contract via `api.registerMemoryFlushPlan(buildMemoryFlushPlan)` in `extensions/memory-core/index.ts`. Core logic calls `resolveMemoryFlushPlan()` from `src/plugins/memory-state.ts` to retrieve the plan at runtime; the hardcoded defaults have been removed from core. This means only a loaded memory plugin (e.g. `memory-core`) can supply flush prompts and target-path policy — third-party memory plugins can override this by registering their own resolver.
+- **`MemoryFlushPlan` type:** defined in `src/plugins/memory-state.ts` as `{ softThresholdTokens, forceFlushTranscriptBytes, reserveTokensFloor, prompt, systemPrompt, relativePath }`. The resolver signature is `(params: { cfg?, nowMs? }) => MemoryFlushPlan | null`.
+
+### Memory / FTS — CJK Trigram Tokenization
+
+- **Configurable trigram tokenizer:** `packages/memory-host-sdk/src/host/memory-schema.ts` now accepts `ftsTokenizer: "trigram"` in addition to the default `"unicode61"`. When `"trigram"` is selected, the FTS5 virtual table is created with `tokenize='trigram case_sensitive 0'`, enabling substring search for CJK text that does not segment on whitespace.
+- **Provider-less keyword hit visibility fix (#56473):** FTS-only keyword hits are now visible at the default memory-search threshold without requiring `--min-score 0`.

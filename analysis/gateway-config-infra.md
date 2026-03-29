@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-26 | **Version:** v2026.3.24
-**Codebase:** OpenClaw release tag `v2026.3.24`
+**Updated:** 2026-03-29 | **Version:** v2026.3.28
+**Codebase:** OpenClaw release tag `v2026.3.28`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -846,8 +846,77 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 ### Gateway / Channel Startup
 - **Sequential startup with per-channel failure isolation**: channels start sequentially; a failure in one channel no longer prevents other channels from starting.
 
+### Gateway / Task Registry (`src/tasks/`)
+- **Durable task lifecycle records for ACP/subagent work**: the gateway task registry abstraction (`src/tasks/task-registry.ts`, `task-registry.types.ts`, `task-registry.store.ts`, `task-registry.maintenance.ts`) keeps durable lifecycle records for ACP/subagent spawned tasks. Each `TaskRecord` tracks `taskId`, `runtime` (`subagent` | `acp` | `cli`), `requesterSessionKey`, `status`, `deliveryStatus`, and `notifyPolicy`. ACP completion and failure updates are delivered through the real requester chat path instead of session-only stream events. Maintenance is started via `startTaskRegistryMaintenance()` called from `server.impl.ts` on gateway boot.
+
 ### Docker
 - **Avoid pre-start namespace loop**: Docker setup fix to prevent a namespace loop during pre-start initialization.
 
 ### Runtime
 - **Node 22.14 floor**: minimum Node.js version raised to 22.14.
+
+---
+
+## 9. `src/mcp/` — Gateway-Backed Channel MCP Bridge
+
+**Files:** 4 `.ts` files
+**Purpose:** Exposes OpenClaw gateway conversations, messages, and approval workflows to Codex/Claude and other MCP-capable clients over the Model Context Protocol. The bridge connects to the local gateway as a WebSocket client and surfaces channel conversation tools to the MCP consumer.
+
+### Files
+
+| File | Role |
+|------|------|
+| `channel-server.ts` | `createOpenClawChannelMcpServer()` / `serveOpenClawChannelMcp()` — creates an MCP server backed by `OpenClawChannelBridge`, registers tools and notification handlers, manages `StdioServerTransport` lifecycle with clean shutdown on `SIGINT`/`SIGTERM`/stdin close |
+| `channel-bridge.ts` | `OpenClawChannelBridge` class — connects to the gateway via `GatewayClient`, subscribes to `sessions.subscribe`, enqueues `QueueEvent` items (messages, exec/plugin approvals, Claude permission requests), exposes `listConversations`, `readMessages`, `sendMessage`, `waitForEvent`, `pollEvents`, `respondToApproval` |
+| `channel-tools.ts` | `registerChannelMcpTools()` — registers 8 MCP tools on the server: `conversations_list`, `conversation_get`, `messages_read`, `attachments_fetch`, `events_poll`, `events_wait`, `messages_send`, `permissions_list_open`, `permissions_respond`. `getChannelMcpCapabilities()` — declares `experimental: { "claude/channel": {}, "claude/channel/permission": {} }` capabilities when Claude channel mode is not `"off"` |
+| `channel-shared.ts` | Shared types (`ConversationDescriptor`, `QueueEvent`, `WaitFilter`, `PendingApproval`, `ClaudePermissionRequest`, `ClaudeChannelMode`), `ClaudePermissionRequestSchema` (Zod), helper functions (`toConversation`, `toText`, `matchEventFilter`, `resolveConversationChannel`, `extractAttachmentsFromMessage`, `summarizeResult`, `resolveMessageId`, `normalizeApprovalId`) |
+
+### Key Exports
+- `createOpenClawChannelMcpServer(opts)` — returns `{ server, bridge, start, close }`
+- `serveOpenClawChannelMcp(opts)` — full stdio MCP server lifecycle (used as the MCP entry point)
+- `OpenClawChannelBridge` class
+- MCP tools: `conversations_list`, `conversation_get`, `messages_read`, `attachments_fetch`, `events_poll`, `events_wait`, `messages_send`, `permissions_list_open`, `permissions_respond`
+
+### MCP Capabilities
+- `experimental.claude/channel` — Claude channel notification mode for broadcasting inbound user messages to the MCP client
+- `experimental.claude/channel/permission` — Claude permission-request/response flow for tool approval via chat reply
+
+### ClaudeChannelMode
+- `"auto"` (default) — enables capabilities; Claude channel notifications are active
+- `"on"` — same as auto
+- `"off"` — capabilities block omitted; no Claude channel notifications
+
+### Event Queue
+`OpenClawChannelBridge` maintains an in-memory `QueueEvent[]` queue (capped at 1,000 entries) with a monotonic cursor. Event types: `message`, `claude_permission_request`, `exec_approval_requested`, `exec_approval_resolved`, `plugin_approval_requested`, `plugin_approval_resolved`.
+
+### Dependencies
+- `gateway/client.ts` — `GatewayClient` for WebSocket gateway connection
+- `gateway/call.ts` — `buildGatewayConnectionDetails()`
+- `gateway/connection-auth.ts` — `resolveGatewayConnectionAuth()`
+- `gateway/method-scopes.ts` — `READ_SCOPE`, `WRITE_SCOPE`, `APPROVALS_SCOPE`
+- `config/` — `loadConfig()`, `OpenClawConfig`
+- `@modelcontextprotocol/sdk` — `McpServer`, `StdioServerTransport`
+
+---
+
+## v2026.3.28 Changes
+
+### Gateway / Health — Webhook-vs-Polling Account Mode in Snapshots
+- **Passive channels skip false stale-socket health failures (PR #47488)**: `src/gateway/channel-health-policy.ts` `evaluateChannelHealth()` now inspects `snapshot.mode` and skips the stale-socket check for any channel explicitly operating in webhook mode (`snapshot.mode === "webhook"`), in addition to the existing Telegram long-polling special-case (`policy.channelId === "telegram"`). This means passive channels such as LINE and BlueBubbles, which use webhook delivery and have no persistent outgoing socket, no longer fail the 30-minute stale-event threshold check and trigger false restart cycles. The `mode` field on `ChannelHealthSnapshot` is populated from channel account descriptors at runtime.
+
+### MCP / Gateway-Backed Channel MCP Bridge (New Feature)
+- **`src/mcp/` module added**: a new `src/mcp/` directory introduces `channel-bridge.ts`, `channel-server.ts`, `channel-tools.ts`, and `channel-shared.ts`. The bridge gives Codex/Claude-facing MCP clients a gateway-connected view of OpenClaw channel conversations. See section 9 above for full details.
+- **Conversation tools**: `conversations_list`, `conversation_get`, `messages_read`, `attachments_fetch`, `events_poll`, `events_wait`, `messages_send` provide read/write access to channel-routed sessions.
+- **Approval tools**: `permissions_list_open` and `permissions_respond` surface exec and plugin approval requests to MCP clients.
+- **Claude channel notifications**: the `notifications/claude/channel` MCP notification forwards inbound user messages to Claude/Codex in real time. `notifications/claude/channel/permission` handles tool permission request/response via chat reply (pattern: `yes <5-char-id>` or `no <5-char-id>`).
+- **Safer stdio bridge lifecycle**: `serveOpenClawChannelMcp()` registers a single `shutdown()` handler across `SIGINT`, `SIGTERM`, stdin `end`, and stdin `close` with deduplication, and handles transport `onclose` for clean reconnect without leaking gateway connections.
+
+### Plugins / Startup Auto-Load from Config Refs
+- **Bundled provider and CLI-backend plugins auto-load from explicit config refs**: `src/plugins/bundled-compat.ts` `withBundledPluginAllowlistCompat()` injects bundled plugin IDs into `plugins.allow` when a non-empty allowlist is present and the bundled plugin is not yet listed. This means bundled Claude CLI, Codex CLI, and Gemini CLI message-provider setups referenced in config no longer require a manual `plugins.allow` entry — the loader adds them automatically at startup. `withBundledPluginEnablementCompat()` similarly injects `{ enabled: true }` entries under `plugins.entries` for bundled plugin IDs that have no explicit entry yet.
+
+### Config / Doctor — Legacy Migration Cutoff (Breaking)
+- **Automatic config migrations older than two months are dropped**: very old legacy config keys no longer trigger rewrite on load or by `openclaw doctor`. They now fail validation instead. Operators with configs older than ~two months must manually update or remove the stale keys.
+
+### Config / Validation Fixes
+- **`tools.web.fetch.maxResponseBytes` accepted (#53401)**: `src/config/zod-schema.agent-runtime.ts` now includes `maxResponseBytes: z.number().int().positive().optional()` under the `tools.web.fetch` schema, so this previously rejected key passes strict validation. Source: `src/config/types.tools.ts` also declares `maxResponseBytes?: number` on the fetch tool config type.
+- **`buttons` schema kept optional in merged tool definitions (#54418)**: the shared `buttons` schema field in merged tool definitions is now optional, so plain `action=send` calls no longer fail validation when no buttons are provided.

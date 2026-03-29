@@ -6,9 +6,125 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.24 — Release Summary
+## OpenClaw v2026.3.28 — Release Summary
 
-> **Released:** 2026-03-27 (docs release) | upstream GitHub release `v2026.3.24` published 2026-03-26 | **Policy note:** latest *documented* released section stays at top.
+> **Released:** 2026-03-29 (docs release) | upstream GitHub release `v2026.3.28` published 2026-03-29 | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.24..v2026.3.28` | **Scan stats:** 3806 files changed, +217,667 / -92,006 lines
+
+### Breaking
+
+- **Providers/Qwen:** remove the deprecated `qwen-portal-auth` OAuth integration for `portal.qwen.ai`; migrate to Model Studio with `openclaw onboard --auth-choice modelstudio-api-key`. (#52709)
+- **Config/Doctor:** drop automatic config migrations older than two months; very old legacy keys now fail validation instead of being rewritten on load or by `openclaw doctor`.
+
+### Features
+
+- **xAI/Responses API:** move the bundled xAI provider to the Responses API, add first-class `x_search` plugin tool, and auto-enable the xAI plugin from owned web-search and tool config so bundled Grok auth/configured search flows work without manual plugin toggles. (#56048) Thanks @huntharo.
+- **MiniMax:** add image generation provider for `image-01` model, supporting generate and image-to-image editing with aspect ratio control; trim model catalog to M2.7 only, removing legacy M2, M2.1, M2.5, and VL-01 models. (#54487) Thanks @liyuan97.
+- **Plugins/hooks:** add async `requireApproval` to `before_tool_call` hooks, letting plugins pause tool execution and prompt the user for approval via the exec approval overlay, Telegram buttons, Discord interactions, or the `/approve` command on any channel. (#55339) Thanks @vaclavbelak and @joshavant.
+- **ACP/channels:** add current-conversation ACP binds for Discord, BlueBubbles, and iMessage so `/acp spawn codex --bind here` can turn the current chat into a Codex-backed workspace without creating a child thread.
+- **OpenAI:** enable `apply_patch` by default for OpenAI and OpenAI Codex models, aligned with `write` sandbox permissions.
+- **Plugins/CLI backends:** move bundled Claude CLI, Codex CLI, and Gemini CLI inference defaults onto the plugin surface; add bundled Gemini CLI backend support; replace `gateway run --claude-cli-logs` with generic `--cli-backend-logs` (old flag kept as compatibility alias).
+- **Podman:** simplify rootless container setup, install the launch helper under `~/.local/bin`, and document the host-CLI `openclaw --container <name> ...` workflow.
+- **Slack:** add an explicit `upload-file` Slack action routing file uploads through the existing Slack upload transport, with optional filename/title/comment overrides; unify file-first sends for Microsoft Teams, Google Chat, and BlueBubbles under the canonical `upload-file` action.
+- **Matrix TTS:** send auto-TTS replies as native Matrix voice bubbles instead of generic audio attachments. (#37080) Thanks @Matthew19990919.
+- **CLI:** add `openclaw config schema` to print the generated JSON schema for `openclaw.json`. (#54523) Thanks @kvokka.
+- **Config/TTS:** auto-migrate legacy speech config on normal reads and secret resolution; remove regular-mode runtime fallback for old bundled `tts.<provider>` API-key shapes.
+- **Memory/plugins:** move the pre-compaction memory flush plan behind the active memory plugin contract so `memory-core` owns flush prompts and target-path policy.
+- **MCP/channels:** add a Gateway-backed channel MCP bridge with Codex/Claude-facing conversation tools, Claude channel notifications, and safer stdio bridge lifecycle handling for reconnects and routed session discovery.
+- **Plugins/runtime:** expose `runHeartbeatOnce` in the plugin runtime `system` namespace so plugins can trigger a single heartbeat cycle with an explicit delivery target override. (#40299) Thanks @loveyana.
+
+### Security
+
+- **LINE:** make webhook signature validation run the timing-safe compare even when the supplied signature length is wrong, closing a timing side-channel. (#55663) Thanks @gavyngong.
+- **Security/audit:** extend web search key audit to recognize Gemini, Grok/xAI, Kimi, Moonshot, and OpenRouter credentials via a boundary-safe bundled-web-search registry shim. (#56540)
+- **ACP/ACPX agent registry:** align OpenClaw's ACPX built-in agent mirror with the latest `openclaw/acpx` command defaults, pin versioned `npx` built-ins to exact versions, and stop unknown ACP agent IDs from falling through to raw `--agent` command execution on the MCP-proxy path. (#28321) Thanks @m0nkmaster and @vincentkoc.
+
+### Fixes (key ones)
+
+**Agents**
+- **Agents/stop reason:** recover unhandled provider stop reasons (e.g. `sensitive`) as structured assistant errors instead of crashing the agent run. (#56639)
+- **Agents/cooldowns:** scope rate-limit cooldowns per model so one 429 no longer blocks every model on the same auth profile; replace exponential 1 min → 1 h escalation with a stepped 30 s / 1 min / 5 min ladder; surface a user-facing countdown when all models are rate-limited. (#49834) Thanks @kiranvk-2011.
+- **Agents/compaction:** preserve the post-compaction AGENTS refresh on stale-usage preflight compaction for both immediate replies and queued followups. (#49479) Thanks @jared596. Surface safeguard-specific cancel reasons and relabel benign manual `/compact` no-ops as skipped instead of failed. (#51072) Thanks @afurm.
+
+**Memory/QMD**
+- **Memory/QMD:** weight CJK-heavy text correctly when estimating chunk sizes, preserve surrogate-pair characters during fine splits, and keep long Latin lines on old chunk boundaries for better-sized CJK memory indexing. (#40271) Thanks @AaronLuo00.
+- **Memory/QMD:** resolve slugified `memory_search` file hints back to the indexed filesystem path before returning search hits so `memory_get` works again for mixed-case and spaced paths. (#50313) Thanks @erra9x.
+- **Memory/QMD:** honor `memory.qmd.update.embedInterval` even when regular QMD update cadence is disabled or slower by arming a dedicated embed-cadence maintenance timer. (#37326) Thanks @barronlroth.
+- **Agents/memory flush:** keep daily memory flush files append-only during embedded attempts so compaction writes do not overwrite earlier notes. (#53725) Thanks @HPluseven.
+
+**Telegram**
+- **Telegram/splitting:** replace proportional text estimate with verified HTML-length search so long messages split at word boundaries instead of mid-word. (#56595)
+- **Telegram/delivery:** skip whitespace-only and hook-blanked text replies in bot delivery to prevent GrammyError 400 empty-text crashes. (#56620)
+- **Telegram/send:** validate `replyToMessageId` at all four API sinks with a shared normalizer that rejects non-numeric, NaN, and mixed-content strings. (#56587)
+- **Telegram/forum topics:** keep native `/new` and `/reset` routed to the active topic by preserving the topic target on forum-thread command context. (#35963)
+- **Telegram:** deliver verbose tool summaries inside forum topic sessions again. (#43236) Thanks @frankbuild.
+
+**WhatsApp**
+- **WhatsApp:** fix infinite echo loop in self-chat DM mode where the bot's own outbound replies were re-processed as new inbound user messages. (#54570) Thanks @joelnishanth.
+
+**Discord**
+- **Discord/reconnect:** drain stale gateway sockets, clear cached resume state before forced fresh reconnects, and fail closed when old sockets refuse to die so Discord recovery stops looping on poisoned resume state. (#54697) Thanks @ngutman.
+
+**Matrix**
+- **Matrix/E2EE thumbnails:** encrypt E2EE image thumbnails with `thumbnail_file` while keeping unencrypted-room previews on `thumbnail_url`. (#54711) Thanks @frischeDaten.
+- **Matrix/ESM crypto:** load bundled `@matrix-org/matrix-sdk-crypto-nodejs` through `createRequire(...)` so E2EE media send and receive keep package-local native binding lookup working in packaged ESM builds. (#54566) Thanks @joelnishanth.
+
+**LINE**
+- **LINE/status:** stop `openclaw status` from warning about missing credentials when sanitized LINE snapshots are already configured. (#45701) Thanks @tamaosamu.
+
+**Microsoft Teams**
+- **Teams/config:** accept the existing `welcomeCard`, `groupWelcomeCard`, `promptStarters`, and feedback/reflection keys in strict config validation so already-supported Teams runtime settings stop failing schema checks. (#54679) Thanks @gumclaw.
+- **Teams/Entra JWT:** prefer the freshest personal conversation reference for `user:<aadObjectId>` sends when multiple stored references exist, so replies stop targeting stale DM threads. (#54702) Thanks @gumclaw.
+
+**BlueBubbles**
+- **BlueBubbles/debounce:** guard debounce flush against null message text by sanitizing at the enqueue boundary and adding an independent combiner guard. (#56573)
+- **BlueBubbles/contacts:** optionally enrich unnamed participant lists with local macOS Contacts names after group gating passes, so group member context can show names instead of only raw phone numbers.
+
+**iMessage**
+- **iMessage:** stop leaking inline `[[reply_to:...]]` tags into delivered text by sending `reply_to` as RPC metadata and stripping stray directive tags from outbound messages. (#39512) Thanks @mvanhorn.
+
+**CLI**
+- **CLI/zsh completion:** defer `compdef` registration until `compinit` is available so zsh completion loads cleanly with plugin managers and manual setups. (#56555)
+- **CLI/onboarding:** show the Kimi Code API key option again in the Moonshot setup menu so the interactive picker includes all Kimi setup paths. Fixes #54412 Thanks @sparkyrider.
+- **CLI/update status:** explicitly say `up to date` when the local version already matches npm latest. (#51409) Thanks @dongzhenye.
+
+**Control UI**
+- **Control UI/config:** keep sensitive raw config hidden by default, replace the blank blocked editor with an explicit reveal-to-edit state, and restore raw JSON editing without auto-exposing secrets. Fixes #55322.
+
+**Auto-reply**
+- **Auto-reply:** suppress JSON-wrapped `{"action":"NO_REPLY"}` control envelopes before channel delivery with a strict single-key detector; preserves media when text is only a silent envelope. (#56612)
+
+**xAI**
+- **xAI/code execution config:** register Codex for media understanding and route image prompts through Codex instructions so image analysis no longer fails on missing provider registration. (#54829) Thanks @neeravmakwana.
+- **xAI/auth discovery:** let the bundled Grok web-search plugin offer optional `x_search` setup during `openclaw onboard` and `openclaw configure --section web`, including an x_search model picker with the shared xAI key.
+
+**Daemon/Linux**
+- **Daemon/Linux:** stop flagging non-gateway systemd services as duplicate gateways just because their unit files mention OpenClaw, reducing false-positive doctor/log noise. (#45328) Thanks @gregretkowski.
+
+**Feishu**
+- **Feishu/WebSocket:** close WebSocket connections on monitor stop/abort so ghost connections no longer persist, preventing duplicate event processing and resource leaks. (#52844) Thanks @schumilin.
+- **Feishu/timestamps:** use the original message `create_time` instead of `Date.now()` for inbound timestamps so offline-retried messages carry the correct authoring time. (#52809) Thanks @schumilin.
+
+**Google/OpenAI**
+- **Google/models:** resolve Gemini 3.1 pro, flash, and flash-lite for all Google provider aliases by passing the actual runtime provider ID and adding a template-provider fallback. (#56567)
+- **OpenAI/WebSocket:** preserve reasoning replay metadata and tool-call item ids on WebSocket tool turns, and start a fresh response chain when full-context resend is required. (#53856) Thanks @xujingchen1996.
+
+**Other significant fixes**
+- **Mistral:** normalize OpenAI-compatible request flags so official Mistral API runs no longer fail with remaining `422 status code (no body)` chat errors.
+- **CLI/plugins:** make routed commands use the same auto-enabled bundled-channel snapshot as gateway startup so configured bundled channels like Slack load without requiring a prior config rewrite. (#54809) Thanks @neeravmakwana.
+- **Agents/embedded replies:** surface mid-turn 429 and overload failures when embedded runs end without a user-visible reply. (#50930) Thanks @infichen.
+- **Claude CLI/MCP:** always pass a strict generated `--mcp-config` overlay for background Claude CLI runs so Claude does not inherit ambient user/global MCP servers. (#54961) Thanks @markojak.
+- **Discord/slash-command descriptions:** trim overlong descriptions to Discord's 100-character limit and map rejected deploy indexes back to command names so deploys stop failing on long descriptions. (#54118) Thanks @huntharo.
+- **Agents/openai-compatible tool calls:** deduplicate repeated tool call ids across live assistant messages and replayed history so OpenAI-compatible backends no longer reject duplicate `tool_call_id` values with HTTP 400. (#40996) Thanks @xaeon2026.
+- **CLI/status:** detect node-only hosts and show the configured remote gateway target instead of a false local `ECONNREFUSED`, suppress contradictory local-gateway diagnosis output.
+- **Matrix/streaming:** add `streaming: "partial"` draft replies that stay on a single editable preview message, stop preview streaming once text no longer fits one Matrix event, and clear stale previews before media-only finals. (#56387) Thanks @jrusz.
+- **Plugins/SDK:** thread `moduleUrl` through plugin-sdk alias resolution so user-installed plugins outside the openclaw directory correctly resolve `openclaw/plugin-sdk/*` subpath imports. (#54283) Thanks @xieyongliang.
+
+---
+
+## OpenClaw v2026.3.24 — Historical Release Summary
+
+> **Released:** 2026-03-27 (docs release) | upstream GitHub release `v2026.3.24` published 2026-03-26 | **Policy note:** historical section.
 
 ### Features
 

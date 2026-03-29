@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-27 (docs snapshot: v2026.3.24-1) | Released baseline: GitHub `v2026.3.24`
+> Updated: 2026-03-29 (docs snapshot: v2026.3.28-1) | Released baseline: GitHub `v2026.3.28`
 
 ---
 
@@ -1419,6 +1419,54 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 ### Stats Update (v2026.3.24-1 docs snapshot)
 
 - **7,627 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`)
+- **504,909 lines of TypeScript** (same scope)
+- **80+ extension packages** and **51 bundled skills** in the released tree
+
+---
+
+## v2026.3.28 Released Changes (2026-03-29 docs snapshot)
+
+### New Architectural Components
+
+- **Gateway MCP Bridge** (`src/mcp/`): channel-server, channel-bridge, and channel-tools modules backed by the gateway provide Codex/Claude-facing conversation tools and channel notification capabilities. Enables channel tool discovery and bi-directional stdio lifecycle for MCP clients.
+- **Plugin `requireApproval` hook:** async approval gate in `before_tool_call` plugin hooks. Plugins implement the `requireApproval` contract; approval requests route through exec overlay, Telegram, Discord, and the `/approve` command, matching the existing exec-approval UX.
+- **xAI plugin surface:** bundled Grok/xAI provider migrated to Responses API. Plugin now owns `x_search` and `code_execution` tools; auto-enable from config removes manual plugin wiring.
+- **CLI backend plugin surface:** bundled Claude CLI, Codex CLI, and Gemini CLI inference moved to plugin architecture (`extensions/claude-cli/`, `extensions/codex-cli/`, `extensions/gemini-cli/`), enabling independent updates.
+- **MiniMax image generation:** `image-01` provider added in `extensions/minimax/`. MiniMax text-generation catalog trimmed to M2.7 only — M2, M2.1, M2.5, and VL-01 are removed.
+- **Memory plugin flush plan contract:** `memory-core` extension owns flush prompts via `MemoryFlushPlanResolver` plugin contract, decoupling flush logic from core agent code.
+
+### Channels
+
+- **ACP current-conversation binds:** Discord, BlueBubbles, and iMessage ACP channels support current-conversation binds.
+- **`upload-file` action unification:** Slack, Microsoft Teams, Google Chat, and BlueBubbles share a unified `upload-file` action implementation.
+- **Matrix TTS native voice bubbles:** Matrix channel now sends TTS audio as native voice bubbles.
+
+### CLI / Config
+
+- **`openclaw config schema` command:** new CLI command to print or export the JSON Schema for `openclaw.json`, enabling editor autocomplete without a separate schema file.
+- **Config/TTS auto-migration:** stale or deprecated config keys and TTS preferences are auto-migrated on startup; `openclaw doctor --fix` handles residual cases.
+
+### Security
+
+- **LINE timing-safe HMAC:** LINE webhook signature verification now uses constant-time comparison regardless of signature length, closing a timing-oracle bypass.
+- **Extended web search key audit:** `openclaw security audit` now covers Gemini, xAI, Kimi, Moonshot, and OpenRouter API key exposure paths in addition to existing providers.
+- **`apply_patch` enabled by default:** `apply_patch` tool is now enabled by default for OpenAI/Codex model paths.
+
+### Breaking Changes / Migration Notes
+
+- **Qwen:** `qwen-portal-auth` plugin removed. Use `openclaw onboard --auth-choice modelstudio-api-key` to onboard with a Model Studio API key instead.
+- **Config/Doctor:** migrations older than 2 months are dropped. Old config keys that require those migrations now fail validation. Run `openclaw doctor --fix` before upgrading if you have not migrated recently.
+- **`--claude-cli-logs` flag deprecated:** replaced by `--cli-backend-logs`. The old flag will be removed in a future release.
+- **MiniMax catalog reduced:** only M2.7 is available in the MiniMax provider. Configs referencing M2, M2.1, M2.5, or VL-01 must be updated.
+
+### Memory / QMD
+
+- **CJK chunking:** memory and QMD chunking now correctly handles CJK character boundaries to prevent mid-character splits.
+- **Slugified path resolution:** QMD slugified path resolution is hardened for non-ASCII file names.
+
+### Stats Update (v2026.3.28-1 docs snapshot)
+
+- **7,627 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`; validated against `v2026.3.28`)
 - **504,909 lines of TypeScript** (same scope)
 - **80+ extension packages** and **51 bundled skills** in the released tree
 

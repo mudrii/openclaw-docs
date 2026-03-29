@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -126,7 +126,7 @@ Central security audit, remediation, and content-safety module. Provides compreh
 - **Non-network navigation schemes blocked** — `fix(browser)`: non-network navigation schemes blocked in browser module (e.g., `file://`, `javascript:`, `data:` URIs)
 - **noVNC observer tokens** — `fix(sandbox)`: noVNC observer sessions now require one-time token auth plus mandatory password auth
 
-### File Inventory (38 TypeScript files in `v2026.3.24`: 24 source + 14 tests)
+### File Inventory (38 TypeScript files in `v2026.3.28`: 24 source + 14 tests)
 
 | File | Description |
 |------|-------------|
@@ -906,7 +906,7 @@ Plugin system for OpenClaw — handles discovery, installation, loading, lifecyc
 ### Module Overview
 Public SDK for plugin authors. Re-exports essential types and utilities from internal modules so plugins don't need to import from deep internal paths. Entry point: `index.ts`.
 
-### File Inventory (44 TypeScript files in `v2026.3.1`: 29 source + 15 tests)
+### File Inventory (44 TypeScript files in `v2026.3.28`: 29 source + 15 tests)
 
 | File | Description |
 |------|-------------|
@@ -970,7 +970,7 @@ Agent Client Protocol (ACP) implementation — provides an MCP-compatible server
 - **Prompt size bounds** — Prompt input capped at 2 MiB to prevent memory exhaustion
 - See DEVELOPER-REFERENCE.md §9 (gotchas 33–45) for related hardening details
 
-### File Inventory (43 TypeScript files in `v2026.3.1`: 30 source + 13 tests)
+### File Inventory (43 TypeScript files in `v2026.3.28`: 30 source + 13 tests)
 
 | File | Description |
 |------|-------------|
@@ -1227,3 +1227,38 @@ The following entries are added to the Security Model section for `src/browser`:
 ### Security — Sandbox Fixes
 
 - See `security-plugins.md` v2026.3.24 delta for sandbox `alsoAllow`/re-allows fix and sandbox explain hints sanitization (`shellEscapeSingleArg()` session key redaction).
+
+---
+
+## v2026.3.28 Delta Notes
+
+### xAI Plugin — Responses API and x_search (PR #56048)
+
+- **xAI provider moved to Responses API** — The bundled xAI provider now defaults to `openai-responses` API (`api: "openai-responses"` in `provider-catalog.ts`). `applyXaiConfig()` and the new `applyXaiResponsesApiConfig()` helper both apply the `openai-responses` path; the legacy `openai-completions` path is still accepted but no longer the default.
+- **`x_search` as a first-class bundled tool** — The xAI plugin registers `x_search` as a named tool via `api.registerTool(createXSearchTool(...), { name: "x_search" })` alongside the existing `code_execution` tool. The tool searches X (formerly Twitter) posts via the xAI API; it is enabled when any of `tools.web.x_search.apiKey`, `plugins.entries.xai.config.webSearch.apiKey`, `tools.web.search.grok.apiKey` (legacy fallback), or the `XAI_API_KEY` env var is present at runtime. The tool schema (`x-search.ts`) validates query, date-range (YYYY-MM-DD), handle allow/exclude lists, and image/video understanding flags.
+- **Auto-enable xAI plugin from web-search and tool config** — The xAI plugin resolves a fallback API key from both the plugin-owned `webSearch.apiKey` config and the legacy `tools.web.search.grok.apiKey` path. This means an xAI key configured under the web-search provider config also activates `x_search` and `code_execution` without additional configuration.
+- **`code_execution` config moved into plugin** — `code_execution` settings (`enabled`, `model`, `maxTurns`, `timeoutSeconds`) are now owned by `plugins.entries.xai.config.codeExecution` in the plugin manifest config schema, narrowing typing away from the legacy unstructured `tools.*` path. The `configSchema` in `openclaw.plugin.json` declares both `webSearch` and `codeExecution` sub-objects as `additionalProperties: false`.
+- **`x_search` config path** — `tools.web.x_search` in the runtime config controls enablement (`enabled`), model, inline citations, cache TTL, and API key for the x_search tool. The plugin-owned key (`plugins.entries.xai.config.webSearch.apiKey`) and the legacy grok key are checked as fallbacks in key resolution order.
+
+### xAI Plugin — Onboarding x_search Setup
+
+- **`openclaw onboard` and `openclaw configure --section web`** — After a Grok web-search API key is configured during onboarding, the xAI plugin's `runXSearchSetup` flow optionally offers to enable `x_search` in the same session. The prompter presents a note that `x_search` reuses the same xAI key, asks whether to enable it, and if confirmed, applies `tools.web.x_search.enabled = true` plus a model choice (default `grok-3-mini-fast` or `grok-4-1-fast`). Declining or having `x_search.enabled: false` already set skips the step. The setup path can also be reached standalone via `openclaw configure --section web`.
+
+### Security — Web Search Key Audit (PR #56540)
+
+- **Extended credential detection in `hasBundledWebSearchCredential()`** — The security audit's web-search key check now recognizes credentials for Gemini (`GEMINI_API_KEY`), Grok/xAI (`XAI_API_KEY`), Kimi (`KIMI_API_KEY`), Moonshot (`MOONSHOT_API_KEY`), and OpenRouter (`OPENROUTER_API_KEY`) in addition to the previously covered providers. Detection is done via the bundled-web-search registry shim (`src/plugins/bundled-web-search-registry.ts`) which iterates all registered `PluginWebSearchProviderEntry` instances, checking both plugin config (`getConfiguredCredentialValue`) and environment variables (`envVars`). This closes gaps where users with those providers configured would receive a false-negative audit result for web-search exposure.
+- **Boundary-safe shim pattern** — The registry shim (`hasBundledWebSearchCredential`) delegates to `resolveBundledPluginWebSearchProviders()` rather than directly reading provider-specific config paths, preserving the plugin boundary and honoring plugin disablement state.
+
+### Control UI — Raw Config Security (#55322)
+
+- **Sensitive raw config hidden by default** — The Control UI raw config editor (`ui/src/ui/views/config.ts`) now hides the raw JSON textarea when the config contains sensitive values (`sensitiveCount > 0`). A `rawRevealed: boolean` toggle (default `false`) controls visibility. When hidden, a pill badge shows the secret count and redaction status, and an info callout reads "Use the reveal button above to edit the raw config."
+- **Explicit reveal-to-edit state replaces blank blocked editor** — Previously a blocked editor showed a blank/inaccessible state (#55322). The new flow replaces that with an explicit eye/eye-off icon button that toggles `rawRevealed`. The textarea renders only after the user explicitly clicks reveal, making the intentional exposure of secrets a deliberate action rather than an accidental display.
+- **Raw JSON editing restored without auto-exposing secrets** — When `rawRevealed` is toggled on, the full raw textarea is shown for editing. When toggled off again, the textarea is hidden and the pill returns to "redacted" state. Secrets are never auto-exposed on page load.
+
+### Config — Web Fetch `maxResponseBytes` Schema (#53401)
+
+- **`tools.web.fetch.maxResponseBytes` allowed in runtime schema** — The runtime Zod schema (`zod-schema.agent-runtime.ts`) now includes `maxResponseBytes: z.number().int().positive().optional()` in the `tools.web.fetch` shape, passing validation for runtime config objects that set a custom download size limit. The config type (`types.tools.ts`) declares `maxResponseBytes?: number` on the `WebFetchConfig` interface. Labels and help text are registered in `schema.labels.ts` ("Web Fetch Max Download Size (bytes)") and `schema.help.ts` ("Max download size before truncation."). The base generated schema (`schema.base.generated.ts`) exposes `tools.web.fetch.maxResponseBytes` as a documented config key.
+
+### Docs/FAQ — Xfinity SSL Cross-Links Removed (#56500)
+
+- **Broken Xfinity SSL troubleshooting cross-links removed** — The English FAQ (`docs/help/faq.md`) and zh-CN FAQ (`docs/zh-CN/help/faq.md`) entries for Comcast/Xfinity Advanced Security blocking `docs.openclaw.ai` previously contained cross-links to the troubleshooting page. Those cross-links have been removed as they were broken. The FAQ entries themselves (describing the Xfinity block and the `spa.xfinity.com/check_url_status` reporting URL) remain in place.

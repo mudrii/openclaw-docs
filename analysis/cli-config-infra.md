@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -153,7 +153,7 @@ The CLI module is the **entry point and command registration layer** for the `op
 | `node-cli/register.ts` | Node subcommand registration |
 | `node-cli/daemon.ts` | Node daemon management |
 | `models-cli.ts` | `openclaw models` — model configuration |
-| `config-cli.ts` | `openclaw config` — config get/set/edit/unset/file |
+| `config-cli.ts` | `openclaw config` — config get/set/edit/unset/file/schema/validate |
 | `channels-cli.ts` | `openclaw channels` — channel management |
 | `logs-cli.ts` | `openclaw logs` — log viewing |
 | `memory-cli.ts` | `openclaw memory` — memory management |
@@ -272,7 +272,7 @@ type RouteSpec = {
 | `openclaw health` | Gateway health check |
 | `openclaw sessions` | Session management |
 | `openclaw browser` | Browser automation tools |
-| `openclaw gateway` | Gateway control (`run`/`stop`/`restart`/`status`/`call`/`discover`; supports `--dev`, `--require-rpc` on `status`) |
+| `openclaw gateway` | Gateway control (`run`/`stop`/`restart`/`status`/`call`/`discover`; supports `--dev`, `--require-rpc` on `status`; `gateway run` accepts `--cli-backend-logs` flag, `--claude-cli-logs` kept as deprecated alias) |
 | `openclaw daemon` | Legacy service management alias |
 | `openclaw logs` | View gateway logs |
 | `openclaw system` | System events, heartbeat, presence |
@@ -424,7 +424,7 @@ The commands module contains **business logic implementations** for all CLI comm
 | `auth-choice.apply.openai.ts` | OpenAI auth |
 | `auth-choice.apply.openrouter.ts` | OpenRouter auth |
 | `auth-choice.apply.plugin-provider.ts` | Plugin provider auth |
-| `auth-choice.apply.qwen-portal.ts` | Qwen Portal auth |
+| ~~`auth-choice.apply.qwen-portal.ts`~~ | _Removed in v2026.3.28_ — Qwen Portal (`qwen-portal-auth`) OAuth removed; use Qwen via Model Studio (`openclaw onboard --auth-choice modelstudio-api-key`) |
 | `auth-choice.apply.vllm.ts` | vLLM auth |
 | `auth-choice.apply.xai.ts` | xAI auth |
 | `auth-choice.apply-helpers.ts` | Auth application helpers |
@@ -777,7 +777,7 @@ openclaw.json
 │   ├── profile                   # "minimal"|"coding"|"messaging"|"full"
 │   ├── allow/deny/alsoAllow      # Tool allowlists
 │   ├── web.search                # Web search config (provider, apiKey, perplexity, grok)
-│   ├── web.fetch                 # Web fetch config (maxChars, firecrawl)
+│   ├── web.fetch                 # Web fetch config (maxChars, maxResponseBytes, firecrawl)
 │   ├── media                     # Media understanding (image/audio/video)
 │   ├── links                     # Link understanding
 │   ├── message                   # Message tool config
@@ -1868,3 +1868,45 @@ User types: openclaw <command> [args]
 - **Node 22.14 floor change:** the minimum supported Node.js version floor has been raised to 22.14.
 
 - **CLI logging — timezone offset in timestamps:** CLI log timestamps now include the timezone offset for unambiguous time references across environments.
+
+## v2026.3.28 Delta Notes <!-- v2026.3.28 -->
+
+### CLI <!-- v2026.3.28 -->
+
+- **`openclaw config schema` subcommand** (#54523): new `config schema` subcommand prints the generated JSON schema for `openclaw.json` to stdout as JSON. Implementation: `runConfigSchema()` in `src/cli/config-cli.ts` — reads the runtime config schema via `readBestEffortRuntimeConfigSchema()`, injects a `$schema` string property, and writes via `writeRuntimeJson()`. The subcommand is registered under `config` alongside `get`, `set`, `unset`, `file`, and `validate`. The `config` command description updated to `get/set/edit/unset/file/schema/validate`. <!-- v2026.3.28 -->
+
+- **CLI/zsh completion — defer `compdef` until `compinit` available** (#56555): the generated zsh completion script now wraps `compdef` registration inside `_${rootCmd}_register_completion()`, which checks `(( ! $+functions[compdef] ))` before attempting to bind. If `compdef` is not yet available (plugin managers or manual setups that source completions before `compinit`), it queues the function via `precmd_functions` so binding happens automatically on the next prompt. This fixes blank-completion or startup-error symptoms in oh-my-zsh, zinit, and manual setups. Implementation: `generateZshCompletion()` in `src/cli/completion-cli.ts`. <!-- v2026.3.28 -->
+
+- **CLI/onboarding — Kimi Code API key option restored in Moonshot setup menu** (#54412): the `kimi-code-api-key` auth choice (Kimi Code subscription API key) is now included as a third option in the Moonshot AI setup group alongside the existing `moonshot-api-key` (.ai) and `moonshot-api-key-cn` (.cn) choices. Registered via the `kimi-coding` bundled plugin's `openclaw.plugin.json` with `groupId: "moonshot"` so it appears under the Moonshot AI (Kimi K2.5) provider group during onboarding. <!-- v2026.3.28 -->
+
+- **CLI/update status — explicit "up to date" when local matches npm latest** (#51409): `formatUpdateOneLiner()` in `src/commands/status.update.ts` now pushes `"up to date"` into the update one-liner when the local version (`VERSION`) equals `update.registry.latestVersion` (semver comparison == 0) and the install kind is not `"git"`. Previously, the output only showed the npm latest version string with no explicit state label. Git installs retain their own `"up to date"` label from the git sync section. <!-- v2026.3.28 -->
+
+- **CLI/message send — write manual deliveries into resolved agent session transcript** (#54187): manual `openclaw message send` deliveries are now mirrored into the resolved agent's session transcript via `appendAssistantMessageToSessionTranscript()` when an outbound session route is available. The `mirror` field on `OutboundSendContext` carries `{ agentId, sessionKey, text, mediaUrls }` from `handleSendAction()` in `src/infra/outbound/message-action-runner.ts`. Transcript append runs in the `onHandled` callback of `tryHandleWithPluginAction()` in `src/infra/outbound/outbound-send-service.ts`. <!-- v2026.3.28 -->
+
+- **CLI/plugins — routed commands use same bundled-channel snapshot as gateway startup** (#54809): fast-path routed commands (status, health, sessions) now apply `applyPluginAutoEnable()` on the loaded config before calling `ensurePluginRegistryLoaded()` in `src/cli/plugin-registry.ts`. This ensures bundled provider/channel plugins that are auto-enabled at gateway startup are also available for routed CLI commands without requiring manual `plugins.allow` entries. <!-- v2026.3.28 -->
+
+### Plugins/Startup <!-- v2026.3.28 -->
+
+- **Bundled provider and CLI-backend plugins auto-loaded from explicit config refs** (breaking for manual `plugins.allow`): bundled plugins (including the Claude CLI, Codex CLI, and Gemini CLI inference backends) are now auto-loaded when referenced via model refs or `agents.defaults.cliBackends` config keys, without needing explicit `plugins.allow` entries. The auto-enable logic in `src/config/plugin-auto-enable.ts` resolves provider plugin IDs from `BUNDLED_AUTO_ENABLE_PROVIDER_PLUGIN_IDS` (populated from `autoEnableWhenConfiguredProviders` manifest entries) and channel plugin IDs from `resolveChannelPluginIds()`. Previous setups that relied on explicit `plugins.allow` entries for bundled Claude CLI, Codex CLI, or Gemini CLI will continue to work but the entries are now redundant. <!-- v2026.3.28 -->
+
+- **Bundled Gemini CLI backend added**: Gemini CLI is now a first-class bundled CLI-backend plugin alongside Claude CLI and Codex CLI. Plugin-surface inference defaults moved onto the plugin. <!-- v2026.3.28 -->
+
+- **`gateway run --cli-backend-logs`** replaces `--claude-cli-logs`: the generic `--cli-backend-logs` flag (`src/cli/gateway-cli/run.ts`) filters gateway console output to the `agent/cli-backend` subsystem for all CLI backends. The old `--claude-cli-logs` flag is retained as a deprecated alias. Both flags map to the same internal `cliBackendLogs` option. <!-- v2026.3.28 -->
+
+### Config <!-- v2026.3.28 -->
+
+- **Config/Doctor — drop automatic config migrations older than two months (BREAKING)** (#52709): `openclaw doctor` no longer automatically rewrites config keys that were superseded more than two months ago. Very old legacy keys (older than the two-month cutoff) now fail validation instead of being silently migrated. Users on configs with such keys must apply the migration manually or with `openclaw doctor --fix` before the key reached end-of-migration-life. Runtime TTS auto-migration on normal config reads and secret resolution is retained; only the Doctor's rewrite-on-load path for pre-cutoff entries is removed. <!-- v2026.3.28 -->
+
+- **Config/TTS — auto-migrate legacy speech config on normal reads** (#52709): legacy `tts.<provider>` API-key shapes (the old `messages.tts` / `channels.discord.voice.tts` structure) are now migrated into `messages.tts.providers` automatically on every config read and during secret resolution. Legacy-shape diagnostics remain available under `openclaw doctor` for transparency. The regular-mode runtime fallback that previously supported the old shapes at runtime has been removed; configs must pass through the migration path. Implementation: `migrateLegacyTtsConfig()` in `src/config/legacy.migrations.runtime.ts`. <!-- v2026.3.28 -->
+
+- **Config/web fetch — `tools.web.fetch.maxResponseBytes` accepted in runtime schema validation** (#53401): the `maxResponseBytes` field under `tools.web.fetch` is now allowlisted in strict runtime schema validation. Previously set via `config set` or manually in `openclaw.json`, it was rejected by the validator. Schema definition: `src/config/zod-schema.agent-runtime.ts`. <!-- v2026.3.28 -->
+
+### Providers <!-- v2026.3.28 -->
+
+- **Providers/Qwen — `qwen-portal-auth` OAuth integration removed (BREAKING)** (#52709): the `qwen-portal-auth` OAuth flow for `portal.qwen.ai` has been removed. `src/commands/auth-choice.apply.qwen-portal.ts` is deleted. Users must migrate to Model Studio via `openclaw onboard --auth-choice modelstudio-api-key`. Qwen models remain available through the `modelstudio` plugin. <!-- v2026.3.28 -->
+
+- **MiniMax — model catalog trimmed to M2.7 only**: the MiniMax bundled plugin (`extensions/minimax/`) now exposes only `MiniMax-M2.7` and `MiniMax-M2.7-highspeed`. Legacy model IDs `M2`, `M2.1`, `M2.5`, and `VL-01` are removed from `provider-models.ts` and the plugin manifest. The default model ID is `MiniMax-M2.7`. <!-- v2026.3.28 -->
+
+### Podman/Container <!-- v2026.3.28 -->
+
+- **Podman setup simplified around current rootless user**: `scripts/podman/setup.sh` runs as the current (non-root) user and keeps the container rootless; the script description header now explicitly states this. The launch helper script (`scripts/run-openclaw-podman.sh`) is installed at the project root for local container workflows. Host-CLI `openclaw --container <name> ...` forwarding routes CLI commands into the named running container without requiring `ssh` (implemented via `src/cli/container-target.ts`). <!-- v2026.3.28 -->

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
+> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1261,3 +1261,63 @@ When event fires:
 - **`/tools` shows currently usable tools with "Available Right Now" section** — The `/tools` command now displays an "Available Right Now" section listing tools that are currently usable in the active session context.
 
 ---
+
+## v2026.3.28 Delta Notes
+
+<!-- v2026.3.28 -->
+
+### Memory / Plugins — Flush Plan Moved to `memory-core` Plugin Contract
+
+- **`extensions/memory-core/src/flush-plan.ts`** now owns the pre-compaction memory flush plan: prompt text, system prompt, soft-threshold tokens, append-only guards, target path policy (`memory/YYYY-MM-DD.md`), and the `buildMemoryFlushPlan()` factory.
+- The plugin registers its resolver with core via `api.registerMemoryFlushPlan(buildMemoryFlushPlan)` in `extensions/memory-core/index.ts`. Core resolves the active flush plan by calling `getMemoryFlushPlanResolver()` from `src/plugins/memory-state.ts` at runtime rather than executing hardcoded logic.
+- `MemoryFlushPlanResolver` (`src/plugins/memory-state.ts`) is the plugin contract type: `(params: { cfg, nowMs }) => MemoryFlushPlan | null`. `registerMemoryFlushPlanResolver()` stores the active resolver on `memoryPluginState.flushPlanResolver`.
+- Operators and third-party memory plugins can now replace flush prompt and target-path policy by implementing this contract and calling `registerMemoryFlushPlan` at registration time.
+
+### Memory Flush — Append-Only During Embedded Attempts (PR #53725)
+
+- `flush-plan.ts` enforces append-only semantics for daily flush files: `MEMORY_FLUSH_APPEND_ONLY_HINT` is included in both `DEFAULT_MEMORY_FLUSH_PROMPT` and `DEFAULT_MEMORY_FLUSH_SYSTEM_PROMPT`, instructing the model to append new content to `memory/YYYY-MM-DD.md` if the file already exists, never overwrite.
+- This prevents compaction writes from clobbering earlier notes written in the same session day, ensuring all flush entries accumulate rather than the last one winning.
+- `ensureMemoryFlushSafetyHints()` enforces these hints on any custom prompt/system-prompt supplied via config, keeping the append-only guarantee even for operator-customized flush turns.
+
+### Agents / Compaction — Post-Compaction AGENTS Refresh on Preflight Compaction (PR #49479)
+
+- **`src/auto-reply/reply/agent-runner-memory.ts`**: after a preflight (stale-usage budget-triggered) compaction completes, `appendPostCompactionRefreshPrompt()` reads critical sections from the workspace `AGENTS.md` via `readPostCompactionContext()` and injects them into the follow-up run's `extraSystemPrompt`.
+- This preserves the post-compaction AGENTS refresh that was previously only applied to on-demand compactions, ensuring the agent re-reads session startup, daily memory paths, and red-line instructions even when compaction was triggered by the stale-usage preflight path.
+- `readPostCompactionContext()` lives in `src/auto-reply/reply/post-compaction-context.ts` and substitutes `YYYY-MM-DD` placeholders with the real date so agents load the correct daily memory file after compaction.
+
+### Agents / Compaction — Benign `/compact` No-Ops Labeled "skipped" Not "failed" (PR #51072)
+
+- **`src/auto-reply/reply/commands-compact.ts`**: the compaction label displayed to the user is now `"Compaction skipped"` when `isCompactionSkipReason(result.reason)` is true (context already small enough or manual `/compact` was a no-op), instead of `"Compaction failed"`. `"Compaction failed"` is reserved for genuine errors only.
+- Condition: `result.ok || isCompactionSkipReason(result.reason)` then `compacted ? "Compacted ..." : "Compaction skipped"`, otherwise `"Compaction failed"`.
+- Compaction safeguard cancel reasons are surfaced via `cancelReason` on `CompactionSafeguardRuntime` (`src/agents/pi-hooks/compaction-safeguard-runtime.ts`): `setCancelReason()` stores a human-readable reason; `consumeCancelReason()` pops it for inclusion in user-facing output.
+
+### Agents / Embedded Replies — Mid-Turn 429 and Overload Failures Surfaced (PR #50930)
+
+- **`src/agents/pi-embedded-runner/run.ts`**: when a mid-turn 429/overload triggers an internal `pi-agent-core` retry, `waitForRetry()` can resolve prematurely before tool execution completes, producing an empty payload. The runner now detects this: if `payloads.length === 0` and `stopReason === "toolUse"` or `"error"` (and no deterministic approval prompt, no yield, no suppressed tool error), it surfaces an explicit error message to the user instead of silently discarding the reply.
+- For runs where mutating tools executed before the interrupt, the error warns that tool actions may have already taken effect.
+- The failing auth profile is marked for cooldown so multi-profile setups rotate away from the exhausted credential on the next turn.
+- Successful media-only replies and approval-prompt turns with `stopReason=toolUse` are excluded and continue to pass through correctly.
+
+### Agents / Errors — Provider Quota/Reset Details Surfaced; HTML/Cloudflare Filtered (PR #54512)
+
+- **`src/agents/pi-embedded-helpers/errors.ts`**: `extractProviderRateLimitMessage()` checks whether a rate-limit error body contains actionable details (`RATE_LIMIT_SPECIFIC_HINT_RE`: reset times, plan names, quota info) and, if so, surfaces the provider's own message instead of the generic "API rate limit reached" fallback.
+- HTML/Cloudflare error pages are explicitly excluded via `isCloudflareOrHtmlErrorPage()`, keeping these on the generic fallback even when the page text incidentally matches the pattern.
+- Very long blobs (>300 chars) and raw JSON are also excluded, preventing unreadable provider payloads from leaking to end users.
+
+### ACP / Channels — Current-Conversation ACP Binds for Discord, BlueBubbles, and iMessage
+
+- **`src/auto-reply/reply/commands-acp/lifecycle.ts`**: `/acp spawn <codex> --bind here` now resolves a `placement: "current"` binding when issued inside an active conversation on supported channels, without creating a child thread.
+- Channel binding capability registrations in **`src/channels/plugins/contracts/registry.ts`** confirm `"current"` placement support: `bluebubbles` (`placements: ["current"]`), `discord` (`placements: ["current", "child"]`), and `imessage` (`placements: ["current"]`). The generic current-conversation binding store lives in `src/infra/outbound/current-conversation-bindings.ts`.
+- When `capabilities.placements` does not include `"current"` for the active channel, a clear error is returned: `Conversation bindings do not support current placement for ${channel}`.
+
+### Plugins / Runtime — `runHeartbeatOnce` in Plugin Runtime `system` Namespace (PR #40299)
+
+- **`src/plugins/runtime/runtime-system.ts`**: `createRuntimeSystem()` now includes `runHeartbeatOnce` in the `PluginRuntime["system"]` namespace, wrapping `runHeartbeatOnceInternal` from `src/infra/heartbeat-runner.ts`.
+- The plugin-safe wrapper accepts `RunHeartbeatOnceOptions` (`{ reason, agentId, sessionKey, heartbeat }`) and explicitly restricts to the plugin-visible subset — `cfg` and internal `deps` injection are blocked at the plugin boundary.
+- The `heartbeat` override allows callers to force delivery to a specific target (e.g., `{ target: "last" }`) for single-cycle heartbeat runs triggered from plugin code.
+- Type contract in **`src/plugins/runtime/types-core.ts`**: `PluginRuntimeSystemCore.runHeartbeatOnce: (opts?: RunHeartbeatOnceOptions) => Promise<HeartbeatRunResult>`.
+
+### Config / Doctor — Automatic Migrations Older Than Two Months Dropped
+
+- The `openclaw doctor` config migration pipeline no longer applies automatic migrations whose introduction dates are more than two months old. This keeps the migration backlog bounded and prevents ancient migration paths from interfering with current config repair flows.
+- Operators whose configs have not been touched in a long time should run `openclaw doctor --fix` promptly after upgrading to v2026.3.28 to ensure any remaining in-window migrations are applied before they age out.

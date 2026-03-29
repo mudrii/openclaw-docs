@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-26 | **Version:** v2026.3.24 | **Codebase:** OpenClaw release tag `v2026.3.24`
+**Updated:** 2026-03-29 | **Version:** v2026.3.28 | **Codebase:** OpenClaw release tag `v2026.3.28`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** release-tag snapshot across 14 modules: 501 tracked support-module files plus 353 Swift files in `apps/macos`
 
@@ -1095,3 +1095,39 @@ Shared test utilities and mock factories.
 - **Embedded transport error classification improvements:** embedded transport error classification is improved to better distinguish transient from permanent errors, reducing false-positive cooldown escalation.
 
 - **`src/process/supervisor/` new subsystem:** a new process supervisor subsystem has been added under `src/process/supervisor/`, providing structured process lifecycle management for child processes.
+
+---
+
+## v2026.3.28 Delta Notes <!-- v2026.3.28 -->
+
+### Auto-Reply <!-- v2026.3.28 -->
+
+- **Suppress JSON-wrapped `NO_REPLY` control envelopes before channel delivery** (PR #56612) — `src/auto-reply/tokens.ts` adds `isSilentReplyEnvelopeText()` which uses a strict single-key detector to recognize JSON objects of the form `{"action":"NO_REPLY"}` as silent control envelopes and suppress them before they reach any channel. Only exact single-key envelopes with `action` equal to the silent token are matched; objects with extra keys are passed through unchanged. `isSilentReplyPayloadText()` now delegates to both `isSilentReplyText()` and `isSilentReplyEnvelopeText()`. When the text is only a silent envelope but the payload carries media, the media is preserved and an empty text is used instead.
+
+### CLI/Update Status <!-- v2026.3.28 -->
+
+- **Explicit "up to date" when local version matches npm latest** (#51409) — `src/commands/status.update.ts` `formatUpdateOneLiner()` now explicitly appends `"up to date"` to the update summary line when the local version matches npm latest (comparison result `=== 0`) and the install kind is not `"git"`. Previously no affirmative confirmation was printed in the already-current state; the install is now labeled clearly as up to date alongside the matching npm version.
+
+### Daemon/Linux <!-- v2026.3.28 -->
+
+- **Stop flagging non-gateway systemd services as duplicate gateways** (PR #45328) — `src/daemon/inspect.ts` `detectMarkerLineWithGateway()` only flags a systemd unit file as a duplicate gateway when a line in that file contains both the word `"gateway"` AND one of the known OpenClaw marker strings (`openclaw`, `clawdbot`, `moltbot`). Unit files that mention an OpenClaw marker elsewhere but lack any gateway reference line are no longer surfaced as duplicate gateway warnings in `openclaw doctor` output or diagnostic logs.
+
+### MCP/Channels Bridge <!-- v2026.3.28 -->
+
+- **Gateway-backed channel MCP bridge** — `src/mcp/` adds a new `OpenClawChannelBridge` class (`channel-bridge.ts`) backed by a `GatewayClient` connection, exposing conversation tools to Codex/Claude-facing MCP consumers as a new support surface. Tools registered via `channel-tools.ts` include `conversations_list`, `conversation_get`, `messages_read`, `attachments_fetch`, and send/wait primitives. `channel-server.ts` (`createOpenClawChannelMcpServer()`, `serveOpenClawChannelMcp()`) wires the bridge to a stdio `StdioServerTransport` with safe lifecycle handling for SIGINT/SIGTERM, stdin end/close, and transport `onclose` events — preventing ghost connections on reconnects and ensuring routed session discovery is cleaned up on shutdown.
+
+### BlueBubbles/Groups <!-- v2026.3.28 -->
+
+- **Optionally enrich unnamed participants with local macOS Contacts names** — `extensions/bluebubbles/src/participant-contact-names.ts` adds `enrichBlueBubblesParticipantsWithContactNames()`, which queries the local macOS Contacts SQLite databases (across multiple database paths under `~/Library/Application Support/AddressBook/`) to resolve display names for participants whose `name` field is blank. Lookups are cached with a 1-hour positive TTL and 5-minute negative TTL. Name enrichment only runs after group gating passes, so unnamed participant lists in group context can show resolved contact names rather than only raw phone numbers. The feature is macOS-only and the enrichment is opt-in.
+
+### Agents/Errors <!-- v2026.3.28 -->
+
+- **Surface provider quota/reset details when available** (PR #54512) — `src/agents/pi-embedded-helpers.ts` `formatAssistantErrorText()` now extracts and surfaces provider-specific quota exhaustion messages (including reset-time hints) when the error body is non-HTML plain text. HTML responses (e.g. Cloudflare or CDN rate-limit pages) continue to fall back to the generic `"API rate limit reached. Please try again later."` copy rather than leaking raw HTML to users.
+
+- **Distinguish common network failures from true timeouts** (PR #51419) — `src/agents/failover-error.ts` `resolveFailoverReasonFromError()` maps `ECONNREFUSED`, `ENOTFOUND`, `ECONNRESET`, `EPIPE`, and related POSIX network codes to the `"timeout"` failover reason, producing the user-facing message `"LLM request failed: connection refused by the provider endpoint."` (or equivalent) for connection-refused and DNS-lookup failures rather than a generic timeout message. This improves lifecycle diagnostic clarity — `embedded_run_agent_end` events distinguish common network unreachability from true per-request timeout exhaustion.
+
+### Feishu <!-- v2026.3.28 -->
+
+- **Close WebSocket connections on monitor stop/abort** (#52844) — `extensions/feishu/src/monitor.transport.ts` `monitorWebSocket()` calls `wsClient.close()` inside its `cleanup()` function when the abort signal fires or the monitor is stopped, then removes the client from the `wsClients` map. `monitor.state.ts` `stopFeishuMonitorState()` also calls `closeWsClient()` on the stored client for a given account ID before deleting it. This prevents ghost WebSocket connections and eliminates duplicate event processing from stale open sockets after monitor stop/restart.
+
+- **Use original message `create_time` instead of `Date.now()` for inbound timestamps** (#52809) — `extensions/feishu/src/bot.ts` `handleFeishuMessage()` now parses `event.message.create_time` (a millisecond epoch string) into `messageCreateTimeMs` early in message handling, falling back to `Date.now()` only when the field is absent. All downstream consumers (pending history entries, inbound payload construction, envelope timestamps) use this original authoring timestamp instead of the delivery/processing time, ensuring Feishu message timestamps reflect when the message was authored rather than when OpenClaw received it.

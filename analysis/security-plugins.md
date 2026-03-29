@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
+> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -791,7 +791,6 @@ Documentation generation (only test files found).
 | `copilot-proxy/` | Copilot Proxy provider |
 | `google-gemini-cli-auth/` | Gemini CLI OAuth provider |
 | `minimax-portal-auth/` | MiniMax Portal OAuth provider |
-| `qwen-portal-auth/` | Qwen Portal OAuth provider |
 
 ### Tool/Feature Plugins
 
@@ -1027,3 +1026,46 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 ### Hooks — `before_dispatch`
 
 - **New `before_dispatch` hook added to plugin hooks** — `src/plugins/types.ts` (lines 1705-1731) defines the `before_dispatch` plugin hook. First handler returning `handled: true` wins; the reply routes through the final-delivery path. This enables plugins to intercept messages before they reach the agent runtime.
+
+---
+
+## v2026.3.28 Delta Notes
+
+### Plugin Hooks — `requireApproval` in `before_tool_call` (PR #55339)
+
+- **`requireApproval` field added to `PluginHookBeforeToolCallResult`** — `src/plugins/types.ts` defines a new optional `requireApproval` object on the `before_tool_call` hook result. When a plugin returns `requireApproval`, the hook runner pauses tool execution and surfaces an approval prompt before the tool call proceeds.
+- **`requireApproval` shape** — The object carries `title` (string), `description` (string), optional `severity` (`"info" | "warning" | "critical"`), optional `timeoutMs` (default 120 000 ms), optional `timeoutBehavior` (`"allow" | "deny"`), and an optional async `onResolution` callback that receives the final `PluginApprovalResolution` outcome (`"approved"`, `"denied"`, `"timed_out"`, or `"cancelled"`). The `pluginId` field is set automatically by the hook runner; plugins must not set it.
+- **First-plugin-wins merge semantics** — The hook runner (`src/plugins/hooks.ts`) accumulates `requireApproval` from the first plugin that sets it; subsequent plugins cannot override it. Params are frozen after `requireApproval` is set so lower-priority plugins cannot modify the tool parameters. A lower-priority plugin can still set `block: true` even after `requireApproval` is already set.
+- **Approval surfaces** — The approval request is dispatched via the gateway `plugin.approval.request` / `plugin.approval.waitDecision` RPC pair (`src/agents/pi-tools.before-tool-call.ts`). Approval can be resolved through the exec-approval overlay in connected clients, Telegram buttons (requires `isTelegramExplicitApprover`), Discord interactions (requires `isDiscordExecApprovalApprover`), or the `/approve` text command.
+- **`/approve` command unified handling** — `src/auto-reply/reply/commands-approve.ts` detects `plugin:`-prefixed approval IDs and routes them directly to `plugin.approval.resolve`, bypassing exec-approval client checks. Unprefixed IDs try `exec.approval.resolve` first and automatically fall back to `plugin.approval.resolve` when the exec approval is not found, so the same `/approve <id> allow-once|allow-always|deny` syntax handles both exec and plugin approvals.
+
+### Plugin SDK — `moduleUrl` Threading Fix for External Plugins (PR #54283)
+
+- **`moduleUrl` threaded through plugin-sdk alias resolution** — `src/plugins/sdk-alias.ts` now accepts and propagates an optional `moduleUrl` hint through all alias-resolution helpers (`resolvePluginSdkAliasMap`, `resolvePluginSdkScopedAliasMap`, etc.). When `loader.ts` loads a plugin that lives outside the OpenClaw install directory (e.g., `~/.openclaw/extensions/`), it passes its own `import.meta.url` as the `moduleUrl` hint so the alias resolver can locate the correct `openclaw/plugin-sdk/*` subpath CJS shims even when argv-based root detection cannot find the OpenClaw root.
+- **`plugin-sdk:check-exports` gated in `release:check`** — The `pnpm plugin-sdk:check-exports` script (which validates exported Plugin SDK subpaths) is now included in the `release:check` script (`package.json`) so drift between declared subpath exports and the actual SDK surface is caught before releases.
+
+### Plugin SDK — Context Engine `assemble()` Retry for Pre-Prompt Engines (PR #50848)
+
+- **Strict legacy `assemble()` retry without `prompt` field** — The context engine wrapper (`src/context-engine/`) now retries `assemble()` calls without the new `prompt` field when an older engine throws an "Unrecognized key(s)" error on receiving `prompt`. This preserves prompt-aware retrieval compatibility for plugins that registered a context engine before the `prompt` parameter was introduced, while still passing `prompt` to engines that support it. The first-retry result memoizes legacy mode for subsequent calls on the same engine instance.
+
+### Plugin Startup — Auto-Load Bundled Provider and CLI-Backend Plugins
+
+- **Bundled provider and CLI-backend plugins auto-loaded from explicit config refs** — The plugin loader now auto-loads bundled provider plugins and CLI-backend plugins when they appear in explicit config references, even when `plugins.allow` is not set. This ensures configured provider integrations (e.g., `acp.dispatch.backend = "acpx"`) activate the correct bundled plugin at startup without requiring a separate explicit `plugins.allow` entry.
+
+### Security — Web Search Key Audit Extended (PR #56540)
+
+- **New credential providers recognized in web search key audit** — `src/security/audit-extra.sync.ts` delegates web search credential detection to `hasBundledWebSearchCredential()` in `src/plugins/bundled-web-search-registry.ts`, which iterates all registered bundled web search providers. As of v2026.3.28, this includes Gemini (`GEMINI_API_KEY` / `GOOGLE_API_KEY` via the `google` extension), Grok/xAI (`XAI_API_KEY` via the `xai` extension), Kimi/Moonshot (`KIMI_API_KEY` / `KIMICODE_API_KEY` / `MOONSHOT_API_KEY` via the `moonshot` extension), and OpenRouter (`OPENROUTER_API_KEY` via the `openrouter` extension). The registry shim resolves credentials through the bundled web search provider registry, so the audit recognizes all keys that would auto-activate web search, not just the previously hard-coded set.
+
+### Security — LINE Timing-Safe HMAC (PR #55663)
+
+- **Timing-safe HMAC validation even when signature length mismatches** — `extensions/line/src/signature.ts` pads both the computed HMAC and the supplied signature to the same length before calling `crypto.timingSafeEqual()`, then gates acceptance on `hashBuffer.length === signatureBuffer.length`. This ensures `timingSafeEqual` is always called (no early return on length mismatch) so the comparison is constant-time regardless of whether the supplied signature has the wrong length, preventing timing side-channels in LINE webhook validation.
+
+### ACP/ACPX — Agent Mirror Alignment and Unknown Agent ID Hardening (PR #28321)
+
+- **Built-in agent mirror aligned with `openclaw/acpx` defaults** — `extensions/acpx/src/runtime-internals/mcp-agent-command.ts` maintains a `ACPX_BUILTIN_AGENT_COMMANDS` map that mirrors the built-in agent registry of the `acpx` CLI. The map uses pinned, exact-version `npx` invocations (e.g., `npx -y pi-acp@0.0.22`, `npx -y @zed-industries/codex-acp@0.9.5`) to ensure the bundled ACPX plugin and the external `acpx` binary agree on which agent commands are used for each well-known agent ID.
+- **Unknown ACP agent IDs no longer fall through to raw `--agent` execution on MCP-proxy path** — `resolveAcpxAgentCommand()` returns `null` for agent IDs not found in either the user config overrides or the built-in map. The MCP-proxy dispatch path in `extensions/acpx/src/runtime.ts` treats a `null` result as an unresolvable agent and surfaces an error rather than passing the raw unknown agent ID as a `--agent` command argument, closing a bypass where an unrecognized agent ID could be forwarded as an arbitrary CLI argument.
+
+### Breaking Changes (Security-Relevant)
+
+- **Providers/Qwen: `qwen-portal-auth` OAuth integration removed** — The `qwen-portal-auth` bundled extension has been removed from the extensions directory. Users relying on Qwen Portal OAuth authentication should migrate to direct API key auth. The extension no longer appears in `openclaw plugins list`.
+- **Config/Doctor: old migration keys fail validation** — Legacy config migration paths have been dropped. Config keys that previously triggered migrations now fail validation. Run `openclaw doctor` to identify affected config and follow the output guidance to update to current key paths.

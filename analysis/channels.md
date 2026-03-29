@@ -1,8 +1,8 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-26 | Version: v2026.3.24 | Codebase: OpenClaw release tag `v2026.3.24`
-> Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, plus shared `src/channels` and `src/routing`
+> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
+> Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, and Matrix live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, and adjacent core modules.
 
@@ -1468,3 +1468,85 @@ Changes in the current released line are recorded inline above under each channe
 ### Feishu (Lark)
 
 - **WebSocket**: connection cleanup on monitor stop.
+
+---
+
+## v2026.3.28 Delta Notes
+
+### Telegram
+
+- **Forum topic routing for /new and /reset** (#56654): The `/new` and `/reset` native commands now preserve the active forum topic (`message_thread_id`) when creating or resetting sessions. Previously these commands dropped the thread ID, causing subsequent bot replies to land in the General topic instead of the originating topic. Verified in `extensions/telegram/src/bot-handlers.runtime.ts`.
+
+- **HTML-length search for long message splits** (#56595): Long outbound message splitting now measures chunk boundaries against verified HTML byte-length rather than a proportional plain-text estimate. The splitter uses `measureRendered: (html) => html.length` in `extensions/telegram/src/format.ts` so split points are validated against the actual serialized HTML, preventing oversized chunks from triggering Telegram 400 errors on messages with heavy markup.
+
+- **Skip whitespace-only and hook-blanked text replies** (#56620): `deliverReplies()` in `extensions/telegram/src/bot/delivery.replies.ts` now drops text payloads that are whitespace-only or were blanked out by a delivery hook before calling Telegram. This prevents `GrammyError 400` errors caused by attempting to send empty or whitespace-only messages.
+
+- **Shared `replyToMessageId` normalizer at all four API sinks** (#56587): A shared `readTelegramReplyToMessageId()` helper in `extensions/telegram/src/action-runtime.ts` is now used at all four outbound action sinks (send, edit, forward, and the draft-stream path). This ensures consistent numeric validation and coercion of `replyToMessageId` across all send paths.
+
+- **Verbose tool summaries in forum topic sessions** (#43236): Verbose tool-result summaries are now routed correctly to the active forum topic session. The topic thread ID is carried through the tool-result delivery path so verbose output lands inside the correct topic thread rather than the General topic.
+
+- **Ignore self-authored DM message updates** (#54530): Inbound DM message updates authored by the bot itself (e.g. bot-pinned cards, service messages) are now silently ignored rather than triggering a bogus pairing challenge. Verified by the test `"ignores private self-authored message updates instead of issuing a pairing challenge"` in `extensions/telegram/src/bot.create-telegram-bot.test.ts`.
+
+### WhatsApp
+
+- **Fix infinite echo loop in self-chat DM mode** (#54570): `extensions/whatsapp/src/inbound/monitor.ts` now tracks recently sent outbound message IDs via `isRecentOutboundMessage()` and drops `fromMe` echoes that match a recent outbound ID for the same `remoteJid`. This prevents the bot's own replies from being re-processed as new inbound user messages in self-chat DM mode.
+
+- **Specific allowFrom policy error for valid blocked targets**: `extensions/whatsapp/src/resolve-outbound-target.ts` now surfaces a targeted error message when a normalized outbound target is valid but blocked by the configured `allowFrom` policy: `Target "${target}" is not listed in the configured WhatsApp allowFrom policy.` The normalized form of the target (not the raw input) is included in the message.
+
+### Discord
+
+- **Drain stale gateway sockets before forced fresh reconnects** (#54697): `extensions/discord/src/monitor/provider.lifecycle.reconnect.ts` introduces `disconnectGatewaySocketWithoutAutoReconnect()`, which strips the existing socket's `close`/`error` listeners and waits up to `DISCORD_GATEWAY_DISCONNECT_DRAIN_TIMEOUT_MS` (5 s) for a clean close before reconnecting. If the socket does not close in time, `socket.terminate()` is called; if terminate fails or the socket still refuses to close after a further 1 s, the reconnect fails closed rather than opening a parallel socket. `clearResumeState()` wipes `sessionId`, `resumeGatewayUrl`, and `sequence` from cached gateway state before fresh reconnects so Carbon does not attempt a RESUME on the new connection.
+
+### Matrix
+
+- **Encrypt thumbnails in E2EE rooms using `thumbnail_file`** (#54711): `extensions/matrix/src/matrix/send/media.ts` now sets `imageInfo.thumbnail_file` (the encrypted file descriptor) instead of `thumbnail_url` when the room is encrypted, ensuring thumbnail content is encrypted end-to-end in E2EE rooms. Unencrypted rooms continue to use `thumbnail_url`.
+
+- **Load crypto-nodejs via `createRequire` to fix `__dirname` in ESM** (#54566): `extensions/matrix/src/matrix/sdk/crypto-node.runtime.ts` loads `@matrix-org/matrix-sdk-crypto-nodejs` with `const require = createRequire(import.meta.url)`, giving the CJS package access to `__dirname`. The bundled runtime test (`crypto-node.runtime.test.ts`) verifies the output contains `createRequire(import.meta.url)` and a `require(...)` call rather than a static ESM import.
+
+- **TTS auto-replies as native Matrix voice bubbles** (#37080): Auto-TTS replies are now sent with `"org.matrix.msc3245.voice": {}` in the event content (`extensions/matrix/src/matrix/send/media.ts`), rendering them as native voice bubbles in Matrix clients that support MSC3245 instead of generic audio attachments.
+
+### LINE
+
+- **Timing-safe HMAC signature validation** (#55663): `extensions/line/src/signature.ts` now calls `crypto.timingSafeEqual()` unconditionally — padding both the computed hash and the provided signature to the same length before comparison. This closes the timing side-channel that previously allowed signature length to leak through early-exit comparison.
+
+- **`collectStatusIssues` uses configured field instead of raw token** (#45701): `extensions/line/src/status.ts` now wires `collectLineStatusIssues` through `createDependentCredentialStatusIssueCollector` with `dependencySourceKey: "tokenSource"`. Status issue collection reads the resolved `tokenSource` field from the account snapshot rather than probing the raw token, aligning LINE with the shared status-issue pattern used by other channels.
+
+- **Webhook mode carried into health monitor snapshots** (#47488): `resolveAccountSnapshot` in `extensions/line/src/status.ts` now includes `extra: { tokenSource: account.tokenSource, mode: "webhook" }` in every snapshot. The `mode` field makes the LINE connection mode visible in health monitor output.
+
+### Microsoft Teams
+
+- **Accept strict Bot Framework and Entra service tokens** (#56631): `extensions/msteams/src/sdk.ts` validates inbound JWT tokens against both the Bot Framework validator and an Entra `JwtValidator`. Both validators are tried in sequence; a token is accepted if either passes.
+
+- **Accept `welcomeCard`, `groupWelcomeCard`, `promptStarters`, and `feedbackReflection` keys in strict config validation** (#54679): `extensions/msteams/src/monitor-handler.ts` reads `msteamsCfg.welcomeCard`, `msteamsCfg.groupWelcomeCard`, `msteamsCfg.promptStarters`, and `msteamsCfg.feedbackReflection` from the resolved account config. These keys are now recognized in runtime config resolution and no longer trigger unknown-key warnings under strict validation.
+
+- **Preserve Entra JWT fallback on legacy validator errors**: When the Bot Framework JWT validator encounters an error (e.g. a legacy token format), the Entra validator path is still attempted before the request is rejected, preserving Entra-issued token acceptance.
+
+### BlueBubbles
+
+- **Guard debounce flush against null message text** (#56573): `extensions/bluebubbles/src/monitor-debounce.ts` now guards the debounce flush path against null or undefined message text, preventing flush failures when a message arrives with no text body.
+
+- **Restore inbound prompt image refs for CLI-routed turns; reapply embedded runner image size guardrails** (#51373): Inbound prompt image references are restored for turns routed via the CLI path. Embedded runner image size guardrails are re-applied after the restore to prevent oversized payloads from reaching the inference loop.
+
+- **Optional contacts enrichment with local macOS Contacts names after group gating** : `extensions/bluebubbles/src/monitor-processing.ts` calls `enrichBlueBubblesParticipantsWithContactNames()` after mention/group gating passes. Unnamed phone-number participants in group conversations are enriched with display names from the local macOS Contacts database. Gating is checked before the Contacts lookup so the lookup does not run for messages that will be dropped. Controlled by `config.enrichContactNames` (default `true`) in `extensions/bluebubbles/src/types.ts`.
+
+- **ACP current-conversation bind**: Discord, BlueBubbles, and iMessage now support `/acp spawn codex --bind here` to bind the current conversation to a new ACP session. The BlueBubbles bind is implemented via `createBlueBubblesConversationBindingManager()` in `extensions/bluebubbles/src/conversation-bindings.ts` and wired into `extensions/bluebubbles/src/channel.ts`.
+
+### iMessage
+
+- **Stop leaking inline `[[reply_to:...]]` tags into delivered text** (#39512): `extensions/imessage/src/channel.outbound.test.ts` confirms that inline `[[reply_to:...]]` tags are stripped from outbound text and the `replyToId` is passed as the `reply_to` RPC metadata parameter instead. Stray `[[reply_to:...]]` tags without a matching `replyToId` option are also stripped.
+
+- **ACP current-conversation bind**: iMessage now supports `/acp spawn codex --bind here` via `createIMessageConversationBindingManager()` in `extensions/imessage/src/conversation-bindings.ts`, wired into `extensions/imessage/src/channel.ts`.
+
+### Slack
+
+- **New explicit `upload-file` action routing file uploads through Slack upload transport**: `extensions/slack/src/message-action-dispatch.ts` maps the `upload-file` action name to the internal `uploadFile` handler. `extensions/slack/src/message-actions.ts` registers `"upload-file"` in the actions set alongside `"read"`, `"edit"`, `"delete"`, and `"download-file"`. The handler in `extensions/slack/src/action-runtime.ts` routes through `sendSlackMessage` with upload metadata (`uploadFileName`, `uploadTitle`).
+
+### ACP / Channels
+
+- **ACP current-conversation bind for Discord, BlueBubbles, and iMessage**: All three channels now expose `/acp spawn codex --bind here` to bind the active conversation to a new ACP session. The Discord implementation is tested end-to-end in `extensions/discord/src/monitor/acp-bind-here.integration.test.ts`; BlueBubbles and iMessage are implemented via dedicated `conversation-bindings.ts` modules in each extension.
+
+### Feishu
+
+- **Close WebSocket connections on monitor stop/abort** (#52844): `extensions/feishu/src/monitor.cleanup.test.ts` verifies that the WebSocket client is closed when the monitor aborts, when targeted stop cleanup runs, and during global stop cleanup. The monitor correctly tears down all open WebSocket connections on shutdown.
+
+- **Use original message `create_time` instead of `Date.now()` for inbound timestamps** (#52809): `extensions/feishu/src/bot.ts` now parses `event.message.create_time` early in the inbound handler and uses it as the authoritative timestamp for the session and inbound payload. `Date.now()` is used only as a fallback when `create_time` is absent. This ensures pending-history entries, inbound payloads, and downstream consumers all use the original authoring timestamp.

@@ -8,7 +8,7 @@
 
 ## Project Structure & Module Organization
 
-- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web channel in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`). Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity).
+- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web channel in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`, MCP bridge in `src/mcp/`). Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity). v2026.3.28+: `src/mcp/` (channel-server, channel-bridge, channel-tools — gateway-backed MCP bridge for Codex/Claude channel tool access).
 - Tests: colocated `*.test.ts`.
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
@@ -141,12 +141,22 @@
 
 ## Security & Configuration Tips
 
+- **`requireApproval` in `before_tool_call` hooks (v2026.3.28+):** plugins can now gate tool execution via an async `requireApproval` contract. Approval requests route through exec overlay, Telegram, Discord, and the `/approve` command.
+- **LINE timing-safe HMAC (v2026.3.28+):** LINE webhook signature verification uses constant-time comparison. Do not roll custom HMAC comparison for LINE — use the shared `security/secret-equal.ts` helper.
+- **Extended web search key audit (v2026.3.28+):** `openclaw security audit` now covers Gemini, xAI, Kimi, Moonshot, and OpenRouter API key exposure, in addition to existing providers. Run after any provider config change.
 - **`gateway.auth.mode` is now required** when both `gateway.auth.token` and `gateway.auth.password` are configured. Omitting it causes a startup error (introduced v2026.3.7). Run `openclaw doctor --fix` to auto-migrate.
 - Web provider stores creds at `~/.openclaw/credentials/`; rerun `openclaw channels login --channel web` if logged out.
 - Pi sessions live under `~/.openclaw/sessions/` by default; the base directory is not configurable.
 - Environment variables: see `~/.profile`. Container runtime: set `OPENCLAW_CONTAINER` or use CLI `--container` flag for Docker/Podman container commands.
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
+
+## v2026.3.28 Breaking Changes
+
+- **Qwen:** `qwen-portal-auth` plugin removed. Migrate to `openclaw onboard --auth-choice modelstudio-api-key` (Model Studio API key flow).
+- **Config/Doctor:** migrations older than 2 months are dropped; old keys that required those migrations now fail validation. Run `openclaw doctor --fix` before upgrading if configs have not been migrated recently.
+- **`--claude-cli-logs` deprecated:** use `--cli-backend-logs` instead. The old flag will be removed in a future release.
+- **MiniMax catalog reduced to M2.7 only:** M2, M2.1, M2.5, and VL-01 are no longer available. Update any agent or model configs that reference these model IDs.
 
 ## GHSA (Repo Advisory) Patch/Publish
 

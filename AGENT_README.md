@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.3.24-1 (2026-03-27).** Latest published upstream release: v2026.3.24 (published 2026-03-26).
+> **Current docs version: v2026.3.28-1 (2026-03-29).** Latest published upstream release: v2026.3.28 (published 2026-03-29).
 
 ---
 
@@ -63,7 +63,17 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, etc.); `src/channels/`, `src/routing/`, and `src/web/` remain the shared/core channel surfaces. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.3.24 additions (current release line):**
+**v2026.3.28 additions (current release line):**
+
+- **Gateway MCP Bridge** (`src/mcp/`): channel-server, channel-bridge, channel-tools. If you change `src/mcp/`, test Codex/Claude channel tool discovery and stdio lifecycle. Impact: `gateway/`, `plugins/`, any MCP client.
+- **Plugin `requireApproval`** in `before_tool_call` hooks: async approval gate routing through exec overlay, Telegram, Discord, and `/approve`. If you change plugin hook `before_tool_call`, test `requireApproval` approval flow across exec overlay, Telegram, and Discord.
+- **xAI plugin surface on Responses API:** `x_search` and `code_execution` are now plugin-owned; auto-enable from config. xAI provider now depends on Responses API transport.
+- **CLI backend plugin surface:** Claude CLI, Codex CLI, and Gemini CLI inference on plugin architecture. If you change gateway startup, verify bundled plugin auto-load (`withBundledPluginAllowlistCompat`).
+- **MiniMax `image-01`** generation provider in `extensions/minimax/`; catalog trimmed to M2.7 only.
+- **Memory plugin flush plan contract:** `memory-core` owns flush prompts via `MemoryFlushPlanResolver`. If you change memory QMD chunking, test CJK and surrogate-pair handling.
+- **Config/TTS auto-migration:** stale keys auto-migrated on startup. If you change `config/legacy-migrate.ts`, verify migrations older than 2 months are dropped.
+
+**v2026.3.24 additions (historical):**
 
 - **Gateway OpenAI compat:** `/v1/models`, `/v1/embeddings` endpoints, model override forwarding through `/v1/chat/completions` and `/v1/responses`
 - **Microsoft Teams:** official Teams SDK migration with streaming 1:1 replies, welcome cards, prompt starters, feedback/reflection, typing indicators, native AI labeling (PR #51808). Message edit and delete support (PR #49925).
@@ -301,6 +311,10 @@ gateway/server-plugins.ts
 | `logging/subsystem.ts`           | Every module that creates loggers                                                                                                              |
 | Any `index.ts` barrel            | All consumers of that module's exports                                                                                                         |
 | `context-engine/registry.ts` or `context-engine/types.ts` | All plugins implementing `ContextEnginePlugin`, compaction behavior, subagent spawn/end hooks |
+| Plugin hook `before_tool_call` | `requireApproval` approval flow across exec overlay, Telegram, Discord; verify `/approve` command routing |
+| Gateway startup / plugin allowlist | Bundled plugin auto-load (`withBundledPluginAllowlistCompat`); verify Claude CLI, Codex CLI, Gemini CLI extensions load correctly |
+| Memory QMD chunking | CJK boundary handling and surrogate-pair splitting; slugified path resolution for non-ASCII file names |
+| `src/mcp/` (channel-server, channel-bridge, channel-tools) | Codex/Claude channel tool discovery; stdio lifecycle; test with a live MCP client connected to gateway |
 
 ### Cross-Module Side Effects (Non-Obvious)
 
@@ -431,6 +445,17 @@ Conditional checks:
 pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
+
+### Release-window Workflow Additions (v2026.3.28)
+
+- **Qwen portal auth removed:** `qwen-portal-auth` is gone. Use `openclaw onboard --auth-choice modelstudio-api-key` for new Qwen setups. Existing configs with `qwen-portal-auth` will fail validation — run `openclaw doctor --fix` to migrate.
+- **Config/Doctor migration window dropped:** migrations older than 2 months are no longer applied. Old config keys that required those migrations will fail validation. Audit configs and run `openclaw doctor --fix` before upgrading if you have not migrated recently.
+- **`--claude-cli-logs` deprecated:** renamed to `--cli-backend-logs`. Update any scripts or runbooks that reference the old flag.
+- **MiniMax catalog reduced:** only M2.7 is available. Configs referencing M2, M2.1, M2.5, or VL-01 must be updated to `minimax/m2.7`.
+- **`src/mcp/` is a new module:** gateway-backed channel MCP bridge. When touching gateway startup, verify MCP channel-server and channel-tools initialize correctly. `withBundledPluginAllowlistCompat` controls bundled plugin auto-load.
+- **Plugin `requireApproval`:** the `before_tool_call` hook contract now supports async approval. Any plugin that implements `before_tool_call` should be reviewed against the new approval contract interface to avoid silent incompatibility.
+- **xAI on Responses API:** xAI provider now uses the Responses API exclusively. If your config uses `x_search` or `code_execution` as standalone tools, these are now plugin-owned and require the xAI plugin to be enabled (auto-enabled from config in v2026.3.28).
+- **`apply_patch` enabled by default for OpenAI/Codex:** review exec allowlists if you were explicitly blocking `apply_patch` for these model paths.
 
 ### Release-window Workflow Additions (v2026.3.13)
 
@@ -682,6 +707,8 @@ src/<module>/
 - **Breaking Changes (v2026.2.22):** #59, #60, #61, #62, #63
 - **Breaking Changes (v2026.3.1):** #92, #93
 - **Breaking Changes (v2026.3.7):** #106
+- **Breaking Changes (v2026.3.28):** #107, #108, #109, #110
+- **Operational Notes (v2026.3.28):** #111, #112, #113
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
 - **Feishu:** #101
 
@@ -969,6 +996,26 @@ src/<module>/
 **BREAKING CHANGES (v2026.3.7):**
 
 106. **`gateway.auth.mode` is now required when both token and password are configured** — If `gateway.auth.token` and `gateway.auth.password` are both set, `gateway.auth.mode` must be explicitly declared (`"token"` or `"password"`). Omitting `gateway.auth.mode` in this configuration causes a startup validation error (introduced v2026.3.7). Run `openclaw doctor --fix` to detect and auto-migrate. Configs with only one auth method configured are unaffected.
+
+### v2026.3.28 Specific
+
+**BREAKING CHANGES (v2026.3.28):**
+
+107. **Qwen portal auth is gone — use Model Studio** — `qwen-portal-auth` plugin and associated OAuth flow are removed. Configs that used `qwen-portal-auth` will fail validation at startup. Migrate: run `openclaw onboard --auth-choice modelstudio-api-key` and remove any `qwen-portal-auth` plugin entry from your config.
+
+108. **Doctor no longer auto-migrates configs older than 2 months** — migrations with a cutoff date older than 2 months from the current release are dropped. Config keys requiring those migrations will fail Zod validation. Run `openclaw doctor --fix` before upgrading if you haven't migrated recently; do not assume silent backward compat.
+
+109. **`--claude-cli-logs` flag removed** — replaced by `--cli-backend-logs`. Any scripts, runbooks, or CI configs referencing `--claude-cli-logs` must be updated; the old flag is no longer recognized.
+
+110. **MiniMax: only M2.7 model available** — M2, M2.1, M2.5, and VL-01 have been removed from the MiniMax catalog. Configs or agent definitions referencing these model IDs will fail model resolution. Update to `minimax/m2.7`.
+
+**OPERATIONAL NOTES (v2026.3.28):**
+
+111. **`src/mcp/` is a new gateway-backed module** — channel-server, channel-bridge, and channel-tools are the three components. If MCP client connections are failing, check that gateway startup completes before the MCP stdio listener is attached. The channel-tools surface is registered via the bundled plugin allowlist (`withBundledPluginAllowlistCompat`).
+
+112. **xAI Responses API migration** — xAI/Grok provider now uses the Responses API exclusively. `x_search` and `code_execution` are plugin-owned tools (auto-enabled from config). If you have custom tool-policy rules that reference xAI tools by name, verify they still apply under the plugin-owned surface. The xAI plugin is auto-enabled when an xAI auth profile is configured.
+
+113. **LINE timing-safe HMAC** — LINE webhook signature verification uses `crypto.timingSafeEqual`. Do not replace the comparison with string equality in any fork/patch; timing-oracle attacks against byte-length leakage are a real threat on HMAC verification.
 
 ---
 
