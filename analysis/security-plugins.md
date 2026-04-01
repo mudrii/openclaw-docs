@@ -671,7 +671,7 @@ Build-time utility scripts (test-only files found).
 
 ---
 
-## 15. `src/web/` — Web/WhatsApp Layer
+## 15. `extensions/whatsapp/` — WhatsApp Layer
 
 ### Purpose
 WhatsApp Web integration via Baileys — session management, message monitoring, media handling, auto-reply orchestration, QR login, outbound messaging.
