@@ -1,15 +1,15 @@
-# OpenClaw Codebase Analysis: Security, Web & Browser Cluster
+# OpenClaw Codebase Analysis: Security, Web Search, WhatsApp & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28` | Modules: security, web, browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
 ## Table of Contents
 
 1. [src/security](#1-srcsecurity)
-2. [src/web](#2-srcweb)
-3. [src/browser](#3-srcbrowser)
+2. [extensions/whatsapp](#2-extensionswhatsapp)
+3. [extensions/browser](#3-extensionsbrowser)
 4. [src/canvas-host](#4-srccanvas-host)
 5. [src/plugins](#5-srcplugins)
 6. [src/plugin-sdk](#6-srcplugin-sdk)
@@ -275,10 +275,10 @@ Central security audit, remediation, and content-safety module. Provides compreh
 
 ---
 
-## 2. src/web
+## 2. extensions/whatsapp
 
 ### Module Overview
-WhatsApp Web integration module using `@whiskeysockets/baileys`. Handles WhatsApp authentication, session management, inbound message monitoring, outbound message sending, auto-reply orchestration, heartbeat scheduling, media handling, and group policy enforcement. Entry points: `loginWeb()`, `monitorWebInbox()`, `monitorWebChannel()`, `sendMessageWhatsApp()`.
+WhatsApp integration module using `@whiskeysockets/baileys`. On the current stable line this runtime lives under `extensions/whatsapp/`, while top-level `src/web-search/` separately covers bundled web-search runtime selection. This section focuses on the released WhatsApp channel runtime: authentication, session management, inbound message monitoring, outbound message sending, auto-reply orchestration, heartbeat scheduling, media handling, and group policy enforcement. Entry points: `loginWeb()`, `monitorWebInbox()`, `monitorWebChannel()`, `sendMessageWhatsApp()`.
 
 #### v2026.2.15 Changes
 - **Disallow workspace-\* roots without explicit localRoots** — image tool now requires explicit `localRoots` config to access workspace-prefixed directories (`src/agents/tools/image-tool.ts`)
@@ -435,7 +435,7 @@ WhatsApp Web integration module using `@whiskeysockets/baileys`. Handles WhatsAp
 
 ---
 
-## 3. src/browser
+## 3. extensions/browser
 
 ### Module Overview
 Browser automation module providing a local HTTP control server for Playwright and Chrome DevTools Protocol (CDP) based browser control. Supports multiple browser profiles, Chrome extension relay, screenshots, DOM/ARIA snapshots, page interactions, storage management, and AI-assisted browser actions. Entry points: `startBrowserControlServerFromConfig()`, `browserStatus()`, `browserAct()`.
@@ -1262,3 +1262,15 @@ The following entries are added to the Security Model section for `src/browser`:
 ### Docs/FAQ — Xfinity SSL Cross-Links Removed (#56500)
 
 - **Broken Xfinity SSL troubleshooting cross-links removed** — The English FAQ (`docs/help/faq.md`) and zh-CN FAQ (`docs/zh-CN/help/faq.md`) entries for Comcast/Xfinity Advanced Security blocking `docs.openclaw.ai` previously contained cross-links to the troubleshooting page. Those cross-links have been removed as they were broken. The FAQ entries themselves (describing the Xfinity block and the `spa.xfinity.com/check_url_status` reporting URL) remain in place.
+
+## v2026.3.31 Delta Notes
+
+### Gateway / Web Security
+
+- **`trusted-proxy` is a stricter released deployment mode:** local-direct fallback now requires the configured token, and browser-origin `Origin` enforcement is part of the stable gateway/web trust model.
+- **HTTP tool invocation is tighter on the stable line:** gateway-side auth checks for tool invoke paths are narrower and more explicit than the earlier release window.
+
+### Browser / Media
+
+- **Current browser runtime lives under `extensions/browser/`:** stable browser attach/session/server behavior should be read from the bundled browser extension tree, not a historical top-level browser module.
+- **Cross-origin media redirects no longer forward auth or cookies:** media-save flows now keep credentials on same-origin chains only.

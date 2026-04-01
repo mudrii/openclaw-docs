@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-29 | **Version:** v2026.3.28
-**Codebase:** OpenClaw release tag `v2026.3.28`
+**Updated:** 2026-04-01 | **Version:** v2026.3.31
+**Codebase:** OpenClaw release tag `v2026.3.31`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -920,3 +920,15 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 ### Config / Validation Fixes
 - **`tools.web.fetch.maxResponseBytes` accepted (#53401)**: `src/config/zod-schema.agent-runtime.ts` now includes `maxResponseBytes: z.number().int().positive().optional()` under the `tools.web.fetch` schema, so this previously rejected key passes strict validation. Source: `src/config/types.tools.ts` also declares `maxResponseBytes?: number` on the fetch tool config type.
 - **`buttons` schema kept optional in merged tool definitions (#54418)**: the shared `buttons` schema field in merged tool definitions is now optional, so plain `action=send` calls no longer fail validation when no buttons are provided.
+
+## v2026.3.31 Delta Notes
+
+### Gateway Auth / Node Trust
+
+- **`trusted-proxy` is stricter on the stable line:** mixed shared-token configs are rejected, local-direct fallback requires the configured token, and browser-origin `Origin` checks are part of the released trust boundary.
+- **Node commands are approval-gated:** pairing alone no longer exposes declared node commands, and node-originated runs stay on a reduced trusted surface even after approval.
+
+### Gateway / MCP / Runtime Isolation
+
+- **HTTP tool-invoke and plugin-auth routing are tighter:** stable `v2026.3.31` narrows plugin route runtime scopes and keeps HTTP invoke authorization closer to the effective runtime boundary.
+- **Remote MCP transports are stable behavior:** gateway/infrastructure assumptions now need to account for remote HTTP/SSE servers plus `streamable-http`, not only local stdio workers.

@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.3.28-1 (2026-03-29).** Latest published upstream release: v2026.3.28 (published 2026-03-29).
+> **Current docs version: v2026.3.31-1 (2026-04-01).** Latest published upstream release: v2026.3.31 (published 2026-03-31 UTC).
 
 ---
 
@@ -61,9 +61,18 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 | 7     | `cli/`        | `config/`, `commands/`, `infra/`, `agents/`, `plugins/`                         | Package entry point                        | 🟡          |
 | 7     | `commands/`   | `config/`, `cli/`, `infra/`, `agents/`, `channels/`, `daemon/`                  | `cli/`                                     | 🟡          |
 
-Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, etc.); `src/channels/`, `src/routing/`, and `src/web/` remain the shared/core channel surfaces. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
+Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.3.28 additions (current release line):**
+**v2026.3.31 additions (current release line):**
+
+- **Background task control plane:** the released line now uses `src/tasks/` as the shared SQLite-backed registry for ACP, subagents, cron, and detached CLI execution. If you touch task ownership, status, cleanup, or delivery, test both attached and detached flows.
+- **`openclaw tasks` on the stable line:** operator-visible task control is now part of the released CLI surface. Changes in status/session reporting should be checked against `/status`, `openclaw tasks list`, `openclaw tasks show`, and detached-run delivery.
+- **QQ Bot + expanded channel surface:** bundled QQ Bot is now part of the released tree, alongside stable-line updates for LINE outbound media + ACP binding, Matrix history/proxy/streaming/thread replies, Slack native exec approvals, Teams member-info, and WhatsApp reactions.
+- **MCP remote transports:** `mcp.servers` now supports remote HTTP/SSE endpoints plus `streamable-http`, and bundled MCP tools use provider-safe names. If you touch MCP configs or tool registration, test both local stdio and remote transport paths.
+- **Current browser/runtime layout:** browser automation is no longer a top-level `src/browser/` module on the released line. Inspect `extensions/browser/src/browser/*` and `extensions/browser/src/config/*` for current attach/session/runtime behavior.
+- **Gateway trust hardening:** `trusted-proxy`, node pairing approval, node command gating, plugin-auth route scoping, and HTTP tool invoke auth all changed on this release line. Gateway/auth edits need explicit trust-boundary regression coverage.
+
+**v2026.3.28 additions (historical):**
 
 - **Gateway MCP Bridge** (`src/mcp/`): channel-server, channel-bridge, channel-tools. If you change `src/mcp/`, test Codex/Claude channel tool discovery and stdio lifecycle. Impact: `gateway/`, `plugins/`, any MCP client.
 - **Plugin `requireApproval`** in `before_tool_call` hooks: async approval gate routing through exec overlay, Telegram, Discord, and `/approve`. If you change plugin hook `before_tool_call`, test `requireApproval` approval flow across exec overlay, Telegram, and Discord.
@@ -446,11 +455,19 @@ pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
 
+### Release-window Workflow Additions (v2026.3.31)
+
+- **Task surfaces must be tested together:** validate `openclaw tasks list|show|cancel`, `/status`, detached cron/subagent runs, and task cleanup/recovery as one released surface.
+- **Node trust changed materially:** if you change node pairing, node commands, or node-originated exec flows, verify approval gating and reduced-trust behavior explicitly.
+- **Remote MCP configs are now first-class:** test `mcp.servers` with URL-based transports, auth headers, and timeouts; do not assume stdio-only behavior.
+- **Current browser code lives under `extensions/browser/`:** when auditing or changing browser automation, read the extension runtime instead of relying on historical `src/browser/` references.
+- **Install security is now fail-closed:** plugin/skill installation workflows must cover scanner failures and the documented dangerous override path.
+
 ### Release-window Workflow Additions (v2026.3.28)
 
 - **Qwen portal auth removed:** `qwen-portal-auth` is gone. Use `openclaw onboard --auth-choice modelstudio-api-key` for new Qwen setups. Existing configs with `qwen-portal-auth` will fail validation — run `openclaw doctor --fix` to migrate.
 - **Config/Doctor migration window dropped:** migrations older than 2 months are no longer applied. Old config keys that required those migrations will fail validation. Audit configs and run `openclaw doctor --fix` before upgrading if you have not migrated recently.
-- **`--claude-cli-logs` deprecated:** renamed to `--cli-backend-logs`. Update any scripts or runbooks that reference the old flag.
+- **`--claude-cli-logs` deprecated:** renamed to `--cli-backend-logs`, but retained as a compatibility alias on the released line. Update scripts and runbooks anyway.
 - **MiniMax catalog reduced:** only M2.7 is available. Configs referencing M2, M2.1, M2.5, or VL-01 must be updated to `minimax/m2.7`.
 - **`src/mcp/` is a new module:** gateway-backed channel MCP bridge. When touching gateway startup, verify MCP channel-server and channel-tools initialize correctly. `withBundledPluginAllowlistCompat` controls bundled plugin auto-load.
 - **Plugin `requireApproval`:** the `before_tool_call` hook contract now supports async approval. Any plugin that implements `before_tool_call` should be reviewed against the new approval contract interface to avoid silent incompatibility.
@@ -997,6 +1014,24 @@ src/<module>/
 
 106. **`gateway.auth.mode` is now required when both token and password are configured** — If `gateway.auth.token` and `gateway.auth.password` are both set, `gateway.auth.mode` must be explicitly declared (`"token"` or `"password"`). Omitting `gateway.auth.mode` in this configuration causes a startup validation error (introduced v2026.3.7). Run `openclaw doctor --fix` to detect and auto-migrate. Configs with only one auth method configured are unaffected.
 
+### v2026.3.31 Specific
+
+**BREAKING CHANGES (v2026.3.31):**
+
+114. **`nodes run` wrapper removed** — current released node shell execution goes through `exec host=node` and `nodes invoke`. If a runbook still references `nodes run`, update it before release validation.
+
+115. **Plugin/skill installs now fail closed on critical scan findings** — treat security scanner failures as blocking unless the operator explicitly chooses `--dangerously-force-unsafe-install`.
+
+116. **`trusted-proxy` mixed-token configs are invalid** — configs that combine incompatible shared-token paths now fail validation, and local-direct fallback requires the configured token.
+
+117. **Node commands need pairing approval** — device pairing alone is no longer enough to expose declared node commands or broader node trust.
+
+118. **Current browser runtime is extension-owned** — inspect `extensions/browser/src/browser/config.ts`, `extensions/browser/src/browser/chrome-mcp.ts`, `extensions/browser/src/browser/profile-capabilities.ts`, and `extensions/browser/src/browser/server-context.availability.ts` for released attach/runtime behavior.
+
+119. **Task state is now first-class runtime data** — status, recovery, and detached-delivery investigations should read `src/tasks/*` in addition to the old cron/ACP/subagent paths.
+
+120. **Remote MCP transports are part of the stable surface** — `mcp.servers` URL configs, auth headers, and provider-safe tool naming now matter for correctness reviews.
+
 ### v2026.3.28 Specific
 
 **BREAKING CHANGES (v2026.3.28):**
@@ -1005,7 +1040,7 @@ src/<module>/
 
 108. **Doctor no longer auto-migrates configs older than 2 months** — migrations with a cutoff date older than 2 months from the current release are dropped. Config keys requiring those migrations will fail Zod validation. Run `openclaw doctor --fix` before upgrading if you haven't migrated recently; do not assume silent backward compat.
 
-109. **`--claude-cli-logs` flag removed** — replaced by `--cli-backend-logs`. Any scripts, runbooks, or CI configs referencing `--claude-cli-logs` must be updated; the old flag is no longer recognized.
+109. **`--claude-cli-logs` flag deprecated** — replaced by `--cli-backend-logs`. Any scripts, runbooks, or CI configs referencing `--claude-cli-logs` should be updated; the old flag still exists as a compatibility alias on the released line.
 
 110. **MiniMax: only M2.7 model available** — M2, M2.1, M2.5, and VL-01 have been removed from the MiniMax catalog. Configs or agent definitions referencing these model IDs will fail model resolution. Update to `minimax/m2.7`.
 
@@ -1189,7 +1224,8 @@ Core built-in channels (leaf modules, 🟢 risk):
 ```
 extensions/telegram/   extensions/discord/   extensions/slack/      extensions/signal/
 extensions/imessage/   extensions/whatsapp/  extensions/feishu/     extensions/matrix/
-src/channels/          src/routing/          src/web/               src/line/
+extensions/qqbot/      extensions/browser/   src/channels/          src/routing/
+src/line/              src/tasks/            src/web-search/
 ```
 
 Additional source modules beyond §1's map:

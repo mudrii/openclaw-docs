@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1321,3 +1321,16 @@ When event fires:
 
 - The `openclaw doctor` config migration pipeline no longer applies automatic migrations whose introduction dates are more than two months old. This keeps the migration backlog bounded and prevents ancient migration paths from interfering with current config repair flows.
 - Operators whose configs have not been touched in a long time should run `openclaw doctor --fix` promptly after upgrading to v2026.3.28 to ensure any remaining in-window migrations are applied before they age out.
+
+## v2026.3.31 Delta Notes
+
+### Background Tasks / Task Flows
+
+- **Shared task registry now anchors detached work:** the stable line moves ACP, subagent, cron, and detached CLI lifecycle state onto `src/tasks/`, giving agent work a durable SQLite-backed control plane instead of ACP-only bookkeeping.
+- **Task flow ownership matters to delivery:** one-task flow linkage and parent-owner routing mean detached work now returns through the intended requester/session path more reliably; agent-side regressions need attached and detached coverage.
+
+### Agents / Runtime
+
+- **Embedded Pi runs gain native Codex web search:** stable `v2026.3.31` includes Codex-native web search support for embedded Pi runs, plus matching runtime/config integration.
+- **Idle stream timeout is now configurable:** stalled embedded model streams can abort cleanly instead of waiting for the broader run timeout, which changes how long-running agent failures surface.
+- **OpenAI Responses verbosity is forwarded:** `text.verbosity` now travels across Responses transports and status surfaces, so runtime and docs should treat verbosity as a released config/runtime behavior.

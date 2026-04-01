@@ -8,7 +8,7 @@
 
 ## Project Structure & Module Organization
 
-- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web channel in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`, MCP bridge in `src/mcp/`). Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity). v2026.3.28+: `src/mcp/` (channel-server, channel-bridge, channel-tools — gateway-backed MCP bridge for Codex/Claude channel tool access).
+- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, shared web channel pieces in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`, MCP bridge in `src/mcp/`, released task control plane in `src/tasks/`, and released web search runtime in `src/web-search/`). Browser automation for the current stable line lives in `extensions/browser/`. Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity). v2026.3.28+: `src/mcp/` (channel-server, channel-bridge, channel-tools — gateway-backed MCP bridge for Codex/Claude channel tool access).
 - Tests: colocated `*.test.ts`.
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
@@ -151,7 +151,15 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
-## v2026.3.28 Breaking Changes
+## v2026.3.31 Breaking Changes
+
+- **`nodes run` shell wrapper removed:** released node shell execution now goes through `exec host=node` and the `nodes invoke` surface. Do not document or reintroduce the old duplicated wrapper path.
+- **Plugin/skill install scans fail closed:** dangerous-code `critical` findings and install-time scan failures now block installs by default. The only documented override is `--dangerously-force-unsafe-install`.
+- **`trusted-proxy` auth tightened:** mixed shared-token configs are rejected, and local-direct fallback now requires the configured token instead of implicitly trusting same-host callers.
+- **Node trust reduced:** declared node commands stay disabled until pairing approval, and node-originated runs stay on the reduced trusted surface even after pairing.
+- **Plugin SDK compat shims deprecated:** current released guidance remains `openclaw/plugin-sdk/*`; older provider-compat and channel-runtime shims should be treated as migration-only.
+
+## v2026.3.28 Breaking Changes (Historical)
 
 - **Qwen:** `qwen-portal-auth` plugin removed. Migrate to `openclaw onboard --auth-choice modelstudio-api-key` (Model Studio API key flow).
 - **Config/Doctor:** migrations older than 2 months are dropped; old keys that required those migrations now fail validation. Run `openclaw doctor --fix` before upgrading if configs have not been migrated recently.
@@ -255,7 +263,7 @@
   - skip if package is missing on npm or version already matches.
 - Keep `openclaw` untouched: never run publish from repo root unless explicitly requested.
 - Post-check for each release:
-  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.3.13`)
+  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.3.31`)
   - core guard: `npm view openclaw version --userconfig "$(mktemp)"` should stay at previous version unless explicitly requested.
 
 ## Changelog Release Notes

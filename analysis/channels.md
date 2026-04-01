@@ -1,10 +1,10 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
-> **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, and Matrix live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, and adjacent core modules.
+> **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
 
 > **v2026.2.22 Breaking:** Unified streaming config — most channels now use enum `off | partial | block | progress` in `channels.<channel>.streaming`. Telegram additionally accepts legacy boolean `streaming` and legacy `streamMode` values, mapping them to the enum (`true`→`partial`, `false`→`off`). Run `openclaw doctor --fix` to migrate legacy `streamMode` keys. Slack native streaming moved to `channels.slack.nativeStreaming`.
 
@@ -1550,3 +1550,17 @@ Changes in the current released line are recorded inline above under each channe
 - **Close WebSocket connections on monitor stop/abort** (#52844): `extensions/feishu/src/monitor.cleanup.test.ts` verifies that the WebSocket client is closed when the monitor aborts, when targeted stop cleanup runs, and during global stop cleanup. The monitor correctly tears down all open WebSocket connections on shutdown.
 
 - **Use original message `create_time` instead of `Date.now()` for inbound timestamps** (#52809): `extensions/feishu/src/bot.ts` now parses `event.message.create_time` early in the inbound handler and uses it as the authoritative timestamp for the session and inbound payload. `Date.now()` is used only as a fallback when `create_time` is absent. This ensures pending-history entries, inbound payloads, and downstream consumers all use the original authoring timestamp.
+
+## v2026.3.31 Delta Notes
+
+### New Released Channel Surface
+
+- **QQ Bot is part of the stable bundled channel set:** `extensions/qqbot/` joins the released tree with private chat, group chat, reminder, and media support.
+- **LINE gains broader delivery and ACP coverage:** stable `v2026.3.31` adds LINE outbound image/video/audio sends and current-conversation ACP binding parity.
+
+### Matrix / Slack / Teams / WhatsApp
+
+- **Matrix adds stable room-history and threading controls:** `historyLimit`, proxy support, draft streaming, and per-DM `threadReplies` are all part of the released line.
+- **Slack native exec approvals are released:** approval requests can stay in Slack instead of falling back to the Web UI or terminal.
+- **Microsoft Teams ships `member-info`:** the released Teams action surface includes Graph-backed member lookup.
+- **WhatsApp reactions are documented behavior now:** the stable line allows agents to react with emoji on inbound WhatsApp messages.

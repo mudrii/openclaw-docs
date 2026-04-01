@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
-> Modules: agents (850 files), gateway (360 files), sessions (15 files), routing (11 files), hooks (48 files), context-engine (6 files)
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
+> Modules: agents (1,070 files), gateway (438 files), sessions (15 files), routing (11 files), hooks (51 files), context-engine (7 files)
 
 ---
 
@@ -1454,3 +1454,16 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 ### Hooks — `before_dispatch` Hook
 
 - **New `before_dispatch` hook in `src/plugins/types.ts` (lines 1705-1731)** — A new plugin hook that fires before message dispatch. First handler returning `handled: true` wins; the reply routes through the final-delivery path. Enables plugins to intercept and handle messages before they reach the agent runtime.
+
+## v2026.3.31 Delta Notes
+
+### Core Runtime / Gateway
+
+- **Detached work is now a core runtime concern:** `src/tasks/` becomes part of the stable control plane for ACP, subagents, cron, and CLI runs, which changes how gateway, agent runtime, and status surfaces share state.
+- **Gateway and node trust boundaries tightened:** stable `v2026.3.31` requires explicit pairing approval before node commands are enabled and keeps node-originated runs on a reduced trusted surface.
+- **MCP runtime expanded:** bundled MCP tools now materialize with provider-safe names, and remote HTTP/SSE transports are part of the stable gateway/runtime story.
+
+### Agents / Status
+
+- **Native Codex web search is part of released Pi behavior:** embedded Pi runs now support Codex-native web search on the stable line.
+- **Task context is more visible in status/reporting paths:** `/status` and adjacent status surfaces now account for detached task state more accurately.

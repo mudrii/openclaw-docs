@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -147,7 +147,6 @@ The CLI module is the **entry point and command registration layer** for the `op
 | `nodes-cli/a2ui-jsonl.ts` | A2UI JSONL protocol support |
 | `nodes-camera.ts` | Camera command implementation |
 | `nodes-canvas.ts` | Canvas command implementation |
-| `nodes-run.ts` | Nodes run command implementation |
 | `nodes-screen.ts` | Screen recording implementation |
 | `node-cli.ts` | Node (single node) CLI entry |
 | `node-cli/register.ts` | Node subcommand registration |
@@ -1909,4 +1908,16 @@ User types: openclaw <command> [args]
 
 ### Podman/Container <!-- v2026.3.28 -->
 
-- **Podman setup simplified around current rootless user**: `scripts/podman/setup.sh` runs as the current (non-root) user and keeps the container rootless; the script description header now explicitly states this. The launch helper script (`scripts/run-openclaw-podman.sh`) is installed at the project root for local container workflows. Host-CLI `openclaw --container <name> ...` forwarding routes CLI commands into the named running container without requiring `ssh` (implemented via `src/cli/container-target.ts`). <!-- v2026.3.28 -->
+- **Podman setup simplified around current rootless user**: `scripts/podman/setup.sh` runs as the current (non-root) user and keeps the container rootless; the release-line helper is installed under `~/.local/bin` for local container workflows. Host-CLI `openclaw --container <name> ...` forwarding routes CLI commands into the named running container without requiring `ssh` (implemented via `src/cli/container-target.ts`). <!-- v2026.3.28 -->
+
+## v2026.3.31 Delta Notes
+
+### CLI / Operator Workflows
+
+- **`openclaw tasks` is now part of the released CLI surface:** `list`, `show`, and `cancel` are stable operator paths for detached work, and task lifecycle docs should be treated as first-class CLI documentation.
+- **Onboarding prompt fallback is safer:** declining a discovered remote gateway resets the CLI wizard back to the safe loopback default instead of reusing the rejected URL.
+
+### Config / Runtime Boundaries
+
+- **Dangerous installs fail closed by default:** plugin installs and gateway-backed skill dependency installs now require an explicit `--dangerously-force-unsafe-install` override when built-in scan results are critical or errored.
+- **`mcp.servers` supports remote HTTP/SSE plus `streamable-http`:** stable MCP configuration is no longer limited to local stdio transport assumptions.

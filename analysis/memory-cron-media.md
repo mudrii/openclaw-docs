@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
 
 ---
 
@@ -1162,3 +1162,14 @@ The helper module `src/utils/cjk-chars.ts` exports `estimateStringChars(text)`, 
 
 - **Configurable trigram tokenizer:** `packages/memory-host-sdk/src/host/memory-schema.ts` now accepts `ftsTokenizer: "trigram"` in addition to the default `"unicode61"`. When `"trigram"` is selected, the FTS5 virtual table is created with `tokenize='trigram case_sensitive 0'`, enabling substring search for CJK text that does not segment on whitespace.
 - **Provider-less keyword hit visibility fix (#56473):** FTS-only keyword hits are now visible at the default memory-search threshold without requiring `--min-score 0`.
+
+## v2026.3.31 Delta Notes
+
+### Memory / QMD
+
+- **Per-agent extra collections are part of the stable line:** `memorySearch.qmd.extraCollections` allows controlled cross-agent transcript search without flattening all transcript history into one namespace.
+- **Stable search quality work continued after `v2026.3.28`:** the released line adds additional QMD/FTS fixes around substring search, embed cadence, path round-tripping, and search-mode embedding behavior.
+
+### Cron / Detached Work
+
+- **Cron work now shares the same durable task ledger as ACP and subagents:** release-line cron documentation should treat task records, audit, and maintenance as part of normal detached-run behavior rather than an ACP-only implementation detail.

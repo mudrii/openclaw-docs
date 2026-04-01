@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
 
 ## Overview
 
@@ -10,7 +10,7 @@
 | src/cli/ | 261 | 38,455 | CLI commands, argument parsing, program construction |
 | src/commands/ | 322 | 59,211 | Command implementations (agent, doctor, onboard, etc.) |
 | src/tui/ | 45 | 7,589 | Terminal UI, interactive chat mode |
-| src/browser/ | 125 | 20,579 | Browser control, CDP, Playwright automation |
+| extensions/browser/ | 239 | 34,208 | Browser control, Chrome MCP attach, CDP/Playwright automation |
 | src/media/ | 34 | 3,962 | Media handling, MIME detection, storage |
 | src/media-understanding/ | 51 | 6,336 | Attachment processing (image/audio/video understanding) |
 | src/link-understanding/ | 6 | 333 | URL/link extraction and processing |
@@ -320,7 +320,7 @@ Interactive terminal chat interface using `@mariozechner/pi-tui`. Provides a ful
 
 ---
 
-## 4. src/browser/ — Browser Control & Automation
+## 4. extensions/browser/ — Browser Control & Automation
 
 ### Purpose
 Full browser automation system. Runs an Express HTTP server for browser control, manages Chrome/Chromium profiles via CDP and Playwright, supports Chrome extension relay for attaching to existing tabs, and provides agent-facing snapshot/action APIs.
@@ -1001,3 +1001,15 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Auto-Reply
 
 - **Suppress JSON-wrapped `{"action":"NO_REPLY"}` control envelopes** — `src/auto-reply/tokens.ts`: `isSilentReplyEnvelopeText()` detects JSON objects that are exactly `{"action":"NO_REPLY"}` (single key, `action` field equals the silent token) and treats them as silent replies. The strict single-key detector ensures that payloads containing both an action envelope and media attachments are not suppressed — only the text part is identified as a silent envelope and swallowed before channel delivery. Issue #56612.
+
+## v2026.3.31 Delta Notes
+
+### Media / Tooling
+
+- **Released node shell guidance changed:** the stable line removes the duplicated `nodes.run` shell wrapper. Shell work against paired nodes now goes through `exec host=node`, while `nodes invoke` remains the dedicated node-capability surface.
+- **Media downloads drop auth on cross-origin redirects:** stable media-save behavior now strips auth and cookie headers when a download redirects to a different origin.
+- **Oversized decoded images fail early:** the released line rejects image bombs before metadata/resize backends run, changing media failure behavior from late memory pressure to early validation.
+
+### Runtime Controls
+
+- **OpenAI Responses `text.verbosity` is a released tool/runtime behavior:** CLI and tooling docs should treat it as part of the stable Responses surface, not a beta-only toggle.

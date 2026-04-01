@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-03-29 | Version: v2026.3.28 | Codebase: OpenClaw release tag `v2026.3.28`
+> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1069,3 +1069,15 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 - **Providers/Qwen: `qwen-portal-auth` OAuth integration removed** — The `qwen-portal-auth` bundled extension has been removed from the extensions directory. Users relying on Qwen Portal OAuth authentication should migrate to direct API key auth. The extension no longer appears in `openclaw plugins list`.
 - **Config/Doctor: old migration keys fail validation** — Legacy config migration paths have been dropped. Config keys that previously triggered migrations now fail validation. Run `openclaw doctor` to identify affected config and follow the output guidance to update to current key paths.
+
+## v2026.3.31 Delta Notes
+
+### Install / Plugin Trust Boundaries
+
+- **Plugin and skill installs now fail closed:** built-in dangerous-code `critical` findings and install-time scan failures block installs by default unless the operator explicitly opts into `--dangerously-force-unsafe-install`.
+- **ACPX plugin-tools bridge is a released explicit trust boundary:** the bundled ACPX bridge is default-off and should be documented as an intentional operator choice, not an implicit plugin capability.
+
+### Security Hardening In The Stable Line
+
+- **Host exec env override blocking expands:** released hardening now blocks more request-scoped env overrides that could redirect Docker endpoints, trust roots, compilers, or language-specific runtime environments.
+- **Nostr inbound DMs verify signatures before side effects:** forged events no longer create pairing requests or reply attempts on the stable line.

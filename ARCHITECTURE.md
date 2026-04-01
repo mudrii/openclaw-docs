@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-03-29 (docs snapshot: v2026.3.28-1) | Released baseline: GitHub `v2026.3.28`
+> Updated: 2026-04-01 (docs snapshot: v2026.3.31-1) | Released baseline: GitHub `v2026.3.31`
 
 ---
 
@@ -28,7 +28,7 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. The `agents` module (the largest at ~720 `.ts` files) contains the AI runtime: model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module (~260 `.ts` files) is the message processing pipeline that sits between channels and agents — handling commands, directives, session management, model routing, queue management, and reply delivery.
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.3.31`), the `agents` module is the largest core subtree at roughly 1,070 `.ts` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 368 `.ts` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery.
 
 The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, and feature extensions are loaded dynamically from an `extensions/` directory. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
@@ -157,12 +157,12 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 
 | Module | Files (src) | Lines (approx) | Purpose | Key Dependencies |
 |--------|-------------|-----------------|---------|------------------|
-| `agents/` | 720 | ~130,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents (nested orchestration with typed `task_completion` events), auth profiles, OpenAI WS transport | config, routing, sessions, hooks, channels, infra, pi-ai |
-| `auto-reply/` | 260 | ~49,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery | agents, config, channels, routing, tts, media-understanding |
-| `gateway/` | 310 | ~66,000+ | HTTP/WS server, RPC methods, protocol schema, cron service, node management, browser control, health probes (`/health`, `/healthz`, `/ready`, `/readyz`) | agents, config, routing, channels, plugins, infra |
-| `config/` | 191 | ~34,000+ | Config loading, Zod schemas, session store, legacy migration, path resolution | channels (types), infra |
-| `infra/` | 297 | ~53,000+ | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates | config, agents, process |
-| `channels/` | 137 | ~17,000+ | Channel plugin abstraction, registry, dock, normalization, outbound adapters | config, plugins |
+| `agents/` | 1,074 | ~235,000+ | AI agent runtime: model selection, tool execution, system prompt, sandbox, skills, subagents, MCP/tool mediation, auth profiles, OpenAI/Responses transports, and task-aware status surfaces | config, routing, sessions, hooks, channels, infra, pi-ai |
+| `auto-reply/` | 373 | ~86,000+ | Message processing pipeline: dispatch, directives, commands, model routing, queue, reply delivery, approval handling, and task/status command paths | agents, config, channels, routing, tts, media-understanding |
+| `gateway/` | 441 | ~115,000+ | HTTP/WS server, RPC methods, protocol schema, cron service, node management, MCP bridge endpoints, task maintenance, health probes (`/health`, `/healthz`, `/ready`, `/readyz`) | agents, config, routing, channels, plugins, infra |
+| `config/` | 285 | ~82,000+ | Config loading, Zod schemas, session store, legacy migration, path resolution, MCP URL transports, and auth policy wiring | channels (types), infra |
+| `infra/` | 571 | ~108,000+ | Utilities: retry, restart, outbound delivery, heartbeat, exec approvals, device pairing, updates, task delivery, and security-bound host execution | config, agents, process |
+| `channels/` | 201 | ~29,000+ | Channel plugin abstraction, registry, dock, normalization, outbound adapters, session binding, and status reactions | config, plugins |
 | `channels/status-reactions.ts` | 2 | ~850 | Shared lifecycle reaction controller for Telegram and Discord status events | channels, config, infra |
 | `extensions/telegram/` | 96 | ~24,000+ | Telegram Bot API via grammY: long-poll/webhook, topics (including per-DM topics with routing/authorization), reactions, streaming | grammY, config, auto-reply, channels |
 | `extensions/discord/` | 120 | ~30,000+ | Discord bot via @buape/carbon: guilds, threads, reactions, presence, admin, Component v2 UI | carbon, config, auto-reply, channels |
@@ -172,17 +172,18 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `extensions/signal/` | 31 | ~5,000+ | Signal via signal-cli REST API (JSON-RPC + SSE) | config, auto-reply, channels |
 | `extensions/line/` | 45 | ~7,800+ | LINE via @line/bot-sdk: Flex Messages, Rich Menus, webhook | @line/bot-sdk, config, auto-reply |
 | `extensions/imessage/` | 22 | ~3,000+ | iMessage via custom `imsg` CLI (JSON-RPC over stdin/stdout) | config, auto-reply, channels |
-| `extensions/whatsapp/` | 4 | ~500+ | WhatsApp target normalization (bulk via src/web/) | utils, infra |
-| `web/` | 80 | ~12,600+ | WhatsApp Web via Baileys: session, QR login, media, auto-reply | @whiskeysockets/baileys, config |
+| `extensions/whatsapp/` | 132 | ~18,000+ | WhatsApp channel runtime via Baileys: session, pairing, media send/receive, replies, reactions, and delivery policy | config, auto-reply, channels |
+| `extensions/qqbot/` | 45 | ~12,000+ | QQ Bot bundled channel plugin: multi-account setup, slash commands, reminders, media send/receive, and released allowlist hardening | config, auto-reply, channels |
+| `web-search/` | 2 | ~500+ | Shared web-search runtime wiring and provider selection for bundled search plugins and Pi/native search flows | agents, config |
 | `memory/` | 84 | ~17,000+ | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
 | `cron/` | 71 | ~14,800+ | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
 | `hooks/` | 38 | ~6,600+ | Event-driven hooks: lifecycle events, Gmail integration, slug generation | config, agents, plugins |
-| `plugins/` | 62 | ~12,000+ | Plugin discovery, loading (jiti), registry, hook runner, HTTP routes, services | config, agents, channels |
-| `plugin-sdk/` | 36 | ~2,400+ | SDK re-exports for plugin authors | channels, config, routing |
+| `plugins/` | 273 | ~63,000+ | Plugin discovery, loading (jiti), registry, hook runner, HTTP routes, services, auth scoping, and bundled runtime ownership seams | config, agents, channels |
+| `plugin-sdk/` | 317 | ~22,000+ | Released SDK surface and runtime helpers for plugin authors; current public path is `openclaw/plugin-sdk/*` | channels, config, routing |
 | `cli/` | 254 | ~35,900+ | CLI entry point (Commander.js), subcommands, argument parsing | commands, config, agents |
 | `commands/` | 304 | ~52,400+ | Command implementations: agent, doctor, onboard, configure, models, status | cli, config, agents, gateway, daemon |
 | `tui/` | 45 | ~7,500+ | Terminal UI (pi-tui): interactive chat, slash commands, streaming | @mariozechner/pi-tui, gateway |
-| `browser/` | 117 | ~19,100+ | Browser automation: Express server, CDP, Playwright, Chrome extension relay | playwright, express, ws |
+| `extensions/browser/` | 239 | ~34,000+ | Current released browser automation runtime: Chrome MCP attach, Playwright flows, session/runtime management, and browser tool surfaces | plugin-sdk, config, agents |
 | `media/` | 30 | ~3,800+ | Media handling: MIME detection, store with TTL, SSRF-safe fetch, image ops | file-type, sharp, express |
 | `media-understanding/` | 51 | ~6,300+ | AI media analysis: audio transcription, image/video description, multi-provider | agents (model-auth), media |
 | `link-understanding/` | 6 | ~300+ | URL extraction and CLI-based content summarization | media-understanding (scope), process |
@@ -1424,7 +1425,30 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ---
 
-## v2026.3.28 Released Changes (2026-03-29 docs snapshot)
+## v2026.3.31 Released Changes (2026-04-01 docs snapshot)
+
+### New Architectural Components
+
+- **Shared background-task control plane** (`src/tasks/`): detached ACP, subagent, cron, and CLI work now share a durable SQLite-backed registry with audit, maintenance, ownership, and status surfaces instead of scattered runtime-only bookkeeping.
+- **Current browser runtime lives in the bundled browser extension**: stable browser automation is implemented under `extensions/browser/src/browser/*` and `extensions/browser/src/config/*`, not a top-level `src/browser/` subtree. This is the released attach/profile/server-context path.
+- **MCP remote transports**: the stable line extends `mcp.servers` from local stdio-only assumptions to remote HTTP/SSE endpoints with optional `streamable-http`, which changes deployment and trust-boundary planning for MCP integrations.
+- **QQ Bot becomes a first-class bundled channel** (`extensions/qqbot/`): the released channel architecture now includes QQ Bot alongside the existing bundled messaging surface.
+
+### Trust Boundary Changes
+
+- **Gateway auth and node trust are stricter**: `trusted-proxy` rejects mixed shared-token configs, local-direct fallback requires the configured token, node commands stay disabled until pairing approval, and node-originated runs remain on a reduced trusted surface.
+- **Plugin and skill installs fail closed by default**: built-in dangerous-code `critical` findings and install-scan failures now block installs unless the operator explicitly uses `--dangerously-force-unsafe-install`.
+- **ACPX plugin-tools bridge is explicit and default-off**: the bundled ACPX MCP bridge is now documented as a deliberate trust-boundary crossing instead of an assumed always-on runtime capability.
+
+### Stats Update (v2026.3.31-1 docs snapshot)
+
+- **8,607 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`; validated against release tag `v2026.3.31`)
+- **1,655,809 lines of TypeScript** (same scope)
+- **91 extension packages** and **65 bundled skills** in the released tree
+
+---
+
+## v2026.3.28 Released Changes (2026-03-29 docs snapshot, historical)
 
 ### New Architectural Components
 

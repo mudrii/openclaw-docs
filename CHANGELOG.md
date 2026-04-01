@@ -6,7 +6,45 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
-## OpenClaw v2026.3.28 — Release Summary
+## OpenClaw v2026.3.31 — Release Summary
+
+> **Released:** 2026-04-01 (docs release) | upstream GitHub release `v2026.3.31` published 2026-03-31 UTC | latest prerelease `v2026.4.1-beta.1` intentionally excluded | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.3.28..v2026.3.31` | **Scan stats:** 2,829 files changed, +139,607 / -53,848 lines
+
+### Breaking
+
+- **Nodes/exec:** remove the duplicated `nodes.run` shell wrapper from the CLI and agent `nodes` tool. Released guidance is now `nodes invoke` plus `exec host=node` for shell work.
+- **Skills/install and Plugins/install:** built-in dangerous-code `critical` findings and install-time scan failures now fail closed by default. Operators must explicitly opt in with `--dangerously-force-unsafe-install` to override.
+- **Gateway/auth:** `trusted-proxy` now rejects mixed shared-token configs, and local-direct fallback requires the configured token instead of implicitly authenticating same-host callers.
+- **Gateway/node trust:** node commands now stay disabled until node pairing is explicitly approved, and node-originated runs stay on a reduced trusted surface.
+- **Plugin SDK:** legacy provider-compat and channel-runtime compatibility shims are now deprecated with migration warnings; the documented public path remains `openclaw/plugin-sdk/*`.
+
+### Features
+
+- **Background tasks:** detached work now runs on a shared SQLite-backed control plane that unifies ACP, subagent, cron, and background CLI execution. The released CLI adds `openclaw tasks list|show|cancel`, and stable-line status/tooling surfaces now expose task state more consistently.
+- **Channels:** bundled QQ Bot support lands on the released line, alongside LINE outbound image/video/audio sends, LINE current-conversation ACP binding, Matrix `historyLimit` / proxy / draft streaming / per-DM `threadReplies`, Slack native exec approvals, Microsoft Teams `member-info`, and WhatsApp reaction guidance.
+- **MCP/ACPX:** `mcp.servers` now supports remote HTTP/SSE endpoints with auth headers and `streamable-http`, bundled MCP tools materialize with provider-safe names, and the ACPX plugin-tools bridge ships as an explicit default-off capability with documented trust boundaries.
+- **Agents/runtime:** embedded Pi runs gain native Codex web search, idle-stream timeout control, and OpenAI Responses `text.verbosity` forwarding. `/status` and related status surfaces now report task context more accurately on the stable line.
+- **Memory/QMD:** per-agent `memorySearch.qmd.extraCollections` allows controlled cross-agent transcript search without flattening the whole transcript space into one namespace.
+- **TTS/ops:** TTS fallback attempts now emit structured diagnostics and analytics, improving release-line observability for speech regressions.
+
+### Security And Operations
+
+- **Gateway hardening:** trusted-proxy browser `Origin` enforcement, immediate device-token session revocation after rotation, read-only plugin-auth runtime scoping, tighter HTTP tool-invoke authorization, and safer WebSocket rate limiting all landed on the stable line.
+- **Exec hardening:** approval persistence, wrapper unwrapping, `safeBins` tightening, env override blocking, and `host=auto` fail-closed behavior materially change the released exec trust model.
+- **Node safety:** node shell/workdir handling now preserves node-local context, and owner-only or elevated node commands stay off unapproved or under-scoped paths.
+
+### Fixes (key ones)
+
+- **Gateway/OpenAI compatibility:** `/v1/responses` now accepts flat Responses API function-tool definitions and preserves strict hosted-tool handling, while `/v1/chat/completions` regains default operator scopes when clients omit `x-openclaw-scopes`.
+- **Onboarding/pairing:** QR bootstrap onboarding for iPhone pairing is repaired so the first node pairing can auto-approve cleanly and issue a reusable device token.
+- **Pi/TUI:** message-boundary replies flush on `message_end`, fixing turns that previously looked stuck after the final response was already ready.
+- **CLI/onboarding:** declining a discovered remote gateway now resets the wizard prompt back to the safe loopback default instead of reusing the rejected URL.
+- **Reliability:** task maintenance, session-status reporting, duplicate status replies, inbound media fetches, and per-channel runtime edge cases all received released-line fixes.
+
+---
+
+## OpenClaw v2026.3.28 — Historical Release Summary
 
 > **Released:** 2026-03-29 (docs release) | upstream GitHub release `v2026.3.28` published 2026-03-29 | **Policy note:** latest *documented* released section stays at top.
 > **Window analyzed:** `v2026.3.24..v2026.3.28` | **Scan stats:** 3806 files changed, +217,667 / -92,006 lines

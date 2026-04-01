@@ -1,9 +1,9 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-03-29 | **Version:** v2026.3.28 | **Codebase:** OpenClaw release tag `v2026.3.28`
+**Updated:** 2026-04-01 | **Version:** v2026.3.31 | **Codebase:** OpenClaw release tag `v2026.3.31`
 **Cluster:** Utilities & Support Modules  
-**Total files analyzed:** release-tag snapshot across 14 modules: 501 tracked support-module files plus 353 Swift files in `apps/macos`
+**Total files analyzed:** stable release-line snapshot across 14 support modules plus `apps/macos`
 
 ---
 
@@ -1131,3 +1131,14 @@ Shared test utilities and mock factories.
 - **Close WebSocket connections on monitor stop/abort** (#52844) — `extensions/feishu/src/monitor.transport.ts` `monitorWebSocket()` calls `wsClient.close()` inside its `cleanup()` function when the abort signal fires or the monitor is stopped, then removes the client from the `wsClients` map. `monitor.state.ts` `stopFeishuMonitorState()` also calls `closeWsClient()` on the stored client for a given account ID before deleting it. This prevents ghost WebSocket connections and eliminates duplicate event processing from stale open sockets after monitor stop/restart.
 
 - **Use original message `create_time` instead of `Date.now()` for inbound timestamps** (#52809) — `extensions/feishu/src/bot.ts` `handleFeishuMessage()` now parses `event.message.create_time` (a millisecond epoch string) into `messageCreateTimeMs` early in message handling, falling back to `Date.now()` only when the field is absent. All downstream consumers (pending history entries, inbound payload construction, envelope timestamps) use this original authoring timestamp instead of the delivery/processing time, ensuring Feishu message timestamps reflect when the message was authored rather than when OpenClaw received it.
+
+## v2026.3.31 Delta Notes
+
+### Support Surfaces
+
+- **Task summaries and maintenance are now foundational support utilities:** the stable line adds durable task-registry support code for status summaries, audit, maintenance, and detached-run cleanup.
+- **TTS diagnostics are materially richer:** fallback attempts now emit structured diagnostics and analytics, which changes how operators and docs should reason about speech regressions.
+
+### Operator Reliability
+
+- **Wizard safety improved on remote-gateway decline:** onboarding support paths now reset back to the safe loopback default after rejecting a discovered remote URL.
