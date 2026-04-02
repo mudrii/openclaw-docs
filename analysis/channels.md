@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
+> Updated: 2026-04-02 | Version: v2026.4.1 | Codebase: OpenClaw release tag `v2026.4.1`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
@@ -1564,3 +1564,34 @@ Changes in the current released line are recorded inline above under each channe
 - **Slack native exec approvals are released:** approval requests can stay in Slack instead of falling back to the Web UI or terminal.
 - **Microsoft Teams ships `member-info`:** the released Teams action surface includes Graph-backed member lookup.
 - **WhatsApp reactions are documented behavior now:** the stable line allows agents to react with emoji on inbound WhatsApp messages.
+
+---
+
+## v2026.4.1 Delta Notes
+
+### Feishu (Lark)
+
+- **Drive comment-event flow** (#58497): Dedicated Drive comment-event flow added with comment-thread context resolution, in-thread replies, and `feishu_drive` comment actions for document collaboration workflows. New files: `comment-dispatcher.ts` (routes comment events to the correct session), `comment-handler.ts` (processes comment content and dispatches to agent), `comment-target.ts` (resolves comment thread context for reply routing), `monitor.comment.ts` (monitors Feishu webhook events for Drive comment activity), `drive.ts` and `drive-schema.ts` (Drive API integration and config schema). This enables agents to participate in Feishu document comment threads as a collaboration channel alongside the existing chat flow.
+
+### QQ Bot
+
+- **Allowlist hardening:** `/bot-logs` export gated behind a truly explicit QQ Bot allowlist, rejecting wildcard and mixed wildcard entries while preserving the real framework command path.
+- **Bundled plugin loading fix:** bundled channel plugins remain loadable from legacy `channels.<id>` config even under restrictive plugin allowlists; `openclaw doctor` warns only on real plugin blockers.
+
+### WhatsApp
+
+- **`reactionLevel` guidance:** agent reaction behavior configurable via `reactionLevel` guidance so agents can react with emoji on incoming messages with appropriate frequency/context.
+- **Inbound message timestamp:** WhatsApp inbound message timestamps now passed to model context so the AI can see when messages were sent.
+
+### Telegram
+
+- **Configurable `errorPolicy` and `errorCooldownMs`:** per-account/chat/topic delivery error suppression controls so repeated errors can be silenced without muting distinct failures.
+- **Topic-aware exec approvals:** forum-topic exec approval followups route through Telegram-owned threading and approval-target parsing, staying in the originating topic instead of falling back to the root chat.
+
+### Slack
+
+- **Exec approval alignment:** native Slack approval handling aligned with inferred approvers and real channel enablement so remote exec stops falling into false approval timeouts.
+
+### Session Routing
+
+- **Provider-specific session grammar moved to plugins:** provider-specific session conversation grammar moved into plugin-owned session-key surfaces, preserving Telegram topic routing and Feishu scoped inheritance across bootstrap, model override, restart, and tool-policy paths.

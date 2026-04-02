@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.3.31-1 (2026-04-01).** Latest published upstream release: v2026.3.31 (published 2026-03-31 UTC).
+> **Current docs version: v2026.4.1-1 (2026-04-02).** Latest published upstream release: v2026.4.1 (published 2026-04-01 UTC).
 
 ---
 
@@ -26,6 +26,7 @@ Use this routing first to avoid scanning the whole file.
 | Plugin/extension development | §2 Plugin Loading → §8 file placement (`extensions/`) → §5 checklist |
 | Configure health probes (Docker/K8s) | §6 config (`gateway`) → §9 gotchas #96 → Gateway probe endpoints (`/health`, `/healthz`, `/ready`, `/readyz`) |
 | Use PDF/diffs tool | §8 file placement (`extensions/`) → §2 Tool Execution → §3 (`agents/pi-tools.ts`) → §5 checklist |
+| Fix task/flow lifecycle | §2 Tool Execution → §3 (`src/tasks/`) → §9 gotchas #119 #126 → §5 checklist |
 | Prepare PR | §4 testing → §5 checklist → §10 PR practices |
 | Debug triage | §11 Debugging Workflow → §9 gotcha index → §2 critical paths |
 
@@ -63,7 +64,18 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.3.31 additions (current release line):**
+**v2026.4.1 additions (current release line):**
+
+- **Chat-native `/tasks` board:** `/tasks` is now a first-class chat command exposing the background task board for the current session with agent-local fallback counts. Changes to task status, task-flow linkage, or `/status` rendering should test `/tasks` output alongside `openclaw tasks list|show|cancel`.
+- **SearXNG web search:** a bundled SearXNG provider plugin is now part of the released `web_search` surface. If you touch `src/web-search/` or web search provider discovery, test SearXNG alongside existing providers (Brave, Perplexity, Pi/Codex native search).
+- **Bedrock Guardrails:** the Amazon Bedrock extension now supports guardrail configuration. If you change Bedrock provider behavior or tool-use payloads, verify guardrail pass-through and rejection flows.
+- **Voice Wake (macOS):** Voice Wake can now trigger Talk Mode. Changes to macOS voice or talk-mode paths should cover the wake-trigger entry point.
+- **Feishu Drive comments:** Feishu now has a dedicated comment-event flow with thread context resolution and `feishu_drive` comment actions. If you touch Feishu inbound processing or plugin actions, test comment events alongside standard message events.
+- **Exec approval persistence hardening:** `allow-always` is now durable trust (not one-shot), shell-wrapper paths reuse exact-command trust, static allowlist entries no longer bypass `ask:"always"`, and Windows builds an explicit approval plan. Slack and Discord have native approval routing. If you change exec approval logic, test persistence across restarts and cross-channel approval flows.
+- **`agents.defaults.params`:** global default provider parameters are now configurable. If you change model selection or provider param injection, verify `agents.defaults.params` merging with per-agent and per-model overrides.
+- **Cron `--tools` allowlist:** per-job tool allowlists via `openclaw cron --tools`. If you change cron job creation/update paths, test tool-filter persistence.
+
+**v2026.3.31 additions (historical):**
 
 - **Background task control plane:** the released line now uses `src/tasks/` as the shared SQLite-backed registry for ACP, subagents, cron, and detached CLI execution. If you touch task ownership, status, cleanup, or delivery, test both attached and detached flows.
 - **`openclaw tasks` on the stable line:** operator-visible task control is now part of the released CLI surface. Changes in status/session reporting should be checked against `/status`, `openclaw tasks list`, `openclaw tasks show`, and detached-run delivery.
@@ -324,6 +336,11 @@ gateway/server-plugins.ts
 | Gateway startup / plugin allowlist | Bundled plugin auto-load (`withBundledPluginAllowlistCompat`); verify Claude CLI, Codex CLI, Gemini CLI extensions load correctly |
 | Memory QMD chunking | CJK boundary handling and surrogate-pair splitting; slugified path resolution for non-ASCII file names |
 | `src/mcp/` (channel-server, channel-bridge, channel-tools) | Codex/Claude channel tool discovery; stdio lifecycle; test with a live MCP client connected to gateway |
+| `src/web-search/` or web search provider plugins | SearXNG, Brave, Perplexity, Pi/Codex native search; verify provider discovery and fallback across all bundled providers |
+| `extensions/amazon-bedrock/` guardrail config | Bedrock Guardrails pass-through and rejection flows; tool-use payloads with guardrail IDs |
+| `src/tasks/` task-flow linkage or status rendering | `/tasks` chat command, `openclaw tasks list\|show\|cancel`, `/status` task cards, detached-run delivery, task-flow blocked/retry state |
+| Exec approval persistence or `exec-approvals.json` | `allow-always` durability across restarts, shell-wrapper exact-command trust, Slack/Discord native approval routing, Windows approval plan generation |
+| `agents.defaults.params` or provider param injection | Global default params merging with per-agent, per-model, and inline directive overrides |
 
 ### Cross-Module Side Effects (Non-Obvious)
 
@@ -454,6 +471,19 @@ Conditional checks:
 pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
+
+### Release-window Workflow Additions (v2026.4.1)
+
+- **`/tasks` is a chat-native surface:** the `/tasks` command now shows a session task board in chat. If you change task status, task-flow linkage, or `/status` rendering, verify `/tasks` output alongside CLI `openclaw tasks list|show|cancel`.
+- **SearXNG is a bundled web search provider:** web search provider discovery must now test SearXNG alongside Brave, Perplexity, and native search. Config key: `webSearch.searxng.host`.
+- **Bedrock Guardrails are first-class:** if you change the Amazon Bedrock provider extension, test with and without guardrail config. Guardrail IDs flow through tool-use payloads.
+- **Exec approval `allow-always` is now durable:** previously behaved like `allow-once`. After this release, `allow-always` persists across restarts. Shell-wrapper paths reuse exact-command trust. Slack and Discord have native approval routing. Static allowlist entries no longer silently bypass `ask:"always"`.
+- **`agents.defaults.params` merges globally:** global default provider params now apply unless overridden per-agent or per-model. Test param precedence when changing model selection or provider param injection.
+- **Cron `--tools` per-job allowlists:** cron jobs can now restrict available tools. Test tool-filter persistence on `openclaw cron add|edit --tools`.
+- **Feishu Drive comment events:** Feishu inbound now includes comment events with thread context. Test alongside standard Feishu message events.
+- **Voice Wake triggers Talk Mode (macOS):** changes to macOS voice or talk-mode code paths should cover the Voice Wake entry point.
+- **Auth failover cap:** rate-limit retries now cap same-provider auth-profile rotations before cross-provider fallback. Config: `auth.cooldowns.rateLimitedProfileRotations`. Test multi-profile setups.
+- **Telegram `errorPolicy`:** configurable error suppression per account/chat/topic. If you change Telegram error delivery, test repeated failure suppression and cooldown reset.
 
 ### Release-window Workflow Additions (v2026.3.31)
 
@@ -630,6 +660,8 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 > **v2026.3.12 additions:** `channels.slack.capabilities.interactiveReplies` (bool) opts into Block Kit interactive replies. `agents.defaults.compaction.postIndexSync` (bool) triggers post-compaction memory sync. `agents.defaults.memorySearch.sync.sessions.postCompactionForce` (bool) forces session reindexing after compaction. Per-model `service_tier` fast-mode config for OpenAI and Anthropic.
 >
 > **v2026.3.13 additions:** `agents.defaults.compaction.customInstructions` (string) — per-agent instructions for compaction to preserve language/style continuity. `OPENCLAW_TZ` environment variable for Docker timezone pinning. `agents.list[].params`, `tools.web.fetch.readability`, `tools.web.fetch.firecrawl`, `channels.signal.groups`, `discovery.wideArea.domain` are now accepted config keys (previously Zod-rejected as unknown).
+>
+> **v2026.4.1 additions:** `agents.defaults.params` (object) — global default provider parameters applied to all model calls unless overridden per-agent or per-model. `gateway.webchat.chatHistoryMaxChars` (number) — configurable chat history text truncation for webchat. `auth.cooldowns.rateLimitedProfileRotations` (number) — cap for same-provider auth-profile retries before cross-provider fallback. `channels.telegram.errorPolicy` (string) and `channels.telegram.errorCooldownMs` (number) — per-account/chat/topic error suppression. `channels.whatsapp.reactionLevel` (string) — agent reaction guidance level. `webSearch.searxng.host` (string) — SearXNG instance host for bundled web search provider.
 
 ### How to Add a New Config Key
 
@@ -725,6 +757,7 @@ src/<module>/
 - **Breaking Changes (v2026.3.1):** #92, #93
 - **Breaking Changes (v2026.3.7):** #106
 - **Breaking Changes (v2026.3.28):** #107, #108, #109, #110
+- **Behavioral Shifts (v2026.4.1):** #121, #122, #123, #124, #125, #126, #127, #128
 - **Operational Notes (v2026.3.28):** #111, #112, #113
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
 - **Feishu:** #101
@@ -1031,6 +1064,26 @@ src/<module>/
 119. **Task state is now first-class runtime data** — status, recovery, and detached-delivery investigations should read `src/tasks/*` in addition to the old cron/ACP/subagent paths.
 
 120. **Remote MCP transports are part of the stable surface** — `mcp.servers` URL configs, auth headers, and provider-safe tool naming now matter for correctness reviews.
+
+### v2026.4.1 Specific
+
+**BEHAVIORAL SHIFTS (v2026.4.1):**
+
+121. **Exec `allow-always` is now durable trust** — previously `allow-always` behaved as `allow-once` and was not persisted across restarts. After v2026.4.1, `allow-always` writes durable user-approved trust to `exec-approvals.json`. Shell-wrapper paths that cannot safely persist an executable allowlist entry reuse exact-command trust instead. Static allowlist entries no longer silently bypass `ask:"always"` policy. If your setup relied on `allow-always` being ephemeral, review persisted approvals after upgrade.
+
+122. **Slack and Discord native exec approval routing** — exec approval prompts can now stay in Slack or Discord instead of falling back to Web UI or terminal. Approvers are inferred from existing owner config when `execApprovals.approvers` is unset, and the default approval window is extended to 30 minutes. If you have custom approval routing, verify it still takes precedence.
+
+123. **`agents.defaults.params` applies globally** — global default provider parameters now merge into all provider calls unless overridden per-agent or per-model. If you have provider-specific params that should not apply globally, move them to per-agent or per-model config.
+
+124. **Auth failover caps same-provider retries** — rate-limit failures now cap same-provider auth-profile rotations (via `auth.cooldowns.rateLimitedProfileRotations`) before triggering cross-provider model fallback. Multi-profile setups that previously retried indefinitely within one provider will now fall over sooner.
+
+125. **Telegram `errorPolicy` suppresses repeated errors** — configurable `errorPolicy` and `errorCooldownMs` controls suppress repeated delivery errors per account, chat, and topic without muting distinct failures. If you relied on seeing every error in chat, set `errorPolicy: "always"`.
+
+126. **Task-registry maintenance sweep is async** — the synchronous SQLite maintenance sweep that previously stalled the gateway event loop is now asynchronous with current-state rechecks. If you have custom task-registry extensions, ensure they do not assume synchronous sweep completion.
+
+127. **Webchat exec approvals use native UI** — agent system prompts in webchat sessions now reference native approval UI instead of manual `/approve` commands. If you have custom system prompt templates that reference `/approve`, update them for webchat contexts.
+
+128. **WhatsApp `reactionLevel` guidance** — agents can now react with emoji on incoming WhatsApp messages based on `reactionLevel` config. Default behavior may include reactions where none existed before. Set `reactionLevel: "none"` to suppress.
 
 ### v2026.3.28 Specific
 

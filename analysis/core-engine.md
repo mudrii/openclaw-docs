@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
-> Modules: agents (1,070 files), gateway (438 files), sessions (15 files), routing (11 files), hooks (51 files), context-engine (7 files)
+> Updated: 2026-04-02 | Version: v2026.4.1 | Codebase: OpenClaw release tag `v2026.4.1`
+> Modules: agents (1,070 files), gateway (438 files), tasks (26 files), sessions (15 files), routing (11 files), hooks (51 files), context-engine (7 files)
 
 ---
 
@@ -1467,3 +1467,27 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 - **Native Codex web search is part of released Pi behavior:** embedded Pi runs now support Codex-native web search on the stable line.
 - **Task context is more visible in status/reporting paths:** `/status` and adjacent status surfaces now account for detached task state more accurately.
+
+---
+
+## v2026.4.1 Delta Notes
+
+### Tasks Subsystem (`src/tasks/`)
+
+- **`/tasks` chat board:** `/tasks` is now a chat-native background task board for the current session. Shows recent task details and agent-local fallback counts when no linked tasks are visible. The chat command routes through `auto-reply/` command handling.
+- **`openclaw tasks list|show|cancel` CLI:** first linear task flow control surface for manual multi-task management. Manual multi-task flows are kept separate from one-task auto-sync flows. Doctor recovery hints surface for obviously orphaned or broken flow/task linkage.
+- **Task-flow registry:** a minimal SQLite-backed task flow registry with task-to-flow linkage scaffolding gives orchestrated work a first-class parent record. Blocked state persisted on one-task flows; same flow reopens cleanly on retry.
+- **Task-flow owner context:** one-task ACP and subagent updates route through a parent task-flow owner context so detached work emerges through the intended parent thread/session.
+- **Gateway maintenance guard:** task registry maintenance sweep no longer stalls the gateway event loop under synchronous SQLite pressure. Re-checks the current task record before marking runs lost or pruning them.
+- **Status visibility:** stale completed background tasks hidden from `/status` and `session_status`; live task context preferred; recent failures shown only when no active work remains.
+
+### Cron / Tools
+
+- **Per-job tool allowlists:** `openclaw cron --tools` enables per-job tool allowlists for isolated cron runs. Cron tools allowlist gating enforced at the gateway tool-invoke path.
+- **Isolated cron exec alignment:** no-route approval dead-ends resolved from the effective host fallback policy when trusted automation is allowed; `openclaw doctor` warns when `tools.exec` is broader than `~/.openclaw/exec-approvals.json`.
+
+### Agents / Config
+
+- **`agents.defaults.params`:** global default provider parameters. Provider-specific params (e.g., `cacheRetention`, `service_tier`) can be set once in defaults.
+- **`agents.defaults.compaction.model`:** compaction model override resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints.
+- **Failover rate-limit caps:** prompt-side and assistant-side same-provider auth-profile retries capped for rate-limit failures before cross-provider model fallback. New knob: `auth.cooldowns.rateLimitedProfileRotations`.

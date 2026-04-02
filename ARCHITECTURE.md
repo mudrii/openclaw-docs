@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-01 (docs snapshot: v2026.3.31-1) | Released baseline: GitHub `v2026.3.31`
+> Updated: 2026-04-02 (docs snapshot: v2026.4.1) | Released baseline: GitHub `v2026.4.1`
 
 ---
 
@@ -26,11 +26,11 @@
 
 ## 1. Executive Summary
 
-**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, mobile node pairing, and a rich plugin/extension ecosystem.
+**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.3.31`), the `agents` module is the largest core subtree at roughly 1,070 `.ts` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 368 `.ts` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery.
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.1`), the `agents` module is the largest core subtree at roughly 1,070 `.ts` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 373 `.ts` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery. The `tasks` module (`src/tasks/`) provides the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, and status surfaces.
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, and feature extensions are loaded dynamically from an `extensions/` directory. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (91 extension directories, 84 packages as of `v2026.4.1`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -118,13 +118,13 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                                        │
                     ┌──────────────────┼──────────────────┐
                     ▼                  ▼                  ▼
-           ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐
-           │   MEMORY      │  │    CRON       │  │    HOOKS         │
-           │ (src/memory/) │  │ (src/cron/)   │  │ (src/hooks/)     │
-           │ SQLite+FTS5   │  │ Scheduled     │  │ Event bus,       │
-           │ Vector search │  │ agent jobs    │  │ lifecycle events │
-           │ Embeddings    │  │               │  │ Gmail watcher    │
-           └──────────────┘  └──────────────┘  └──────────────────┘
+           ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐
+           │   MEMORY      │  │    CRON       │  │    HOOKS         │  │    TASKS         │
+           │ (src/memory/) │  │ (src/cron/)   │  │ (src/hooks/)     │  │ (src/tasks/)     │
+           │ SQLite+FTS5   │  │ Scheduled     │  │ Event bus,       │  │ SQLite-backed    │
+           │ Vector search │  │ agent jobs    │  │ lifecycle events │  │ background task  │
+           │ Embeddings    │  │               │  │ Gmail watcher    │  │ control plane    │
+           └──────────────┘  └──────────────┘  └──────────────────┘  └──────────────────┘
                                        │
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -174,8 +174,9 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `extensions/imessage/` | 22 | ~3,000+ | iMessage via custom `imsg` CLI (JSON-RPC over stdin/stdout) | config, auto-reply, channels |
 | `extensions/whatsapp/` | 132 | ~18,000+ | WhatsApp channel runtime via Baileys: session, pairing, media send/receive, replies, reactions, and delivery policy | config, auto-reply, channels |
 | `extensions/qqbot/` | 45 | ~12,000+ | QQ Bot bundled channel plugin: multi-account setup, slash commands, reminders, media send/receive, and released allowlist hardening | config, auto-reply, channels |
-| `web-search/` | 2 | ~500+ | Shared web-search runtime wiring and provider selection for bundled search plugins and Pi/native search flows | agents, config |
+| `web-search/` | 2 | ~500+ | Shared web-search runtime wiring and provider selection for bundled search plugins (including SearXNG) and Pi/native search flows | agents, config |
 | `memory/` | 84 | ~17,000+ | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
+| `tasks/` | 26 | ~5,000+ | SQLite-backed background task control plane: task registry, executor, ownership, audit, maintenance, status, and task-flow linkage for ACP/subagent/cron/CLI detached runs | config, agents, gateway |
 | `cron/` | 71 | ~14,800+ | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
 | `hooks/` | 38 | ~6,600+ | Event-driven hooks: lifecycle events, Gmail integration, slug generation | config, agents, plugins |
 | `plugins/` | 273 | ~63,000+ | Plugin discovery, loading (jiti), registry, hook runner, HTTP routes, services, auth scoping, and bundled runtime ownership seams | config, agents, channels |
@@ -431,7 +432,7 @@ Step 8: agents/tool-display.ts → Format tool result for user display
 | Section | Purpose | Key Fields |
 |---------|---------|------------|
 | `agents` | Agent definitions | `list[]` (agentId, model, skills, tools, workspace, identity, sandbox), `defaults.*` |
-| `agents.defaults` | Default agent settings | `model`, `provider`, `heartbeat.*` (incl. `lightContext`), `compaction.*`, `memorySearch.*`, `allowedModels`, `modelFallbacks`, `typingIntervalSeconds`, `envelopeTimezone` |
+| `agents.defaults` | Default agent settings | `model`, `provider`, `params` (global default provider parameters), `heartbeat.*` (incl. `lightContext`), `compaction.*` (incl. `compaction.model`), `memorySearch.*`, `allowedModels`, `modelFallbacks`, `typingIntervalSeconds`, `envelopeTimezone` |
 | `bindings[]` | Channel→agent routing | `agentId`, `channel`, `account`, `peer`, `guild`, `roles`, `team` |
 | `session` | Session behavior | `dmScope`, `identityLinks`, `resetTriggers`, `sendPolicy`, `store`, `mainKey` |
 | `gateway` | Server config | `port`, `auth`, `tls`, `discovery`, `tailscale`, `lanes`, `nodes`, `browser` |
@@ -693,8 +694,9 @@ Parsed by `plugins/manifest.ts`.
 
 | Type | Count | Examples |
 |------|-------|---------|
-| **Channel plugins** | 21 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams (official Teams SDK), nostr, twitch, zalo |
-| **Provider plugins** | 7 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, qwen-portal-auth, ollama, vllm, sglang |
+| **Channel plugins** | 22 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams (official Teams SDK), nostr, twitch, zalo, qqbot, feishu |
+| **Provider plugins** | 8 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, amazon-bedrock (with Guardrails), ollama, vllm, sglang |
+| **Search plugins** | 1 | searxng (bundled SearXNG web search provider) |
 | **Tool/Feature plugins** | 11 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership, diffs |
 
 ---
@@ -745,7 +747,7 @@ OpenClaw delegates LLM API calls to `@mariozechner/pi-ai` — the external AI ag
 
 ### Supported Providers
 
-Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock**, **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax** (including image generation), **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, **Mistral**, **SiliconFlow**, and any OpenAI-compatible API.
+Via pi-ai and auth profiles: **Anthropic**, **OpenAI**, **Google (Gemini, incl. Gemini 3.1)**, **xAI (Grok)**, **AWS Bedrock** (with Guardrails support), **Azure OpenAI**, **Ollama** (local), **Together.ai**, **Venice.ai**, **HuggingFace**, **MiniMax** (including image generation), **Qwen**, **Volcengine/BytePlus (Doubao)**, **OpenCode/Zen**, **GitHub Copilot**, **Cloudflare AI Gateway**, **Chutes**, **Mistral**, **SiliconFlow**, and any OpenAI-compatible API.
 
 ### Provider-Specific Auth
 
@@ -825,7 +827,8 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | iMessage | imsg CLI | JSON-RPC over stdin/stdout, macOS native |
 | BlueBubbles | BlueBubbles server (HTTP/WS) | iMessage via BlueBubbles, macOS server required |
 | WhatsApp | Baileys | QR login, media conversion, broadcast groups |
-| Feishu | Feishu Open Platform SDK | Docx tables/uploads, reactions, chat tools, reply-in-thread, group session scopes (`group`/`group_sender`/`group_topic`/`group_topic_sender`), multi-account with `defaultAccount` routing, typing backoff |
+| Feishu | Feishu Open Platform SDK | Docx tables/uploads, reactions, chat tools, reply-in-thread, group session scopes (`group`/`group_sender`/`group_topic`/`group_topic_sender`), multi-account with `defaultAccount` routing, typing backoff, Drive comment-event flow with comment-thread context resolution, in-thread replies, and `feishu_drive` comment actions |
+| QQ Bot | QQ Open Platform SDK | Bundled channel with multi-account setup, SecretRef-aware credentials, slash commands, reminders, media send/receive, and released allowlist hardening |
 | Synology Chat | Webhook (HTTP) | Webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls |
 
 ---
@@ -931,11 +934,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 45 |
-| Extension packages (`extensions/*/package.json`) | 33 |
-| Bundled skills (`skills/*`) | 52 |
+| Extension directories (`extensions/*`) | 91 |
+| Extension packages (`extensions/*/package.json`) | 84 |
+| Bundled skills (`skills/*`) | 65 |
 
-> Current analyzed source package: released `v2026.3.23` with shipped correction tag `v2026.3.23-2`. Counts measured from the `v2026.3.23-2` released tree.
+> Current analyzed source package: released `v2026.4.1`. Counts measured from the `v2026.4.1` released tree.
 
 ### Key External Dependencies
 
@@ -1445,6 +1448,45 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 - **8,607 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`; validated against release tag `v2026.3.31`)
 - **1,655,809 lines of TypeScript** (same scope)
 - **91 extension packages** and **65 bundled skills** in the released tree
+
+---
+
+## v2026.4.1 Released Changes (2026-04-02 docs snapshot)
+
+### New Features
+
+- **`/tasks` chat board** — `/tasks` is a chat-native background task board for the current session, showing recent task details and agent-local fallback counts when no linked tasks are visible. Complements the `openclaw tasks list|show|cancel` CLI surface.
+- **SearXNG search plugin** (`extensions/searxng/`) — Bundled SearXNG web search provider plugin for `web_search` with configurable host support. Set `plugins.entries.searxng.config.webSearch.baseUrl` or `SEARXNG_BASE_URL` env var.
+- **Bedrock Guardrails** — The bundled Amazon Bedrock provider plugin now supports Guardrails via `plugins.entries.amazon-bedrock.config.guardrail` with `guardrailIdentifier`, `guardrailVersion`, optional `streamProcessingMode`, and `trace` fields. Guardrails are injected into the streaming request payload via `before_llm_call` hooks.
+- **Voice Wake** (macOS) — Voice Wake option added to trigger Talk Mode on macOS.
+- **Feishu Drive comment flow** — Dedicated Drive comment-event flow with comment-thread context resolution, in-thread replies, and `feishu_drive` comment actions for document collaboration workflows. New files: `comment-dispatcher.ts`, `comment-handler.ts`, `comment-target.ts`, `monitor.comment.ts`, `drive.ts`, `drive-schema.ts`.
+- **`agents.defaults.params`** — Global default provider parameters config. Provider-specific params (e.g., `cacheRetention`, `service_tier`) can be set once in defaults instead of per-agent.
+- **`agents.defaults.compaction.model`** — Compaction model override now resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints.
+- **Failover rate-limit caps** — Prompt-side and assistant-side same-provider auth-profile retries are capped for rate-limit failures before cross-provider model fallback. New knob: `auth.cooldowns.rateLimitedProfileRotations`.
+- **Cron tools allowlist** — `openclaw cron --tools` adds per-job tool allowlists for isolated cron runs.
+
+### Security
+
+- **Exec approval hardening** — `allow-always` now persists as durable user-approved trust instead of behaving like `allow-once`; exact-command trust reused on shell-wrapper paths; static allowlist entries no longer silently bypass `ask:"always"`; Windows requires explicit approval when no allowlist execution plan is available.
+- **Exec/cron alignment** — Isolated cron no-route approval dead-ends resolved from effective host fallback policy; `openclaw doctor` warns when `tools.exec` is broader than `~/.openclaw/exec-approvals.json`.
+
+### Channel Updates
+
+- **Feishu** — Drive comment-event flow (above), plus continued stability improvements.
+- **QQ Bot** — Allowlist hardening: `/bot-logs` export gated behind truly explicit allowlist, rejecting wildcard entries.
+- **WhatsApp** — `reactionLevel` guidance for agent reactions; inbound message timestamp passed to model context.
+- **Telegram** — Configurable `errorPolicy` and `errorCooldownMs` controls for per-account/chat/topic delivery error suppression.
+
+### Config Changes
+
+| Key | Purpose |
+|-----|---------|
+| `agents.defaults.params` | Global default provider parameters |
+| `agents.defaults.compaction.model` | Override model for compaction across all entrypoints |
+| `auth.cooldowns.rateLimitedProfileRotations` | Cap same-provider auth-profile retries on rate-limit |
+| `plugins.entries.searxng.config.webSearch.baseUrl` | SearXNG instance URL |
+| `plugins.entries.amazon-bedrock.config.guardrail` | Bedrock Guardrails config |
+| `gateway.webchat.chatHistoryMaxChars` | Configurable chat history text truncation |
 
 ---
 

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
+> Updated: 2026-04-02 | Version: v2026.4.1 | Codebase: OpenClaw release tag `v2026.4.1`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1081,3 +1081,30 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 - **Host exec env override blocking expands:** released hardening now blocks more request-scoped env overrides that could redirect Docker endpoints, trust roots, compilers, or language-specific runtime environments.
 - **Nostr inbound DMs verify signatures before side effects:** forged events no longer create pairing requests or reply attempts on the stable line.
+
+---
+
+## v2026.4.1 Delta Notes
+
+### Exec Approval Hardening
+
+- **`allow-always` durability fix:** `allow-always` now persists as durable user-approved trust instead of behaving like `allow-once`. Exact-command trust is reused on shell-wrapper paths that cannot safely persist an executable allowlist entry.
+- **Static allowlist bypass closed:** static allowlist entries no longer silently bypass `ask:"always"`, so configured always-ask policies are enforced even when a matching static entry exists.
+- **Windows approval plan fallback:** Windows environments now require explicit approval when the system cannot build an allowlist execution plan, instead of hard-dead-ending remote exec.
+- **Slack and Discord alignment:** Slack and Discord native approval handling aligned with inferred approvers and real channel enablement so remote exec stops falling into false approval timeouts and disabled states.
+- **Telegram topic-aware approvals:** forum-topic exec approval followups route through Telegram-owned threading and approval-target parsing, staying in the originating topic.
+
+### Exec / Cron Alignment
+
+- **Isolated cron no-route dead-ends resolved:** approval dead-ends for isolated cron runs resolved from the effective host fallback policy when trusted automation is allowed.
+- **`openclaw doctor` exec policy warning:** `openclaw doctor` now warns when `tools.exec` is broader than `~/.openclaw/exec-approvals.json` so stricter host-policy conflicts are explicit.
+- **Per-job tool allowlists:** `openclaw cron --tools` enables per-job tool allowlists, with gateway-level tool-invoke gating for cron-scoped tool restrictions.
+
+### Plugin Security
+
+- **SearXNG plugin:** bundled SearXNG web search provider plugin (`extensions/searxng/`) with configurable host support and SSRF-safe fetch through the shared guard path.
+- **Bedrock Guardrails:** Amazon Bedrock provider plugin gains Guardrails support, injecting `guardrailConfig` (identifier, version, optional stream processing mode and trace) into streaming request payloads via `before_llm_call` hooks.
+
+### ACP Security
+
+- **Dangerous-tool semantic approval classes:** ACP's dangerous-tool name override replaced with semantic approval classes so only narrow readonly reads/searches can auto-approve while indirect exec-capable and control-plane tools always require explicit prompt approval.

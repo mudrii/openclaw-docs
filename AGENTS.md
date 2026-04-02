@@ -8,7 +8,7 @@
 
 ## Project Structure & Module Organization
 
-- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, shared web channel pieces in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`, MCP bridge in `src/mcp/`, released task control plane in `src/tasks/`, and released web search runtime in `src/web-search/`). Browser automation for the current stable line lives in `extensions/browser/`. Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity). v2026.3.28+: `src/mcp/` (channel-server, channel-bridge, channel-tools — gateway-backed MCP bridge for Codex/Claude channel tool access).
+- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, shared web channel pieces in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`, MCP bridge in `src/mcp/`, released task control plane in `src/tasks/`, and released web search runtime in `src/web-search/`). Browser automation for the current stable line lives in `extensions/browser/`. Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity). v2026.3.28+: `src/mcp/` (channel-server, channel-bridge, channel-tools — gateway-backed MCP bridge for Codex/Claude channel tool access). v2026.4.1+: bundled SearXNG web search provider plugin in `extensions/searxng/`; Bedrock Guardrails in `extensions/amazon-bedrock/`; `/tasks` chat-native task board; Feishu Drive comment-event flow with `feishu_drive` actions.
 - Tests: colocated `*.test.ts`.
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
@@ -151,6 +151,17 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
+## v2026.4.1 Behavioral Changes
+
+- **Exec `allow-always` is now durable:** previously behaved as `allow-once`. Now persists across restarts via `exec-approvals.json`. Shell-wrapper paths reuse exact-command trust. Static allowlist entries no longer silently bypass `ask:"always"`.
+- **Slack and Discord native exec approval routing:** approval prompts can stay in Slack/Discord instead of falling back to Web UI or terminal. Default approval window extended to 30 minutes.
+- **`agents.defaults.params` for global default provider params:** applies to all model calls unless overridden per-agent or per-model. Review existing per-provider params to avoid unintended global application.
+- **Auth failover caps same-provider retries:** `auth.cooldowns.rateLimitedProfileRotations` caps retries before cross-provider fallback. Multi-profile setups will fall over sooner.
+- **Telegram `errorPolicy` and `errorCooldownMs`:** configurable per-account/chat/topic error suppression. Default behavior unchanged, but operators can now suppress repeated delivery errors.
+- **WhatsApp `reactionLevel`:** agents can now react with emoji. Set `reactionLevel: "none"` to suppress.
+- **Task-registry maintenance is async:** the synchronous SQLite sweep is now async with current-state rechecks. Custom task-registry extensions must not assume synchronous sweep completion.
+- **SearXNG bundled web search provider:** `webSearch.searxng.host` configures the SearXNG instance for `web_search`.
+
 ## v2026.3.31 Breaking Changes
 
 - **`nodes run` shell wrapper removed:** released node shell execution now goes through `exec host=node` and the `nodes invoke` surface. Do not document or reintroduce the old duplicated wrapper path.
@@ -263,7 +274,7 @@
   - skip if package is missing on npm or version already matches.
 - Keep `openclaw` untouched: never run publish from repo root unless explicitly requested.
 - Post-check for each release:
-  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.3.31`)
+  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.4.1`)
   - core guard: `npm view openclaw version --userconfig "$(mktemp)"` should stay at previous version unless explicitly requested.
 
 ## Changelog Release Notes
