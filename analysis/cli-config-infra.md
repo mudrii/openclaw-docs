@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1921,3 +1921,35 @@ User types: openclaw <command> [args]
 
 - **Dangerous installs fail closed by default:** plugin installs and gateway-backed skill dependency installs now require an explicit `--dangerously-force-unsafe-install` override when built-in scan results are critical or errored.
 - **`mcp.servers` supports remote HTTP/SSE plus `streamable-http`:** stable MCP configuration is no longer limited to local stdio transport assumptions.
+
+## v2026.4.2 Delta Notes
+
+### Breaking (Config)
+
+- **xAI `x_search` config migrated to plugin-owned path** (#59674): `x_search` settings moved from the legacy core `tools.web.x_search.*` path to `plugins.entries.xai.config.xSearch.*`. Auth standardized on `plugins.entries.xai.config.webSearch.apiKey` / `XAI_API_KEY`. Legacy config migrated via `openclaw doctor --fix`.
+- **Firecrawl `web_fetch` config migrated to plugin-owned path** (#59465): Firecrawl config moved from `tools.web.fetch.firecrawl.*` to `plugins.entries.firecrawl.config.webFetch.*`. `web_fetch` fallback now routes through the new fetch-provider boundary instead of a Firecrawl-only core branch. Legacy config migrated via `openclaw doctor --fix`.
+
+### CLI
+
+- **`openclaw tasks flow` — Task Flow inspection/recovery CLI:** the core Task Flow substrate is restored with managed-vs-mirrored sync modes, durable flow state/revision tracking, and `openclaw tasks flow` inspection/recovery primitives for background orchestration. Managed child task spawning plus sticky cancel intent added so external orchestrators can stop scheduling immediately. (#58930, #59610)
+- **Exec defaults — YOLO mode:** gateway/node host exec now defaults to YOLO mode by requesting `security=full` with `ask=off`. Host approval-file fallbacks and doctor reporting aligned with the no-prompt default.
+- **`openclaw cron --tools` for per-job tool allowlists** (#58504): cron jobs now accept `--tools` for per-job tool allowlists.
+- **JSON5 plugin manifest support** (#59084): `openclaw.plugin.json` and bundle `plugin.json` manifests now accept JSON5 syntax (trailing commas, comments, unquoted keys) during install/validation.
+- **`--dangerously-force-unsafe-install` forwarding** (#58879): the flag is now forwarded through archive and npm-spec plugin install paths so the documented override reaches the security scanner.
+- **Podman launch improvements** (#59368): noisy container output removed from `scripts/run-openclaw-podman.sh` and Podman install guidance aligned with the quieter startup flow.
+
+### Config
+
+- **Exec approvals normalization hardened** (#59112): invalid `security`, `ask`, and `askFallback` values are stripped from `~/.openclaw/exec-approvals.json` during normalization so malformed policy enums fall back to documented defaults.
+- **Exec `host=auto` routing-only** (#58897): `tools.exec.host=auto` is treated as routing-only. Implicit no-config exec stays on sandbox when available or gateway otherwise. Per-call host overrides that would bypass the configured sandbox or host target are rejected.
+- **Exec/env hardening** (#59233, #58473): additional host environment override pivots blocked for package roots, language runtimes, compiler include paths, and credential/config locations. Workspace `.env` files blocked from overriding `OPENCLAW_PINNED_PYTHON` and `OPENCLAW_PINNED_WRITE_PYTHON`.
+
+### Doctor
+
+- **Doctor reports host policy sources from real approvals path** (#59367): `openclaw doctor` now reports host policy sources from the real approvals file path and ignores malformed host override values when attributing effective policy conflicts.
+- **Doctor warns on exec policy conflicts:** `openclaw doctor` warns when `tools.exec` is broader than `~/.openclaw/exec-approvals.json` so stricter host-policy conflicts are explicit.
+
+### Infra / Exec
+
+- **Exec/Windows hardening** (#59466, #58040, #59182, #56285): console windows hidden for `runExec`/`runCommandWithTimeout` child-process launches; drive-less rooted paths rejected; Windows-compatible env override keys bound in system-run approval; quote-aware `argPattern` matching restored for gateway and node exec.
+- **Node-host/exec approvals** (#58374): `pnpm dlx` invocations bound through the approval planner's mutable-script path. Gateway workspace cwd no longer forwarded to remote node exec when no workdir was explicitly requested (#58977).

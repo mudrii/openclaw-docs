@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web Search, WhatsApp & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1274,3 +1274,46 @@ The following entries are added to the Security Model section for `src/browser`:
 
 - **Current browser runtime lives under `extensions/browser/`:** stable browser attach/session/server behavior should be read from the bundled browser extension tree, not a historical top-level browser module.
 - **Cross-origin media redirects no longer forward auth or cookies:** media-save flows now keep credentials on same-origin chains only.
+
+---
+
+## v2026.4.2 Delta Notes
+
+### Security — Provider Transport Centralization
+
+- **Centralized request auth, proxy, and TLS across transport paths:** request auth, proxy settings, TLS configuration, and header shaping are now centralized across shared HTTP, stream, and websocket provider paths. Insecure TLS and runtime transport overrides are blocked; proxy-hop TLS is kept separate from target mTLS settings. (#59682, @vincentkoc)
+- **Copilot endpoint hardening:** native GitHub Copilot API hosts are now classified in the shared provider endpoint resolver; token-derived proxy endpoint parsing is hardened so Copilot base URL routing stays centralized and fails closed on malformed hints. (#59644, @vincentkoc)
+- **Anthropic native-vs-proxy endpoint classification:** native-vs-proxy endpoint classification for direct Anthropic `service_tier` handling is centralized so spoofed or proxied hosts do not inherit native Anthropic defaults. (#59608, @vincentkoc)
+- **Streaming header centralization:** default and attribution header merging is centralized across OpenAI websocket, embedded-runner, and proxy stream paths so provider-specific headers stay consistent and caller overrides only win where intended. (#59542, @vincentkoc)
+- **Media HTTP centralization:** base URL normalization, default auth/header injection, and explicit header override handling are centralized across shared OpenAI-compatible audio, Deepgram audio, Gemini media/image, and Moonshot video request paths. (#59469, @vincentkoc)
+- **OpenAI-compatible routing centralization:** native-vs-proxy request policy is centralized so hidden attribution and related OpenAI-family defaults only apply on verified native endpoints across stream, websocket, and shared audio HTTP paths. (#59433, @vincentkoc)
+
+### Security — Exec Hardening
+
+- **Exec approvals/config strip invalid values:** invalid `security`, `ask`, and `askFallback` values are stripped from `~/.openclaw/exec-approvals.json` during normalization so malformed policy enums fall back cleanly to documented defaults instead of corrupting runtime policy resolution. (#59112, @openperf)
+- **`host=auto` routing-only:** `tools.exec.host=auto` is now treated as routing-only; implicit no-config exec uses sandbox when available or gateway otherwise. Per-call host overrides that would bypass the configured sandbox or host target are rejected. (#58897, @vincentkoc)
+- **Exec env override pivots blocked:** additional host environment override pivots for package roots, language runtimes, compiler include paths, and credential/config locations are blocked so request-scoped exec cannot redirect trusted toolchains or config lookups. (#59233, @drobison00)
+- **Dotenv workspace overrides blocked:** workspace `.env` files can no longer override `OPENCLAW_PINNED_PYTHON` and `OPENCLAW_PINNED_WRITE_PYTHON` so trusted helper interpreters cannot be redirected by repo-local env injection. (#58473, @eleqtrizit)
+- **OpenShell/mirror path constraints:** `remoteWorkspaceDir` and `remoteAgentWorkspaceDir` are constrained to the managed `/sandbox` and `/agent` roots; mirror sync no longer overwrites or removes user-added shell roots during config synchronization. (#58515, @eleqtrizit)
+
+### Security — Webhooks
+
+- **`safeEqualSecret` unification:** ad-hoc timing-safe secret comparisons across BlueBubbles, Feishu, Mattermost, Telegram, Twilio, and Zalo webhook handlers are replaced with the shared `safeEqualSecret` helper; empty auth tokens in BlueBubbles are now rejected. (#58432, @eleqtrizit)
+
+### Security — Browser
+
+- **Browser host inspection isolation:** static Chrome inspection helpers are kept out of the activated browser runtime so `openclaw doctor browser` and related diagnostic checks do not eagerly load the bundled browser plugin. (#59471, @vincentkoc)
+- **Browser CDP trailing-dot localhost normalization:** trailing-dot localhost absolute-form hosts are normalized before loopback checks so remote CDP websocket URLs like `ws://localhost.:...` rewrite back to the configured remote host instead of failing loopback validation. (#59236, @mappel-nv)
+
+### Security — Image Generation SSRF
+
+- **Image gen provider SSRF hardening:** OpenAI, MiniMax, and fal image requests are routed through the shared provider HTTP transport path so custom base URLs, guarded private-network routing, and provider request defaults stay aligned. Private-network access is no longer inferred from configured base URLs, and shared HTTP error-body reads are capped so hostile or misconfigured endpoints fail closed without relaxing SSRF policy or buffering unbounded error payloads. (@vincentkoc)
+
+### Security — Output Sanitization
+
+- **`antml:thinking` block stripping:** namespaced `antml:thinking` blocks are stripped from user-visible text so Anthropic-style internal monologue tags do not leak into replies. (#59550, @obviyus)
+
+### Security — Gateway / Sessions
+
+- **Session kill scope enforcement:** HTTP operator scopes are enforced on session kill requests and authorization is gated before session lookup so unauthenticated callers cannot probe session existence. (#59128, @jacobtomlinson)
+- **Untrusted workspace channel plugins ignored during setup:** shadowing workspace channel plugins cannot override built-in channel setup/login flows unless explicitly trusted in config. (#59158, @mappel-nv)

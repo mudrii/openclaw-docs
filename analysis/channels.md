@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-04-02 | Version: v2026.4.1 | Codebase: OpenClaw release tag `v2026.4.1`
+> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
@@ -1595,3 +1595,59 @@ Changes in the current released line are recorded inline above under each channe
 ### Session Routing
 
 - **Provider-specific session grammar moved to plugins:** provider-specific session conversation grammar moved into plugin-owned session-key surfaces, preserving Telegram topic routing and Feishu scoped inheritance across bootstrap, model override, restart, and tool-policy paths.
+
+---
+
+## v2026.4.2 Delta Notes
+
+### Feishu (Lark)
+
+- **Drive comment-event flow** (#58497): Dedicated Drive comment-event flow with comment-thread context resolution, in-thread replies, and `feishu_drive` comment actions for document collaboration workflows. Enables agents to participate in Feishu document comment threads as a collaboration channel alongside the existing chat flow. Thanks @wittam-01.
+- **Comment thread hardening** (#59129): Document comment-thread delivery hardened so whole-document comments fall back to `add_comment`, delayed reply lookups retry more reliably, and user-visible replies avoid reasoning/planning spillover. Thanks @wittam-01.
+
+### Matrix
+
+- **Spec-compliant `m.mentions` metadata** (#59323): Emits spec-compliant `m.mentions` metadata across text sends, media captions, edits, poll fallback text, and action-driven edits so Matrix mentions notify reliably in clients like Element. Thanks @gumadeiras.
+- **Onboarding restoration** (#59462): Guided setup restored in `openclaw channels add` and `openclaw configure --section channels`, while keeping custom plugin wizards on the shared `setupWizard` seam. Thanks @gumadeiras.
+- **Block streaming fix** (#59384): Live partial previews preserved for the current assistant block while completed block updates remain as separate messages when `channels.matrix.blockStreaming` is enabled. Thanks @gumadeiras.
+
+### WhatsApp
+
+- **`reactionLevel` guidance**: Agent reaction behavior configurable via `reactionLevel` guidance so agents can react with emoji on incoming messages with appropriate frequency/context. Thanks @mcaxtr.
+- **Self-chat presence fix** (#59410): Sends `unavailable` presence on connect in self-chat mode so personal-phone users stop losing all push notifications while the gateway is running. Thanks @mcaxtr.
+- **MIME map expansion** (#51562): HTML, XML, and CSS added to the MIME map with graceful fallback for unknown media types instead of dropping the attachment. Thanks @bobbyt74.
+
+### Slack
+
+- **Built-in mrkdwn guidance** (#59100): Built-in Slack mrkdwn guidance added in inbound context so Slack replies stop falling back to generic Markdown patterns that render poorly in Slack. Thanks @jadewon.
+- **Thread context filtering** (#58380): Thread starter and history filtered by the effective conversation allowlist without dropping valid open-room, DM, or group DM context. Thanks @jacobtomlinson.
+
+### Microsoft Teams
+
+- **Streaming fallback fix** (#59297): Already-streamed text stripped from fallback block delivery when replies exceed the 4000-character streaming limit so long responses stop duplicating content. Thanks @bradgroux.
+- **Logging fix** (#59321): Non-`Error` failures formatted with the shared unknown-error helper so logs stop collapsing caught SDK or Axios objects into `[object Object]`. Thanks @bradgroux.
+
+### Mattermost
+
+- **SSRF probe routing** (#58529): Status probes routed through the SSRF guard, honoring `allowPrivateNetwork` so connectivity checks stay safe for self-hosted Mattermost deployments. Thanks @mappel-nv.
+
+### Zalo
+
+- **Webhook replay dedupe** (#58444): Replay dedupe key scoped by chat and sender so reused message IDs across different chats or senders no longer collide; metadata reads hardened for partially missing payloads.
+
+### QQ Bot
+
+- **Structured payload path restriction** (#58453): Local file paths restricted to QQ Bot-owned media storage, traversal outside that root blocked, path leakage reduced in logs, and inline image data URLs preserved. Thanks @jacobtomlinson.
+
+### Telegram
+
+- **Exec approval callback_data limits** (#59217): Shared `/approve … allow-always` callback payloads rewritten to `/approve … always` before Telegram button rendering so plugin approval IDs still fit Telegram's `callback_data` limit and the Allow Always action stays visible. Thanks @jameslcowan.
+- **Exec approval session key fallback** (#59351): Falls back to the origin session key for async approval followups; resume-failure status delivery sanitized so Telegram followups still land without leaking raw exec metadata. Thanks @seonang.
+- **Topic-aware exec approvals** (#58783, v2026.4.1 carry-forward): Forum-topic exec approval followups route through Telegram-owned threading and approval-target parsing, staying in the originating topic instead of falling back to the root chat.
+
+### Channels (shared infrastructure)
+
+- **Session routing moved to plugins**: Provider-specific session conversation grammar moved into plugin-owned session-key surfaces, preserving Telegram topic routing and Feishu scoped inheritance across bootstrap, model override, restart, and tool-policy paths.
+- **Exec approvals DM-first auto-enable**: DM-first native chat approvals auto-enabled when supported channels can infer approvers from existing owner config, while keeping channel fanout explicit and clarifying forwarding versus native approval client config.
+- **Exec approval decoupling** (#59776): Initiating-surface approval availability decoupled from native delivery enablement so Telegram, Slack, and Discord still expose approvals when approvers exist and native target routing is configured separately. Thanks @joelnishanth.
+- **Setup trust hardening** (#59158): Untrusted workspace channel plugins ignored during setup resolution so a shadowing workspace plugin cannot override built-in channel setup/login flows unless explicitly trusted in config. Thanks @mappel-nv.

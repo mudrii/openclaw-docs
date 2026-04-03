@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
+> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1334,3 +1334,39 @@ When event fires:
 - **Embedded Pi runs gain native Codex web search:** stable `v2026.3.31` includes Codex-native web search support for embedded Pi runs, plus matching runtime/config integration.
 - **Idle stream timeout is now configurable:** stalled embedded model streams can abort cleanly instead of waiting for the broader run timeout, which changes how long-running agent failures surface.
 - **OpenAI Responses verbosity is forwarded:** `text.verbosity` now travels across Responses transports and status surfaces, so runtime and docs should treat verbosity as a released config/runtime behavior.
+
+## v2026.4.2 Delta Notes
+
+### Agents / Compaction
+
+- **`agents.defaults.compaction.notifyUser` opt-in notice** (#54251): The `Compacting context...` start notice shown to users during context compaction is now opt-in via `agents.defaults.compaction.notifyUser` instead of always being displayed. Operators who want to keep the notice must set this to `true`; default behavior is silent compaction.
+- **Consistent compaction model resolution** (#56710): `agents.defaults.compaction.model` is now resolved consistently for manual `/compact` and context-engine-owned compaction paths, so the configured override model is honored across all runtime entrypoints (not just the `/compact` command path).
+
+### Agents / Output Sanitization
+
+- **Strip `antml:thinking` blocks from user-visible text** (#59550): Namespaced `antml:thinking` blocks (Anthropic-style internal monologue tags) are now stripped from user-visible assistant text. This prevents internal reasoning markup from leaking into channel replies when providers emit these tags outside of the standard thinking block protocol.
+
+### Agents / Subagents
+
+- **Pin admin-only subagent gateway calls to `operator.admin`** (#59555): Admin-only subagent gateway calls (such as `sessions_spawn`) are now pinned to `operator.admin` scope while keeping the `agent` role at least privilege. This fixes `close(1008) "pairing required"` errors that occurred when loopback scope-upgrade pairing was triggered by subagent spawns.
+
+### Providers / Runtime
+
+- **Provider-owned replay hook surfaces** (#59143): Provider plugins gain replay hook surfaces for transcript policy, replay cleanup, and reasoning-mode dispatch. This enables provider-specific transcript handling during session replay, allowing providers to clean up or transform replayed turns and dispatch reasoning-mode configuration through their own hooks rather than relying on core heuristics.
+
+### Plugins / Hooks
+
+- **`before_agent_reply` hook** (#20067): A new `before_agent_reply` plugin hook fires after inline actions are processed but before the LLM is called. Plugins can use this hook to short-circuit the agent run with synthetic replies, bypassing the LLM entirely. This enables use cases such as cached responses, hardcoded answers for known queries, or plugin-driven reply generation without incurring LLM costs.
+
+### Kimi Coding / Tools
+
+- **Normalize Anthropic tool payloads to OpenAI-compatible function shape** (#59440): When the Kimi Coding provider receives tool call payloads in the Anthropic-compatible format, they are now normalized into the OpenAI-compatible function shape that Kimi Coding expects. This fixes tool calls losing required arguments when Kimi Coding was used with Anthropic-format tool definitions.
+
+### ACP / Gateway Reconnects
+
+- **Keep ACP prompts alive across websocket drops** (#59473): ACP prompts now survive transient websocket disconnections. When a gateway websocket drops and reconnects, in-flight ACP prompts are preserved rather than being silently lost. Prompts that were waiting for acknowledgment are retried on reconnect.
+- **Reject stale prompts after reconnect grace expiry**: Pre-ack ACP prompts that remain unconfirmed after the reconnect grace period expires are now explicitly rejected. This ensures callers fail cleanly with a clear error instead of hanging indefinitely when the gateway never confirms the run after reconnection.
+
+### Cron / Exec Timeouts
+
+- **Surface timed-out exec/bash failures with `verbose: off`** (#58247): Timed-out `exec` and `bash` failures in isolated cron runs are now surfaced to the user even when `verbose: off` is set. This includes custom session-target cron jobs, so scheduled runs that hit exec timeouts no longer fail silently.

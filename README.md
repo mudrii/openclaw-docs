@@ -2,8 +2,8 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Latest published upstream release: v2026.4.1 (published 2026-04-01 UTC).**
-**Current validated docs snapshot: v2026.4.1-1 (validated against `v2026.4.1`).**
+**Latest published upstream release: v2026.4.2 (published 2026-04-02 UTC).**
+**Current validated docs snapshot: v2026.4.2-1 (validated against `v2026.4.2`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -17,7 +17,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [AGENT_README.md](AGENT_README.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.1); tracks released upstream tags and synthesis status. |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.2); tracks released upstream tags and synthesis status. |
 | [AGENTS.md](AGENTS.md) | AI agent guidelines for working with the OpenClaw codebase — repo structure, build commands, testing, PR workflow, security practices. |
 
 ### Detailed Analysis
@@ -56,6 +56,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each documented release tracks an OpenClaw stable release line. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream release; same-base npm correction builds are noted inside the matching docs snapshot rather than treated as separate published GitHub releases:
+- `v2026.4.2-1` (2026-04-03, docs release) — Rebased the docs snapshot to the current stable line: published GitHub release `v2026.4.2`. **Breaking:** xAI `x_search` and Firecrawl `web_fetch` config migrated to plugin-owned paths (`openclaw doctor --fix` to migrate). Major updates: core Task Flow substrate with managed-vs-mirrored sync, durable flow state/revision tracking, and `openclaw tasks flow` CLI; managed child task spawning with sticky cancel intent; plugin `api.runtime.taskFlow` seam; `before_agent_reply` plugin hook; provider-owned replay hook surfaces; Android Google Assistant App Actions; `agents.defaults.compaction.notifyUser` opt-in; exec defaults to YOLO mode (security=full, ask=off); Matrix spec-compliant `m.mentions`; Feishu Drive comment-event flow; plugin-owned diffs `viewerBaseUrl`; channel session routing moved to plugin-owned session-key surfaces; major provider transport centralization (auth, proxy, TLS, headers) across HTTP/stream/websocket; exec approval/env hardening (Windows, dotenv, SSRF); webhook secret comparison unified via `safeEqualSecret`; and gateway/plugin reliability fixes.
 - `v2026.4.1-1` (2026-04-02, docs release) — Rebased the docs snapshot to the current stable line: published GitHub release `v2026.4.1`. Major updates: chat-native `/tasks` task board with agent-local fallback counts; bundled SearXNG web search provider plugin; Amazon Bedrock Guardrails support; macOS Voice Wake Talk Mode trigger; Feishu Drive comment-event flow with in-thread replies and `feishu_drive` comment actions; configurable webchat `chatHistoryMaxChars`; `agents.defaults.params` for global default provider parameters; cron `--tools` per-job tool allowlists; exec approval persistence hardening (`allow-always` now durable, shell-wrapper trust, Slack/Discord native approval routing); WhatsApp reaction guidance levels; Telegram `errorPolicy`/`errorCooldownMs` controls; auth-profile failover rate-limit cap with `auth.cooldowns.rateLimitedProfileRotations`; and task-registry lifecycle/maintenance reliability fixes.
 - `v2026.3.31-1` (2026-04-01, docs release) — Rebased the docs snapshot to the current stable line: published GitHub release `v2026.3.31`. Major updates: background tasks moved onto the shared SQLite-backed control plane with `openclaw tasks list|show|cancel`; bundled QQ Bot channel coverage; MCP remote HTTP/SSE support plus the default-off ACPX plugin-tools bridge; trusted-proxy auth hardening, node command approval gating, and reduced node-originated trust surface; Pi/Codex native web search; Matrix history/proxy/streaming/thread updates; LINE outbound media and ACP bind coverage; Microsoft Teams member-info action; TTS structured diagnostics; exec approval/env hardening; and architecture corrections for `extensions/browser`, `src/tasks`, and `src/web-search`.
 - `v2026.3.28-2` (2026-03-29, docs rerelease) — Minor same-baseline rerelease for upstream `v2026.3.28`, adding the implementation plan artifact for that release cycle while keeping the validated upstream release unchanged.
@@ -82,9 +83,9 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **8,607 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.1`)
-- **1,655,809 lines of TypeScript** covered (same scope as above)
-- **91 extension packages** and **65 bundled skills** reflected in the current released snapshot
+- **8,658 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.2`)
+- **1,710,796 lines of TypeScript** covered (same scope as above)
+- **84 extension packages** and **190 bundled skills** reflected in the current released snapshot
 - **15 Markdown documents** in this repo (5 core docs + 10 analysis files)
 
 ## Contributing

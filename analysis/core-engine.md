@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-02 | Version: v2026.4.1 | Codebase: OpenClaw release tag `v2026.4.1`
-> Modules: agents (1,070 files), gateway (438 files), tasks (26 files), sessions (15 files), routing (11 files), hooks (51 files), context-engine (7 files)
+> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
+> Modules: agents (1,070 files), gateway (438 files), tasks (42 files), sessions (15 files), routing (11 files), hooks (51 files), context-engine (7 files)
 
 ---
 
@@ -95,6 +95,7 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 
 ### Recent Changes
 
+- **v2026.4.2:** Channel session routing moved to plugin-owned session-key surfaces. Provider-specific session conversation grammar (e.g. Telegram topic routing, Feishu scoped inheritance) is now managed through plugin-owned session-key surfaces, preserving correct routing across bootstrap, model override, restart, and tool-policy paths.
 - **v2026.3.13:** `lastAccountId` and `lastThreadId` are now preserved across gateway session resets, so replies keep routing to the correct account and thread after `/reset` (#44773).
 - **v2026.3.12:** Optional `sessionKey` forwarded through all ContextEngine lifecycle calls (bootstrap, assembly, post-turn ingestion, compaction) so context-engine plugins can see structured routing metadata (#44157).
 - **v2026.3.1:** `model-overrides.ts` now clears stale runtime `model`/`modelProvider` fields when the user switches model overrides, so status surfaces immediately reflect the selected model. Clears `fallbackNoticeSelectedModel`/`fallbackNoticeActiveModel`/`fallbackNoticeReason` on any override update. New `model-overrides.test.ts` added.
@@ -233,6 +234,7 @@ Provider-specific authentication and model discovery. The original `src/provider
 
 ### Recent Changes
 
+- **v2026.4.2:** Provider transport centralization — request auth, proxy, TLS, and header shaping centralized across shared HTTP, stream, and websocket paths (#59682). Insecure TLS/runtime transport overrides blocked; proxy-hop TLS kept separate from target mTLS settings. Provider endpoint classification hardened: native GitHub Copilot API hosts classified in the shared endpoint resolver; token-derived proxy endpoint parsing fails closed on malformed hints (#59644). Streaming header merging centralized across OpenAI websocket, embedded-runner, and proxy stream paths so provider-specific headers stay consistent (#59542). Media HTTP handling centralized: base URL normalization, default auth/header injection, and explicit header overrides unified across OpenAI-compatible audio, Deepgram audio, Gemini media/image, and Moonshot video paths (#59469). Native-vs-proxy request policy centralized for OpenAI-compatible routing (#59433) and Anthropic endpoint classification (#59608). Provider-owned replay hook surfaces added for transcript policy, replay cleanup, and reasoning-mode dispatch (#59143).
 - **v2026.3.28 (breaking):** Config/Doctor: automatic config migrations older than two months are now dropped. Very old legacy keys fail validation instead of being silently rewritten on load or by `openclaw doctor`. Run `openclaw doctor` before upgrading if your config has not been maintained recently.
 - **v2026.3.13:** Agents/custom providers: blank API keys for loopback OpenAI-compatible custom providers are now preserved by clearing the synthetic `Authorization` header at runtime (#45631). Agents/OpenAI-compatible compat overrides: explicit user `models[].compat` opt-ins are now respected for non-native `openai-completions` endpoints so capability overrides (including `supportsUsageInStreaming`) are no longer forced off (#44432). Agents/Anthropic replay: replayed assistant thinking blocks are dropped for native Anthropic and Bedrock Claude providers so persisted follow-up turns no longer fail on stored thinking blocks (#44843).
 - **v2026.3.12:** Agents/Kimi Coding: fixed malformed tool call args — tool definitions now sent in native Anthropic format again (#42835). Agents/failover: z.ai `network_error` stop reasons classified as retryable timeouts (#43884). Provider plugin architecture: Ollama, vLLM, and SGLang moved onto provider-plugin architecture with provider-owned onboarding, discovery, and model-picker setup. Pi-embedded-runner/pi-ai: adapt pi-ai OAuth and payload hooks for pi-embedded-runner.
@@ -368,6 +370,7 @@ Hooks are loaded from multiple sources with later sources overriding by name:
 
 ### Recent Changes
 
+- **v2026.4.2:** Plugins/hooks: `before_agent_reply` hook added (#20067). Plugins can short-circuit the LLM with synthetic replies after inline actions, enabling plugin-driven response interception before the agent runtime invokes the model.
 - **v2026.3.28:** Plugins/hooks: new async `requireApproval` field in `before_tool_call` hook results — lets plugins pause tool execution and prompt the user for approval via the exec approval overlay, Telegram buttons, Discord interactions, or the `/approve` command on any channel. `PluginHookBeforeToolCallResult.requireApproval` accepts `title`, `description`, `severity`, `timeoutMs`, `timeoutBehavior`, and `onResolution` callback. `PluginApprovalResolutions` values: `allow-once`, `allow-always`, `deny`, `timeout`, `cancelled`. The `/approve` command now handles both exec and plugin approvals with automatic fallback. (`src/plugins/types.ts`, `src/infra/plugin-approvals.ts`) (#55339)
 - **v2026.3.12:** Hooks/loader: fail closed when workspace hook paths cannot be resolved with `realpath`, so unreadable or broken internal hook paths are skipped instead of falling back to unresolved imports (#44437). Hooks/agent deliveries: dedupe repeated hook requests by optional idempotency key (via `idempotency-key`, `x-openclaw-idempotency-key` headers, or `payload.idempotencyKey`) so webhook retries reuse the first run instead of launching duplicate agent executions (#44438). Gateway/hooks: hook auth failures are now bucketed by forwarded client IP behind trusted proxies; a startup warning is emitted when `hooks.allowedAgentIds` leaves hook routing unrestricted.
 
@@ -679,6 +682,9 @@ The largest module (348 source files, 335 tests). This is the **AI agent runtime
 
 ### Recent Changes
 
+- **v2026.4.2:** Agent compaction: `agents.defaults.compaction.notifyUser` added as opt-in configuration so the `Compacting context...` start notice is only shown when explicitly enabled instead of always being shown (#54251). Compaction model resolution: `agents.defaults.compaction.model` now resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints (#56710).
+- **v2026.4.2:** Exec defaults: gateway/node host exec defaults to YOLO mode (`security=full`, `ask=off`), aligning host approval-file fallbacks and docs/doctor reporting with the no-prompt default.
+- **v2026.4.2:** Agents/subagents: admin-only subagent gateway calls pinned to `operator.admin` while keeping `agent` at least privilege, so `sessions_spawn` no longer fails on loopback scope-upgrade pairing with `close(1008) "pairing required"` (#59555).
 - **v2026.3.28:** Agents/Anthropic: unhandled provider stop reasons (e.g. `sensitive`) are now recovered as structured assistant errors instead of crashing the agent run. `wrapStreamFnHandleSensitiveStopReason()` in `pi-embedded-runner/run/attempt.stop-reason-recovery.ts` intercepts the raw `Unhandled stop reason: <reason>` error from the pi-ai stream, normalizes it into a human-readable error message, and returns it as an `assistantMessage` with `stopReason: "error"` so the channel receives a graceful reply rather than an uncaught exception stalling polling. (#56639)
 - **v2026.3.28:** Agents/cooldowns: rate-limit cooldowns are now scoped per model — a 429 on one model no longer puts every model on the same auth profile into cooldown. The cooldown ladder is now stepped 30 s / 1 min / 5 min (replacing the previous exponential 1 min → 1 h escalation). When all models on all profiles are rate-limited, a user-facing countdown message is surfaced: `⚠️ Rate-limited — ready in ~Xs` / `~N min` (via `buildRateLimitCooldownMessage()` in `auto-reply/reply/agent-runner-execution.ts`). Model-scope tracking uses `cooldownModel` field in `ProfileUsageStats`; `shouldBypassCooldownForModel()` in `auth-profiles/usage.ts` enables per-model bypass. (#49834)
 - **v2026.3.28:** Agents/compaction: post-compaction AGENTS refresh is now preserved on stale-usage preflight compaction for both immediate replies and queued followups. `appendPostCompactionRefreshPrompt()` in `auto-reply/reply/agent-runner-memory.ts` appends the post-compaction context to `followupRun.run.extraSystemPrompt` after preflight compaction completes. (#49479). Safeguard-specific cancel reasons are now surfaced via `cancelReason` field in `CompactionSafeguardRuntime` (`pi-hooks/compaction-safeguard-runtime.ts`). Benign manual `/compact` no-op cases are now labeled `skipped` instead of `failed` in reply output. (#51072)
@@ -948,6 +954,9 @@ Channel (Telegram/Discord/...)
 
 ### Recent Changes
 
+- **v2026.4.2:** Gateway/exec loopback: legacy-role fallback restored for empty paired-device token maps; silent local role upgrades allowed so local exec and node clients stop failing with pairing-required errors after `2026.3.31` (#59092).
+- **v2026.4.2:** Gateway/session kill: HTTP operator scopes enforced on session kill requests; authorization gated before session lookup so unauthenticated callers cannot probe session existence (#59128).
+- **v2026.4.2:** Gateway/node-pending-work: empty `node-pending-work` state entries pruned after explicit acknowledgments and natural expiry so the per-node state map no longer grows indefinitely (#58179).
 - **v2026.3.28:** Gateway/health: webhook-vs-polling account mode is now carried from channel descriptors into runtime health snapshots so passive (webhook-only) channels like LINE and BlueBubbles skip false stale-socket health failures. `evaluateChannelHealth()` in `gateway/channel-health-policy.ts` skips the `stale-socket` check when `snapshot.mode === "webhook"` (in addition to Telegram's existing long-polling exemption). (#47488)
 - **v2026.3.28:** MCP/channels: new Gateway-backed channel MCP bridge (`src/mcp/channel-server.ts`, `src/mcp/channel-bridge.ts`, `src/mcp/channel-tools.ts`) exposes Codex/Claude-facing conversation tools, Claude channel notifications (`notifications/claude/channel`, `notifications/claude/channel/permission`), and safer stdio bridge lifecycle handling for reconnects and routed session discovery. The bridge connects via `gatewayUrl`/`gatewayToken`/`gatewayPassword` and is served via `serveOpenClawChannelMcp()`.
 - **v2026.3.13:** Gateway/client requests: unanswered gateway RPC calls are now rejected after a bounded timeout and pending state is cleared, so stalled connections no longer leak hanging promises indefinitely (#45689). Gateway/session reset: `lastAccountId` and `lastThreadId` preserved across session resets (#44773). Gateway/status: `openclaw gateway status --require-rpc` flag added (`src/cli/daemon-cli/status.ts`); clearer Linux non-interactive daemon-install failure reporting. Gateway/Control UI: operator-only device-auth bypass restored; browser connect failures classified so origin and device-identity problems no longer surface as generic auth errors (#45512). Security/bootstrap tokens: setup codes made single-use to prevent replay.
@@ -1476,7 +1485,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 - **`/tasks` chat board:** `/tasks` is now a chat-native background task board for the current session. Shows recent task details and agent-local fallback counts when no linked tasks are visible. The chat command routes through `auto-reply/` command handling.
 - **`openclaw tasks list|show|cancel` CLI:** first linear task flow control surface for manual multi-task management. Manual multi-task flows are kept separate from one-task auto-sync flows. Doctor recovery hints surface for obviously orphaned or broken flow/task linkage.
-- **Task-flow registry:** a minimal SQLite-backed task flow registry with task-to-flow linkage scaffolding gives orchestrated work a first-class parent record. Blocked state persisted on one-task flows; same flow reopens cleanly on retry.
+- **Task-flow registry:** a minimal SQLite-backed task flow registry with task-to-flow linkage scaffolding gives orchestrated work a first-class parent record. Blocked state persisted on one-task flows; same flow reopens cleanly on retry. (Expanded significantly in v2026.4.2 with the full Task Flow substrate -- see v2026.4.2 Delta Notes.)
 - **Task-flow owner context:** one-task ACP and subagent updates route through a parent task-flow owner context so detached work emerges through the intended parent thread/session.
 - **Gateway maintenance guard:** task registry maintenance sweep no longer stalls the gateway event loop under synchronous SQLite pressure. Re-checks the current task record before marking runs lost or pruning them.
 - **Status visibility:** stale completed background tasks hidden from `/status` and `session_status`; live task context preferred; recent failures shown only when no active work remains.
@@ -1491,3 +1500,70 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **`agents.defaults.params`:** global default provider parameters. Provider-specific params (e.g., `cacheRetention`, `service_tier`) can be set once in defaults.
 - **`agents.defaults.compaction.model`:** compaction model override resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints.
 - **Failover rate-limit caps:** prompt-side and assistant-side same-provider auth-profile retries capped for rate-limit failures before cross-provider model fallback. New knob: `auth.cooldowns.rateLimitedProfileRotations`.
+
+## v2026.4.2 Delta Notes
+
+### Tasks / Task Flow Substrate (#58930, #59610, #59622)
+
+The Task Flow registry, scaffolded in v2026.4.1, is now a fully restored core subsystem in `src/tasks/` with 42 files (up from 26 in v2026.4.1). The Task Flow substrate provides durable orchestration state for background work (ACP, subagents, cron, CLI runs).
+
+**New and expanded files:**
+
+| File | Description |
+|------|-------------|
+| `task-flow-registry.ts` | Core Task Flow registry — create, query, and drive managed flows |
+| `task-flow-registry.types.ts` | Task Flow type definitions (flow state, revision, sync modes) |
+| `task-flow-registry.store.ts` | Task Flow persistent store interface |
+| `task-flow-registry.store.sqlite.ts` | SQLite-backed Task Flow store implementation |
+| `task-flow-registry.paths.ts` | Task Flow file/directory path resolution |
+| `task-flow-registry.audit.ts` | Task Flow audit trail and history tracking |
+| `task-flow-registry.maintenance.ts` | Task Flow maintenance sweeps and orphan recovery |
+| `task-flow-runtime-internal.ts` | Internal runtime bridge between Task Flow registry and agent runtime |
+
+**Key capabilities:**
+- **Managed-vs-mirrored sync modes:** managed flows are fully owned by the Task Flow registry; mirrored flows track external state for observability without ownership.
+- **Durable flow state and revision tracking:** flow state persisted in SQLite with revision numbers for conflict-free updates.
+- **`openclaw tasks flow` CLI:** inspection and recovery primitives for background orchestration — list flows, show flow details, recover orphaned flows.
+- **Managed child task spawning with sticky cancel intent (#59610):** external orchestrators can stop scheduling immediately; parent Task Flows settle to `cancelled` once active child tasks finish.
+- **Plugin `api.runtime.taskFlow` seam (#59622):** bound plugin API surface in `src/plugin-sdk/` so plugins and trusted authoring layers can create and drive managed Task Flows from host-resolved OpenClaw context without passing owner identifiers on each call.
+
+### Providers / Transport Centralization (#59682, #59644, #59542, #59469, #59433, #59608)
+
+Major provider transport refactoring centralizing request handling across all provider communication paths:
+
+- **Request auth, proxy, TLS, header shaping:** centralized across shared HTTP, stream, and websocket paths. Insecure TLS/runtime transport overrides blocked; proxy-hop TLS kept separate from target mTLS settings (#59682).
+- **Provider endpoint classification hardened:** native GitHub Copilot API hosts classified in the shared provider endpoint resolver; token-derived proxy endpoint parsing fails closed on malformed hints (#59644). Native-vs-proxy endpoint classification centralized for direct Anthropic `service_tier` handling so spoofed or proxied hosts do not inherit native Anthropic defaults (#59608).
+- **Streaming header merging centralized:** default and attribution header merging unified across OpenAI websocket, embedded-runner, and proxy stream paths (#59542).
+- **Media HTTP handling centralized:** base URL normalization, default auth/header injection, and explicit header override handling unified across OpenAI-compatible audio, Deepgram audio, Gemini media/image, and Moonshot video request paths (#59469).
+- **Native-vs-proxy request policy:** centralized for OpenAI-compatible routing so hidden attribution and related OpenAI-family defaults only apply on verified native endpoints (#59433).
+
+### Providers / Replay Hook Surfaces (#59143)
+
+Provider-owned replay hook surfaces added for transcript policy, replay cleanup, and reasoning-mode dispatch. Providers can now own their replay behavior through registered hooks rather than relying on ad-hoc core logic.
+
+### Hooks / `before_agent_reply` (#20067)
+
+New plugin hook `before_agent_reply` added. Plugins can short-circuit the LLM with synthetic replies after inline actions, enabling plugin-driven response interception before the agent runtime invokes the model.
+
+### Agents / Compaction Configuration
+
+- **`agents.defaults.compaction.notifyUser` (#54251):** opt-in config so the `Compacting context...` start notice is only shown when explicitly enabled.
+- **`agents.defaults.compaction.model` (#56710):** resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints.
+
+### Agents / Exec Defaults
+
+Gateway/node host exec defaults to YOLO mode (`security=full`, `ask=off`). Host approval-file fallbacks and docs/doctor reporting aligned with the no-prompt default.
+
+### Agents / Subagents (#59555)
+
+Admin-only subagent gateway calls pinned to `operator.admin` while keeping `agent` at least privilege, so `sessions_spawn` no longer fails on loopback scope-upgrade pairing with `close(1008) "pairing required"`.
+
+### Sessions / Channel Session Routing
+
+Channel session routing moved to plugin-owned session-key surfaces. Provider-specific session conversation grammar (e.g. Telegram topic routing, Feishu scoped inheritance) is now managed through plugin-owned session-key surfaces, preserving correct routing across bootstrap, model override, restart, and tool-policy paths.
+
+### Gateway Fixes
+
+- **Exec loopback (#59092):** legacy-role fallback restored for empty paired-device token maps; silent local role upgrades allowed so local exec and node clients stop failing with pairing-required errors after `2026.3.31`.
+- **Session kill (#59128):** HTTP operator scopes enforced on session kill requests; authorization gated before session lookup so unauthenticated callers cannot probe session existence.
+- **Node-pending-work pruning (#58179):** empty `node-pending-work` state entries pruned after explicit acknowledgments and natural expiry so the per-node state map no longer grows indefinitely.

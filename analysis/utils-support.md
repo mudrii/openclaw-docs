@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-01 | **Version:** v2026.3.31 | **Codebase:** OpenClaw release tag `v2026.3.31`
+**Updated:** 2026-04-03 | **Version:** v2026.4.2 | **Codebase:** OpenClaw release tag `v2026.4.2`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** stable release-line snapshot across 14 support modules plus `apps/macos`
 
@@ -1142,3 +1142,28 @@ Shared test utilities and mock factories.
 ### Operator Reliability
 
 - **Wizard safety improved on remote-gateway decline:** onboarding support paths now reset back to the safe loopback default after rejecting a discovered remote URL.
+
+## v2026.4.2 Delta Notes
+
+### Plugins / Activation
+
+- **Preserve activation provenance and reason metadata** (#59641): Plugin activation state now preserves explicit, auto-enabled, and default activation provenance plus reason metadata across CLI, gateway bootstrap, and status surfaces. This ensures plugin enablement state stays accurate after auto-enable resolution, so `openclaw status`, `openclaw plugins`, and similar surfaces display the correct activation source (e.g. "auto-enabled: required by channel" vs "explicit: user-configured") instead of losing provenance during resolution.
+
+### Plugins / Runtime
+
+- **Reuse active registries for `web_search`/`web_fetch` resolution**: Compatible active plugin registries are now reused for `web_search` and `web_fetch` provider snapshot resolution. Previously, repeated runtime reads re-imported the same bundled plugin set on each agent message, adding unnecessary overhead. Registry reuse keeps provider resolution fast without redundant plugin loading.
+
+### Exec Approvals / Channels
+
+- **Auto-enable DM-first native chat approvals**: Native chat approval prompts are now auto-enabled when supported channels can infer approvers from existing owner config. DM-first delivery is preferred, while channel fanout remains explicit. This reduces configuration friction for operators who already have owner/approver config but had to manually enable native approval delivery for each channel.
+- **Decouple approval availability from native delivery enablement** (#59776): Initiating-surface approval availability is now decoupled from native delivery enablement, so Telegram, Slack, and Discord still expose approval prompts when approvers exist even when native target routing is configured separately.
+
+### Webhooks / Secret Comparison
+
+- **Shared `safeEqualSecret` helper** (#58432): Ad-hoc timing-safe secret comparisons across BlueBubbles, Feishu, Mattermost, Telegram, Twilio, and Zalo webhook handlers are replaced with the shared `safeEqualSecret` helper from `src/security/`. Empty auth tokens are now explicitly rejected in BlueBubbles. This centralizes webhook secret comparison logic and ensures consistent timing-safe behavior across all webhook-capable channels.
+
+### Telegram / Exec Approvals
+
+- **Topic-aware exec approval routing** (#58783): Exec approval followups in Telegram forum topics now route through Telegram-owned threading and approval-target parsing, so forum-topic approvals stay in the originating topic instead of falling back to the root chat.
+- **Callback data rewriting for `allow-always`** (#59217): Shared `/approve ... allow-always` callback payloads are rewritten to `/approve ... always` before Telegram button rendering so plugin approval IDs fit within Telegram's `callback_data` size limit while keeping the Allow Always action visible.
+- **Session key fallback for async approvals** (#59351): Async approval followups now fall back to the origin session key, and resume-failure status delivery is sanitized so Telegram followups still land without leaking raw exec metadata.

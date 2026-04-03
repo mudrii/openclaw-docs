@@ -8,7 +8,7 @@
 
 ## Project Structure & Module Organization
 
-- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, shared web channel pieces in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`, MCP bridge in `src/mcp/`, released task control plane in `src/tasks/`, and released web search runtime in `src/web-search/`). Browser automation for the current stable line lives in `extensions/browser/`. Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity). v2026.3.28+: `src/mcp/` (channel-server, channel-bridge, channel-tools — gateway-backed MCP bridge for Codex/Claude channel tool access). v2026.4.1+: bundled SearXNG web search provider plugin in `extensions/searxng/`; Bedrock Guardrails in `extensions/amazon-bedrock/`; `/tasks` chat-native task board; Feishu Drive comment-event flow with `feishu_drive` actions.
+- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, shared web channel pieces in `src/channels/web/index.ts`, infra in `src/infra`, media pipeline in `src/media`, context engine plugin slot in `src/context-engine/`, MCP bridge in `src/mcp/`, released task control plane in `src/tasks/`, released web search runtime in `src/web-search/`, and released web fetch runtime in `src/web-fetch/`). Browser automation for the current stable line lives in `extensions/browser/`. Notable v2026.3.12+ additions: `src/agents/tools/sessions-yield-tool.ts` (cooperative turn-ending primitive) and `src/agents/pi-extensions/compaction-instructions.ts` (per-agent compaction language continuity). v2026.3.28+: `src/mcp/` (channel-server, channel-bridge, channel-tools — gateway-backed MCP bridge for Codex/Claude channel tool access). v2026.4.1+: bundled SearXNG web search provider plugin in `extensions/searxng/`; Bedrock Guardrails in `extensions/amazon-bedrock/`; `/tasks` chat-native task board; Feishu Drive comment-event flow with `feishu_drive` actions. v2026.4.2+: Task Flow Registry (`src/tasks/task-flow-registry.*` — managed orchestration with durable flow state, revision tracking, and `openclaw tasks flow` inspection/recovery); Web Fetch Runtime (`src/web-fetch/runtime.ts` — fetch-provider boundary for `web_fetch` fallback routing); `src/agents/exec-approval-result.ts` (typed approval outcomes); `src/agents/internal-runtime-context.ts` (internal agent runtime context).
 - Tests: colocated `*.test.ts`.
 - Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
 - Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
@@ -145,14 +145,23 @@
 - **LINE timing-safe HMAC (v2026.3.28+):** LINE webhook signature verification uses constant-time comparison. Do not roll custom HMAC comparison for LINE — use the shared `security/secret-equal.ts` helper.
 - **Extended web search key audit (v2026.3.28+):** `openclaw security audit` now covers Gemini, xAI, Kimi, Moonshot, and OpenRouter API key exposure, in addition to existing providers. Run after any provider config change.
 - **`gateway.auth.mode` is now required** when both `gateway.auth.token` and `gateway.auth.password` are configured. Omitting it causes a startup error (introduced v2026.3.7). Run `openclaw doctor --fix` to auto-migrate.
+- **Exec YOLO defaults (v2026.4.2+):** gateway/node host exec now defaults to YOLO mode (`security=full`, `ask=off`). Host approval-file fallbacks and docs/doctor reporting align with that no-prompt default. Review `exec-approvals.json` and `openclaw doctor` output after upgrading if you rely on approval prompts.
+- **xAI `x_search` config migration (v2026.4.2):** `tools.web.x_search.*` moved to `plugins.entries.xai.config.xSearch.*`; auth standardized on `plugins.entries.xai.config.webSearch.apiKey` / `XAI_API_KEY`. Run `openclaw doctor --fix` to migrate.
+- **Firecrawl `web_fetch` config migration (v2026.4.2):** `tools.web.fetch.firecrawl.*` moved to `plugins.entries.firecrawl.config.webFetch.*`; `web_fetch` fallback now routes through the fetch-provider boundary (`src/web-fetch/runtime.ts`). Run `openclaw doctor --fix` to migrate.
+- **Task Flow Registry (v2026.4.2+):** managed orchestration substrate with durable flow state/revision tracking and `openclaw tasks flow` inspection/recovery. Task Flow has its own test surface (`task-flow-registry.test.ts`, `task-flow-registry.maintenance.test.ts`, `task-flow-registry.audit.test.ts`, `task-flow-owner-access.test.ts`). Plugins can drive managed Task Flows via the bound `api.runtime.taskFlow` seam.
 - Web provider stores creds at `~/.openclaw/credentials/`; rerun `openclaw channels login --channel web` if logged out.
 - Pi sessions live under `~/.openclaw/sessions/` by default; the base directory is not configurable.
 - Environment variables: see `~/.profile`. Container runtime: set `OPENCLAW_CONTAINER` or use CLI `--container` flag for Docker/Podman container commands.
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
-## v2026.4.1 Behavioral Changes
+## v2026.4.2 Behavioral Changes
 
+- **Exec defaults now YOLO:** gateway/node host exec defaults to `security=full` with `ask=off`. Host approval-file fallbacks and docs/doctor reporting align with that no-prompt default. If you relied on approval prompts for gateway/node exec, configure `ask` explicitly.
+- **xAI `x_search` config relocated:** `tools.web.x_search.*` moved to `plugins.entries.xai.config.xSearch.*`; auth standardized on `plugins.entries.xai.config.webSearch.apiKey` / `XAI_API_KEY`. Legacy config migrated with `openclaw doctor --fix`.
+- **Firecrawl `web_fetch` config relocated:** `tools.web.fetch.firecrawl.*` moved to `plugins.entries.firecrawl.config.webFetch.*`; `web_fetch` fallback routes through the new fetch-provider boundary instead of a Firecrawl-only core branch.
+- **Task Flow Registry restored:** managed-vs-mirrored sync modes, durable flow state/revision tracking, and `openclaw tasks flow` inspection/recovery primitives. Plugins can drive managed Task Flows via the bound `api.runtime.taskFlow` seam. Task Flow has its own test files spanning `task-flow-registry.test.ts`, maintenance, audit, and owner-access tests.
+- **Provider transport centralized:** request auth, proxy, TLS, and header shaping are centralized across shared HTTP, stream, and websocket paths. Insecure TLS/runtime transport overrides are blocked. Provider transport changes span multiple test files.
 - **Exec `allow-always` is now durable:** previously behaved as `allow-once`. Now persists across restarts via `exec-approvals.json`. Shell-wrapper paths reuse exact-command trust. Static allowlist entries no longer silently bypass `ask:"always"`.
 - **Slack and Discord native exec approval routing:** approval prompts can stay in Slack/Discord instead of falling back to Web UI or terminal. Default approval window extended to 30 minutes.
 - **`agents.defaults.params` for global default provider params:** applies to all model calls unless overridden per-agent or per-model. Review existing per-provider params to avoid unintended global application.
@@ -274,7 +283,7 @@
   - skip if package is missing on npm or version already matches.
 - Keep `openclaw` untouched: never run publish from repo root unless explicitly requested.
 - Post-check for each release:
-  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.4.1`)
+  - per-plugin: `npm view @openclaw/<name> version --userconfig "$(mktemp)"` should match the current stable release line (currently `2026.4.2`)
   - core guard: `npm view openclaw version --userconfig "$(mktemp)"` should stay at previous version unless explicitly requested.
 
 ## Changelog Release Notes

@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.1-1 (2026-04-02).** Latest published upstream release: v2026.4.1 (published 2026-04-01 UTC).
+> **Current docs version: v2026.4.2-1 (2026-04-03).** Latest published upstream release: v2026.4.2 (published 2026-04-02 UTC).
 
 ---
 
@@ -26,7 +26,9 @@ Use this routing first to avoid scanning the whole file.
 | Plugin/extension development | §2 Plugin Loading → §8 file placement (`extensions/`) → §5 checklist |
 | Configure health probes (Docker/K8s) | §6 config (`gateway`) → §9 gotchas #96 → Gateway probe endpoints (`/health`, `/healthz`, `/ready`, `/readyz`) |
 | Use PDF/diffs tool | §8 file placement (`extensions/`) → §2 Tool Execution → §3 (`agents/pi-tools.ts`) → §5 checklist |
-| Fix task/flow lifecycle | §2 Tool Execution → §3 (`src/tasks/`) → §9 gotchas #119 #126 → §5 checklist |
+| Fix task/flow lifecycle | §2 Task Flow Lifecycle → §3 (`src/tasks/`) → §9 gotchas #119 #126 #129 #130 → §5 checklist |
+| Change provider transport/auth | §2 Tool Execution → §3 (`agents/model-selection.ts`) → §9 gotchas #131 #132 → §5 checklist |
+| Fix config migration (xAI/Firecrawl) | §6 config → §9 gotchas #129 #130 → §5 checklist (`openclaw doctor --fix`) |
 | Prepare PR | §4 testing → §5 checklist → §10 PR practices |
 | Debug triage | §11 Debugging Workflow → §9 gotcha index → §2 critical paths |
 
@@ -54,6 +56,7 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 | 5     | `cron/`       | `config/`, `agents/`, `routing/`, `infra/`, `auto-reply/`                       | `gateway/`, `agents/tools/`                | 🟡          |
 | 5     | `hooks/`      | `config/`, `agents/`, `plugins/`, `markdown/`, `process/`                       | `gateway/`, `agents/`, `plugins/`          | 🟡          |
 | 5     | `plugins/`    | `config/`, `agents/`, `channels/`, `hooks/`, `infra/`, `logging/`               | `gateway/`, `channels/`, `cli/`            | 🟡          |
+| 5     | `tasks/`      | `config/`, `infra/`, `logging/`, `agents/`                                      | `gateway/`, `cron/`, `agents/tools/`, `cli/` | 🟡          |
 | 5     | `security/`   | `agents/`, `browser/`, `channels/`, `config/`, `gateway/`, `infra/`, `plugins/` | `cli/`, `gateway/`, `acp/`                 | 🟢          |
 | 5     | `browser/`    | `config/`, `infra/`                                                             | `agents/tools/`, `gateway/`, `cli/`        | 🟢          |
 | 5     | `media/`      | `config/`, `infra/`                                                             | `agents/`, `auto-reply/`, channels         | 🟢          |
@@ -62,9 +65,19 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 | 7     | `cli/`        | `config/`, `commands/`, `infra/`, `agents/`, `plugins/`                         | Package entry point                        | 🟡          |
 | 7     | `commands/`   | `config/`, `cli/`, `infra/`, `agents/`, `channels/`, `daemon/`                  | `cli/`                                     | 🟡          |
 
-Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
+Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.1 additions (current release line):**
+**v2026.4.2 additions (current release line):**
+
+- **Task Flow registry (`src/tasks/task-flow-registry.*`):** managed-vs-mirrored sync modes, durable flow state/revision tracking, `openclaw tasks flow` CLI for inspection/recovery, managed child task spawning with sticky cancel intent, and a bound `api.runtime.taskFlow` seam for plugins. Key files: `task-flow-registry.ts`, `.types.ts`, `.store.ts`, `.store.sqlite.ts`, `.paths.ts`, `.audit.ts`, `.maintenance.ts`, `task-flow-runtime-internal.ts`. If you touch `src/tasks/`, test task lifecycle (create, sync, cancel, maintenance sweep) and `openclaw tasks flow` output.
+- **Provider transport centralization:** request auth, proxy, TLS, and header shaping are now centralized across shared HTTP, stream, and websocket paths. Insecure TLS/runtime transport overrides are blocked. Proxy-hop TLS is separate from target mTLS. If you change provider transport or auth, test across all three transport modes (HTTP, stream, websocket).
+- **Exec defaults: YOLO mode:** gateway/node host exec now defaults to `security=full` with `ask=off`. Host approval-file fallbacks and docs/doctor reporting align with the no-prompt default. Changes to exec defaults have cross-platform implications (Windows, node host).
+- **Plugin hook `before_agent_reply`:** plugins can now short-circuit the LLM with synthetic replies after inline actions. If you change plugin hook dispatch or reply pipeline, test `before_agent_reply` alongside `before_tool_call` and `before_dispatch`.
+- **Config migrations: xAI and Firecrawl:** `x_search` settings moved from `tools.web.x_search.*` to `plugins.entries.xai.config.xSearch.*`. Firecrawl `web_fetch` moved from `tools.web.fetch.firecrawl.*` to `plugins.entries.firecrawl.config.webFetch.*`. Both require `openclaw doctor --fix` migration testing.
+- **`web-fetch/runtime.ts` (new):** web fetch fallback now routes through a fetch-provider boundary instead of Firecrawl-only core branch. If you touch `src/web-fetch/`, test provider routing across Firecrawl and non-Firecrawl paths.
+- **`agents/exec-approval-result.ts` and `agents/internal-runtime-context.ts` (new):** exec approval result types and internal runtime context are now separate modules. If you touch exec approval or agent runtime internals, verify these are imported correctly.
+
+**v2026.4.1 additions (historical):**
 
 - **Chat-native `/tasks` board:** `/tasks` is now a first-class chat command exposing the background task board for the current session with agent-local fallback counts. Changes to task status, task-flow linkage, or `/status` rendering should test `/tasks` output alongside `openclaw tasks list|show|cancel`.
 - **SearXNG web search:** a bundled SearXNG provider plugin is now part of the released `web_search` surface. If you touch `src/web-search/` or web search provider discovery, test SearXNG alongside existing providers (Brave, Perplexity, Pi/Codex native search).
@@ -199,6 +212,11 @@ Released channel implementations mostly live in `extensions/` (`telegram/`, `dis
 | `node-host/invoke-system-run.ts`    | system.run command resolution (security-critical)                  |
 | `process/exec.ts`                   | `runCommandWithTimeout()` — used by every tool execution path      |
 | `agents/model-selection.ts`         | Model resolution across all agents, directives, cron, subagents    |
+| `agents/exec-approval-result.ts`   | Exec approval result types — used by approval pipeline and channels |
+| `agents/internal-runtime-context.ts` | Internal agent runtime context — used by embedded runner and subagents |
+| `tasks/task-flow-registry.ts`       | Task Flow registry — durable flow state, sync, lifecycle for all task orchestration |
+| `tasks/task-flow-registry.store.sqlite.ts` | Task Flow SQLite persistence — backing store for durable flow state |
+| `web-fetch/runtime.ts`             | Web fetch provider routing — shared fetch-provider boundary         |
 
 ### Risk Level Definitions
 
@@ -300,6 +318,35 @@ gateway/server-plugins.ts
 → plugins/runtime.ts → setActivePluginRegistry()
 ```
 
+### Task Flow Lifecycle: Create → Sync → Complete/Cancel
+
+```
+Plugin or agent tool → api.runtime.taskFlow (bound seam)
+→ tasks/task-flow-registry.ts             # createFlow(), syncFlow(), cancelFlow()
+  ├─ task-flow-registry.types.ts          # FlowState, SyncMode (managed|mirrored)
+  ├─ task-flow-registry.store.ts          # store abstraction
+  ├─ task-flow-registry.store.sqlite.ts   # SQLite durable persistence
+  ├─ task-flow-registry.paths.ts          # flow state directory resolution
+  ├─ task-flow-registry.audit.ts          # audit trail for flow transitions
+  └─ task-flow-registry.maintenance.ts    # async sweep, stale flow cleanup
+→ tasks/task-flow-runtime-internal.ts     # internal runtime wiring
+→ gateway/ or agents/tools/               # flow status exposed via CLI and /tasks
+→ openclaw tasks flow list|show|cancel    # operator inspection/recovery
+```
+
+### Provider Transport: Auth → Request → Response
+
+```
+agents/model-selection.ts → resolve model + auth profile
+→ providers/transport-policy.ts           # centralized request policy
+  ├─ HTTP path: shared request auth, proxy, TLS, headers
+  ├─ Stream path: SSE streaming with attribution headers
+  └─ WebSocket path: WS streaming with auth + proxy
+→ providers/endpoint-resolver.ts          # native-vs-proxy classification
+→ providers/<provider>/request.ts         # provider-specific request shaping
+→ Response processing (streaming or buffered)
+```
+
 ---
 
 ## 3. Change Impact Matrix
@@ -341,6 +388,15 @@ gateway/server-plugins.ts
 | `src/tasks/` task-flow linkage or status rendering | `/tasks` chat command, `openclaw tasks list\|show\|cancel`, `/status` task cards, detached-run delivery, task-flow blocked/retry state |
 | Exec approval persistence or `exec-approvals.json` | `allow-always` durability across restarts, shell-wrapper exact-command trust, Slack/Discord native approval routing, Windows approval plan generation |
 | `agents.defaults.params` or provider param injection | Global default params merging with per-agent, per-model, and inline directive overrides |
+| `src/tasks/task-flow-registry*` | Task Flow lifecycle (create, sync, cancel, maintenance sweep); `openclaw tasks flow` CLI output; `/tasks` chat command; durable flow state persistence; managed child task spawning |
+| `src/tasks/task-flow-runtime-internal.ts` | Plugin `api.runtime.taskFlow` seam; managed Task Flow creation from plugins and authoring layers |
+| Provider transport policy or auth/header injection | All three transport modes (HTTP, stream, websocket); native-vs-proxy endpoint classification; attribution headers; mTLS settings; proxy-hop TLS isolation |
+| `src/web-fetch/runtime.ts` | Web fetch provider routing; Firecrawl and non-Firecrawl fallback paths; plugin-owned fetch provider boundary |
+| `agents/exec-approval-result.ts` | Exec approval pipeline result types; channel-specific approval routing (Telegram, Slack, Discord) |
+| `agents/internal-runtime-context.ts` | Agent embedded runner; subagent context propagation; runtime context threading |
+| Plugin hook `before_agent_reply` | Synthetic reply short-circuit after inline actions; verify alongside `before_tool_call` and `before_dispatch` hooks |
+| xAI `x_search` or Firecrawl `web_fetch` config paths | Plugin-owned config paths (`plugins.entries.xai.config.xSearch.*`, `plugins.entries.firecrawl.config.webFetch.*`); `openclaw doctor --fix` migration; legacy core config path removal |
+| Exec defaults (`security`, `ask`, host approval) | YOLO mode (`security=full`, `ask=off`); cross-platform approval-file fallbacks; Windows and node host exec; doctor reporting |
 
 ### Cross-Module Side Effects (Non-Obvious)
 
@@ -349,6 +405,8 @@ gateway/server-plugins.ts
 - **`channels/dock.ts`**: Returns channel metadata without importing heavy channel code. If you change a channel's capabilities, update the dock too.
 - **`auto-reply/thinking.ts`**: `VerboseLevel` is used by `sessions/level-overrides.ts` - changing enum values breaks session persistence.
 - **`infra/outbound/deliver.ts`**: Used by both cron delivery AND channel tool message sending. Changes affect both paths.
+- **`tasks/task-flow-registry.*` → `gateway/` → `agents/tools/` → `cli/`**: Task Flow state changes ripple through gateway task status, agent tool task discovery, CLI `openclaw tasks flow`, and `/tasks` chat command rendering.
+- **Provider transport → `agents/model-selection.ts` → all provider request paths**: Transport policy centralization means auth, proxy, and TLS changes affect HTTP, stream, and websocket paths simultaneously. Test all three.
 
 ---
 
@@ -462,6 +520,8 @@ Conditional checks:
 □ If `routing/*` changed: verify session key parsing + cron + subagent routing
 □ If `agents/pi-tools*` changed: run tool policy + tool execution paths
 □ If `auto-reply/reply/get-reply.ts` changed: run reply pipeline checks across fallback paths
+□ If `src/tasks/task-flow-registry*` changed: test task lifecycle (create, sync, cancel, maintenance sweep) + `openclaw tasks flow` CLI
+□ If provider transport/auth changed: test HTTP, stream, and websocket paths + native-vs-proxy classification
 □ If `gateway/protocol/schema/**` changed: run pnpm protocol:gen:swift && pnpm protocol:check
 ```
 
@@ -471,6 +531,16 @@ Conditional checks:
 pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
+
+### Release-window Workflow Additions (v2026.4.2)
+
+- **Task Flow registry is a durable substrate:** `src/tasks/task-flow-registry.*` now manages persistent flow state with managed-vs-mirrored sync modes. If you touch `src/tasks/`, test task lifecycle (create, sync, cancel, maintenance sweep), `openclaw tasks flow` CLI output, and `/tasks` chat rendering.
+- **Provider transport is centralized:** request auth, proxy, TLS, and header shaping are shared across HTTP, stream, and websocket paths. If you change provider transport or request policy, test all three transport modes plus native-vs-proxy endpoint classification.
+- **Exec defaults are YOLO by default:** gateway/node host exec now defaults to `security=full` with `ask=off`. If you change exec defaults or approval behavior, test cross-platform (Windows, node host) and verify doctor reporting.
+- **`before_agent_reply` hook exists:** plugins can short-circuit LLM replies with synthetic responses. If you change plugin hook dispatch or the reply pipeline, verify `before_agent_reply` alongside other hooks.
+- **xAI `x_search` config migrated to plugin-owned path:** `tools.web.x_search.*` is now `plugins.entries.xai.config.xSearch.*`. Test `openclaw doctor --fix` migration and verify xAI plugin auto-enable from config.
+- **Firecrawl `web_fetch` config migrated to plugin-owned path:** `tools.web.fetch.firecrawl.*` is now `plugins.entries.firecrawl.config.webFetch.*`. Test `openclaw doctor --fix` migration and verify web fetch provider routing.
+- **`web-fetch/runtime.ts` routes through provider boundary:** web fetch fallback is no longer Firecrawl-only. If you touch `src/web-fetch/`, test Firecrawl and non-Firecrawl provider paths.
 
 ### Release-window Workflow Additions (v2026.4.1)
 
@@ -661,6 +731,8 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 >
 > **v2026.3.13 additions:** `agents.defaults.compaction.customInstructions` (string) — per-agent instructions for compaction to preserve language/style continuity. `OPENCLAW_TZ` environment variable for Docker timezone pinning. `agents.list[].params`, `tools.web.fetch.readability`, `tools.web.fetch.firecrawl`, `channels.signal.groups`, `discovery.wideArea.domain` are now accepted config keys (previously Zod-rejected as unknown).
 >
+> **v2026.4.2 additions:** `plugins.entries.xai.config.xSearch.*` — plugin-owned xAI x_search config (migrated from `tools.web.x_search.*`). `plugins.entries.xai.config.webSearch.apiKey` — xAI web search API key. `plugins.entries.firecrawl.config.webFetch.*` — plugin-owned Firecrawl web_fetch config (migrated from `tools.web.fetch.firecrawl.*`). `agents.defaults.compaction.notifyUser` (bool) — opt-in compaction start notice. Provider transport policy: insecure TLS/runtime overrides blocked; proxy-hop TLS separated from target mTLS.
+>
 > **v2026.4.1 additions:** `agents.defaults.params` (object) — global default provider parameters applied to all model calls unless overridden per-agent or per-model. `gateway.webchat.chatHistoryMaxChars` (number) — configurable chat history text truncation for webchat. `auth.cooldowns.rateLimitedProfileRotations` (number) — cap for same-provider auth-profile retries before cross-provider fallback. `channels.telegram.errorPolicy` (string) and `channels.telegram.errorCooldownMs` (number) — per-account/chat/topic error suppression. `channels.whatsapp.reactionLevel` (string) — agent reaction guidance level. `webSearch.searxng.host` (string) — SearXNG instance host for bundled web search provider.
 
 ### How to Add a New Config Key
@@ -745,19 +817,20 @@ src/<module>/
 
 ### Gotcha Index by Domain
 
-- **Config & Auth:** #1, #6, #16, #33, #34, #37, #44, #61, #62, #67, #68, #73, #74, #82
+- **Config & Auth:** #1, #6, #16, #33, #34, #37, #44, #61, #62, #67, #68, #73, #74, #82, #129, #130
 - **Routing & Sessions:** #3, #6, #17, #18, #20, #67, #70, #99, #100, #105
 - **Telegram/Channel Delivery:** #8, #9, #10, #12, #35, #36, #99, #104
-- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52, #63, #66, #79, #80, #84, #88, #89, #92, #93, #98, #102, #103
+- **Tooling & Agent Runtime:** #5, #19, #39, #40, #41, #51, #52, #63, #66, #79, #80, #84, #88, #89, #92, #93, #98, #102, #103, #132, #133, #134
 - **Security/Network:** #38, #42, #43, #45, #46, #47, #48, #53, #54, #55, #56, #57, #58, #64, #65, #66, #73, #74, #75, #96, #97
 - **Channel/Streaming Config:** #36, #49, #50, #62, #72, #81, #83, #94
 - **Subagent/Ownership:** #48, #53, #98
-- **Provider/Model:** #59, #68, #69, #71, #72, #94, #95
+- **Provider/Model:** #59, #68, #69, #71, #72, #94, #95, #131
 - **Breaking Changes (v2026.2.22):** #59, #60, #61, #62, #63
 - **Breaking Changes (v2026.3.1):** #92, #93
 - **Breaking Changes (v2026.3.7):** #106
 - **Breaking Changes (v2026.3.28):** #107, #108, #109, #110
 - **Behavioral Shifts (v2026.4.1):** #121, #122, #123, #124, #125, #126, #127, #128
+- **Breaking Changes (v2026.4.2):** #129, #130, #131, #132, #133, #134
 - **Operational Notes (v2026.3.28):** #111, #112, #113
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
 - **Feishu:** #101
@@ -1085,6 +1158,24 @@ src/<module>/
 
 128. **WhatsApp `reactionLevel` guidance** — agents can now react with emoji on incoming WhatsApp messages based on `reactionLevel` config. Default behavior may include reactions where none existed before. Set `reactionLevel: "none"` to suppress.
 
+### v2026.4.2 Specific
+
+**BREAKING CHANGES (v2026.4.2):**
+
+129. **xAI `x_search` config path moved to plugin-owned** — `tools.web.x_search.*` is now `plugins.entries.xai.config.xSearch.*`. Legacy config at the old path will fail validation. Run `openclaw doctor --fix` to migrate. xAI `x_search` auth is standardized on `plugins.entries.xai.config.webSearch.apiKey` / `XAI_API_KEY`.
+
+130. **Firecrawl `web_fetch` config path moved to plugin-owned** — `tools.web.fetch.firecrawl.*` is now `plugins.entries.firecrawl.config.webFetch.*`. Legacy config at the old path will fail validation. Run `openclaw doctor --fix` to migrate. Web fetch fallback now routes through the fetch-provider boundary instead of Firecrawl-only core branch.
+
+**BEHAVIORAL SHIFTS (v2026.4.2):**
+
+131. **Provider transport is centralized across HTTP/stream/websocket** — request auth, proxy, TLS, and header shaping are now shared across all three transport modes. Insecure TLS/runtime transport overrides are blocked. Proxy-hop TLS is separate from target mTLS settings. If you change provider request behavior, you must test all three transport paths (HTTP, SSE stream, websocket). Attribution headers are merged consistently across embedded-runner, proxy stream, and OpenAI websocket paths.
+
+132. **Exec defaults to YOLO mode** — gateway/node host exec now defaults to `security=full` with `ask=off` (no approval prompt). Host approval-file fallbacks and doctor reporting align with this no-prompt default. If your setup previously relied on interactive approval prompts as a security gate, review exec policy after upgrade. Windows builds and node hosts are affected.
+
+133. **`before_agent_reply` hook can short-circuit LLM** — plugins implementing `before_agent_reply` can return synthetic replies, bypassing the LLM entirely after inline actions. If you change reply pipeline dispatch, verify that `before_agent_reply` hooks are evaluated before LLM invocation and that short-circuit replies are delivered correctly.
+
+134. **Task Flow managed child spawning with sticky cancel** — external orchestrators can stop scheduling immediately via sticky cancel intent, and parent Task Flows settle to `cancelled` once active child tasks finish. If you change task cancellation or flow lifecycle, verify that cancel intent propagates correctly through managed child hierarchies and that parent flows do not settle prematurely.
+
 ### v2026.3.28 Specific
 
 **BREAKING CHANGES (v2026.3.28):**
@@ -1278,7 +1369,7 @@ Core built-in channels (leaf modules, 🟢 risk):
 extensions/telegram/   extensions/discord/   extensions/slack/      extensions/signal/
 extensions/imessage/   extensions/whatsapp/  extensions/feishu/     extensions/matrix/
 extensions/qqbot/      extensions/browser/   src/channels/          src/routing/
-src/line/              src/tasks/            src/web-search/
+src/line/              src/tasks/            src/web-search/        src/web-fetch/
 ```
 
 Additional source modules beyond §1's map:
@@ -1295,6 +1386,7 @@ Additional source modules beyond §1's map:
 | `terminal/` | Terminal UI utilities (table, palette, progress) |
 | `tts/` | Text-to-speech |
 | `tui/` | Terminal UI (TUI) |
+| `web-fetch/` | Web fetch provider routing and runtime |
 | `wizard/` | Onboarding wizard |
 | `daemon/` | Daemon management |
 

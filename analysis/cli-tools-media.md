@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
+> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
 
 ## Overview
 
@@ -1013,3 +1013,19 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Runtime Controls
 
 - **OpenAI Responses `text.verbosity` is a released tool/runtime behavior:** CLI and tooling docs should treat it as part of the stable Responses surface, not a beta-only toggle.
+
+## v2026.4.2 Delta Notes
+
+### Diffs
+
+- **Plugin-owned `viewerBaseUrl`** (#59341): the diffs plugin now supports a plugin-owned `viewerBaseUrl` config so viewer links can use a stable proxy/public origin without passing `baseUrl` on every tool call.
+
+### Image Tool
+
+- **Relative path resolution against `workspaceDir`** (#57222): the image tool now resolves relative local media paths against the agent `workspaceDir` instead of `process.cwd()` so inputs like `inbox/receipt.png` pass the local-path allowlist reliably.
+- **Image generation routed through shared provider HTTP transport** (#59469): OpenAI, MiniMax, and fal image generation requests now route through the shared provider HTTP transport path so custom base URLs, guarded private-network routing, and provider request defaults stay aligned. Private-network access is no longer inferred from configured image base URLs; shared HTTP error-body reads are capped so hostile or misconfigured endpoints fail closed without relaxing SSRF policy.
+
+### Web Fetch
+
+- **Firecrawl config migrated to plugin boundary (BREAKING)** (#59465): Firecrawl `web_fetch` config moved from `tools.web.fetch.firecrawl.*` to `plugins.entries.firecrawl.config.webFetch.*`. `web_fetch` fallback now routes through a new fetch-provider boundary instead of a Firecrawl-only core branch. Legacy config migrated via `openclaw doctor --fix`.
+- **Provider runtime registries reused** (related #48380): `web_search` and `web_fetch` provider snapshot resolution now reuses compatible active registries so repeated runtime reads do not re-import the same bundled plugin set on each agent message.

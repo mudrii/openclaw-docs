@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-01 | Version: v2026.3.31 | Codebase: OpenClaw release tag `v2026.3.31`
+> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
 
 ---
 
@@ -1173,3 +1173,17 @@ The helper module `src/utils/cjk-chars.ts` exports `estimateStringChars(text)`, 
 ### Cron / Detached Work
 
 - **Cron work now shares the same durable task ledger as ACP and subagents:** release-line cron documentation should treat task records, audit, and maintenance as part of normal detached-run behavior rather than an ACP-only implementation detail.
+
+## v2026.4.2 Delta Notes
+
+### Cron
+
+- **Exec timeout visibility** (#58247): timed-out `exec` and `bash` failures in isolated cron runs are now surfaced even when `verbose: off`, including custom session-target cron jobs. Scheduled runs no longer fail silently on exec timeouts.
+- **Per-job tool allowlists** (#58504): `openclaw cron --tools` added for per-job tool allowlists, enabling finer-grained tool access control for cron jobs.
+- **Isolated session retry stability** (#57972): the full live-session provider, model, and auth-profile selection is now carried across retry restarts so cron jobs with model overrides no longer fail or loop on mid-run model-switch requests.
+
+### Tasks / Task Flow
+
+- **Core Task Flow substrate restored** (#58930, #59610): managed-vs-mirrored sync modes, durable flow state/revision tracking, and `openclaw tasks flow` inspection/recovery primitives are now part of the released surface. Managed child task spawning plus sticky cancel intent added so external orchestrators can stop scheduling immediately and let parent Task Flows settle to `cancelled` once active child tasks finish.
+- **Plugin `api.runtime.taskFlow` seam** (#59622): plugins and trusted authoring layers can now create and drive managed Task Flows from host-resolved OpenClaw context without passing owner identifiers on each call.
+- **Cron/task interop:** cron work continues to share the same durable task ledger as ACP and subagents. Task Flow documentation should treat the `openclaw tasks flow` surface as the primary orchestration primitive for background work.

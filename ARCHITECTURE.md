@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-02 (docs snapshot: v2026.4.1) | Released baseline: GitHub `v2026.4.1`
+> Updated: 2026-04-03 (docs snapshot: v2026.4.2) | Released baseline: GitHub `v2026.4.2`
 
 ---
 
@@ -28,9 +28,9 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.1`), the `agents` module is the largest core subtree at roughly 1,070 `.ts` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 373 `.ts` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery. The `tasks` module (`src/tasks/`) provides the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, and status surfaces.
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.2`), the `agents` module is the largest core subtree at roughly 1,070 `.ts` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 373 `.ts` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery. The `tasks` module (`src/tasks/`) provides the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, and status surfaces. In `v2026.4.2`, the tasks module gains the **Task Flow Registry** — a durable flow orchestration substrate with managed-vs-mirrored sync modes, revision tracking, child task spawning with sticky cancel intent, and `openclaw tasks flow` inspection/recovery primitives.
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (91 extension directories, 84 packages as of `v2026.4.1`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (84 extension packages as of `v2026.4.2`, consolidated from 91 in v2026.4.1). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -176,11 +176,12 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `extensions/qqbot/` | 45 | ~12,000+ | QQ Bot bundled channel plugin: multi-account setup, slash commands, reminders, media send/receive, and released allowlist hardening | config, auto-reply, channels |
 | `web-search/` | 2 | ~500+ | Shared web-search runtime wiring and provider selection for bundled search plugins (including SearXNG) and Pi/native search flows | agents, config |
 | `memory/` | 84 | ~17,000+ | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
-| `tasks/` | 26 | ~5,000+ | SQLite-backed background task control plane: task registry, executor, ownership, audit, maintenance, status, and task-flow linkage for ACP/subagent/cron/CLI detached runs | config, agents, gateway |
+| `tasks/` | 34 | ~8,000+ | SQLite-backed background task control plane: task registry, executor, ownership, audit, maintenance, status, and task-flow linkage for ACP/subagent/cron/CLI detached runs. In v2026.4.2, includes **Task Flow Registry** (`task-flow-registry.ts`, `.types.ts`, `.store.ts`, `.store.sqlite.ts`, `.paths.ts`, `.audit.ts`, `.maintenance.ts`, `task-flow-runtime-internal.ts`): durable flow orchestration with managed-vs-mirrored sync modes, revision tracking, child task spawning with sticky cancel intent, and `openclaw tasks flow` inspection/recovery primitives | config, agents, gateway |
+| `web-fetch/` | 2 | ~400+ | Web fetch runtime boundary: Firecrawl `web_fetch` moved from core to plugin-owned path via `runtime.ts`; provides the fetch-provider abstraction that plugins implement | config, plugins |
 | `cron/` | 71 | ~14,800+ | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
 | `hooks/` | 38 | ~6,600+ | Event-driven hooks: lifecycle events, Gmail integration, slug generation | config, agents, plugins |
 | `plugins/` | 273 | ~63,000+ | Plugin discovery, loading (jiti), registry, hook runner, HTTP routes, services, auth scoping, and bundled runtime ownership seams | config, agents, channels |
-| `plugin-sdk/` | 317 | ~22,000+ | Released SDK surface and runtime helpers for plugin authors; current public path is `openclaw/plugin-sdk/*` | channels, config, routing |
+| `plugin-sdk/` | 317 | ~22,000+ | Released SDK surface and runtime helpers for plugin authors; current public path is `openclaw/plugin-sdk/*`. In v2026.4.2, adds `api.runtime.taskFlow` seam so plugins can create and drive managed Task Flows from host-resolved context | channels, config, routing, tasks |
 | `cli/` | 254 | ~35,900+ | CLI entry point (Commander.js), subcommands, argument parsing | commands, config, agents |
 | `commands/` | 304 | ~52,400+ | Command implementations: agent, doctor, onboard, configure, models, status | cli, config, agents, gateway, daemon |
 | `tui/` | 45 | ~7,500+ | Terminal UI (pi-tui): interactive chat, slash commands, streaming | @mariozechner/pi-tui, gateway |
@@ -197,7 +198,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `daemon/` | 40 | ~5,700+ | OS service management: launchd (macOS), systemd (Linux), schtasks (Windows) | infra, cli |
 | `routing/` | 10 | ~1,800+ | Agent route resolution, session key construction, binding matching | config, channels, sessions |
 | `sessions/` | 8 | ~600+ | Session utilities: key parsing, send policy, transcript events, provenance | config, channels |
-| `providers/` | 11 | ~1,200+ | Provider-specific auth: GitHub Copilot OAuth, Qwen refresh | config, agents (auth-profiles) |
+| `providers/` | 11 | ~1,200+ | Provider-specific auth: GitHub Copilot OAuth, Qwen refresh. In v2026.4.2, transport centralization moves request auth, proxy, TLS, header shaping, and endpoint classification into shared HTTP/stream/websocket paths | config, agents (auth-profiles) |
 | `acp/` | 43 | ~2,800+ | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
 | `pairing/` | 7 | ~1,500+ | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
 | `node-host/` | 11 | ~2,300+ | Remote node agent: gateway connection, command invocation, browser proxy, APNs wake support | gateway, browser, config |
@@ -208,7 +209,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `compat/` | 1 | ~20 | Legacy project name constants | — |
 | `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
 | `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | 80+ dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including new `diffs` diff-viewer plugin) | plugin-sdk |
+| `extensions/` | 84 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs` diff-viewer plugin); consolidated from 91 dirs in v2026.4.1 | plugin-sdk |
 | `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 | `packages/` | — | — | Workspace compatibility shims (clawdbot, moltbot) for legacy package name consumers | — |
@@ -481,6 +482,7 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 ### Exec Approval System
 
 - **Modes:** `off` (no approval), `allowlist` (auto-approve matched commands), `always` (approve everything)
+- **Default (v2026.4.2):** YOLO mode — gateway/node host exec defaults to `security=full` with `ask=off` (no-prompt). Host approval-file fallbacks and docs/doctor reporting aligned with the no-prompt default.
 - **Flow:** Agent requests exec → `agents/bash-tools.exec.ts` → `gateway/exec-approval-manager.ts` → check allowlist → if not matched, forward to user via channel → user approves/denies → result returned
 - **Command risk analysis:** `infra/exec-approvals-analysis.ts` classifies command risk
 - **Dangerous tools:** `security/dangerous-tools.ts` lists tools requiring approval (e.g., ACP tools)
@@ -688,7 +690,7 @@ Parsed by `plugins/manifest.ts`.
 - Priority ordering of hook handlers
 - Error isolation (one hook failure doesn't crash others)
 - Async support
-- Lifecycle events: `onLoad`, `onUnload`, `onConfigChange`, `onSessionStart`, `onSessionEnd`, `onAgentBootstrap`, `before_dispatch`
+- Lifecycle events: `onLoad`, `onUnload`, `onConfigChange`, `onSessionStart`, `onSessionEnd`, `onAgentBootstrap`, `before_dispatch`, `before_agent_reply` (v2026.4.2: plugins can short-circuit the LLM with synthetic replies after inline actions)
 
 ### Extension Types
 
@@ -711,6 +713,7 @@ OpenClaw delegates LLM API calls to `@mariozechner/pi-ai` — the external AI ag
 2. **Authentication** — Resolve API keys via auth profiles (`agents/auth-profiles/`)
 3. **Model selection** — Choose model based on config cascade (see §8)
 4. **Custom auth flows** — Implement provider-specific OAuth (GitHub Copilot, Qwen Portal)
+5. **Transport centralization** (v2026.4.2) — Request auth, proxy, TLS, header shaping, and endpoint classification centralized across shared HTTP, stream, and websocket paths. Provider endpoint classification hardened for Copilot, Anthropic, and OpenAI-compatible routing. Media HTTP handling centralized across audio, image, and video request paths.
 
 ### Auth Profiles (`agents/auth-profiles/`)
 
@@ -891,10 +894,10 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Value |
 |--------|-------|
-| **Total src/ modules** | 70 directories |
-| **Total source files** | 2,600+ `.ts` files (non-test) |
-| **Total test files** | 1,600+ `.test.ts` files |
-| **Total src lines** | 780,000+ (`src/**/*.ts`) |
+| **Total src/ modules** | 71 directories |
+| **Total source files** | 2,650+ `.ts` files (non-test) |
+| **Total test files** | 1,650+ `.test.ts` files |
+| **Total src lines** | 810,000+ (`src/**/*.ts`) |
 | **External framework** | @mariozechner/pi-ai, pi-agent-core, pi-coding-agent |
 | **Language** | TypeScript (Node.js) |
 | **Test framework** | Vitest |
@@ -934,11 +937,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 91 |
+| Extension directories (`extensions/*`) | 84 (consolidated from 91 in v2026.4.1) |
 | Extension packages (`extensions/*/package.json`) | 84 |
-| Bundled skills (`skills/*`) | 65 |
+| Bundled skills (`skills/*`) | 190 |
 
-> Current analyzed source package: released `v2026.4.1`. Counts measured from the `v2026.4.1` released tree.
+> Current analyzed source package: released `v2026.4.2`. Counts measured from the `v2026.4.2` released tree.
 
 ### Key External Dependencies
 
@@ -1487,6 +1490,46 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 | `plugins.entries.searxng.config.webSearch.baseUrl` | SearXNG instance URL |
 | `plugins.entries.amazon-bedrock.config.guardrail` | Bedrock Guardrails config |
 | `gateway.webchat.chatHistoryMaxChars` | Configurable chat history text truncation |
+
+---
+
+## v2026.4.2 Released Changes (2026-04-03 docs snapshot)
+
+### New Architectural Components
+
+- **Task Flow Registry** (`src/tasks/task-flow-registry.*`): durable flow orchestration substrate added to the existing tasks control plane. Core files: `task-flow-registry.ts` (core registry), `task-flow-registry.types.ts` (type definitions), `task-flow-registry.store.ts` (storage abstraction), `task-flow-registry.store.sqlite.ts` (SQLite implementation), `task-flow-registry.paths.ts` (path resolution), `task-flow-registry.audit.ts` (audit functionality), `task-flow-registry.maintenance.ts` (maintenance operations), `task-flow-runtime-internal.ts` (internal runtime). Supports managed-vs-mirrored sync modes, durable flow state/revision tracking, managed child task spawning with sticky cancel intent, and `openclaw tasks flow` inspection/recovery primitives.
+- **Web Fetch Runtime Boundary** (`src/web-fetch/runtime.ts`): Firecrawl `web_fetch` moved from core to plugin-owned path. The new fetch-provider boundary routes `web_fetch` fallback through plugin-owned resolution instead of a Firecrawl-only core branch.
+
+### Provider Transport Centralization
+
+Major refactoring of HTTP/stream/websocket transport paths across all providers:
+
+- **Request auth, proxy, TLS, and header shaping centralized** across shared HTTP, stream, and websocket paths; insecure TLS/runtime transport overrides blocked; proxy-hop TLS kept separate from target mTLS settings.
+- **Provider endpoint classification hardened** — native GitHub Copilot API hosts classified in the shared provider endpoint resolver; Copilot base URL routing centralized and fails closed on malformed hints. Anthropic native-vs-proxy endpoint classification centralized for `service_tier` handling.
+- **Streaming headers centralized** — default and attribution header merging unified across OpenAI websocket, embedded-runner, and proxy stream paths.
+- **Media HTTP handling centralized** — base URL normalization, auth/header injection, and explicit header override handling unified across OpenAI-compatible audio, Deepgram audio, Gemini media/image, and Moonshot video request paths.
+- **OpenAI-compatible routing centralized** — native-vs-proxy request policy ensures hidden attribution and OpenAI-family defaults only apply on verified native endpoints.
+
+### Plugin SDK
+
+- **`api.runtime.taskFlow` seam** — plugins and trusted authoring layers can create and drive managed Task Flows from host-resolved OpenClaw context without passing owner identifiers on each call.
+- **`before_agent_reply` hook** — plugins can short-circuit the LLM with synthetic replies after inline actions.
+- **Provider-owned replay hook surfaces** — transcript policy, replay cleanup, and reasoning-mode dispatch exposed to provider plugins.
+
+### Exec Model
+
+- **YOLO mode default** — gateway/node host exec defaults to `security=full` with `ask=off` (no-prompt mode). Host approval-file fallbacks and docs/doctor reporting aligned with the no-prompt default.
+
+### Config Migrations (Breaking)
+
+- **xAI `x_search`** — settings moved from legacy core `tools.web.x_search.*` to plugin-owned `plugins.entries.xai.config.xSearch.*`; auth standardized on `plugins.entries.xai.config.webSearch.apiKey` / `XAI_API_KEY`. Migrate with `openclaw doctor --fix`.
+- **Firecrawl `web_fetch`** — config moved from legacy core `tools.web.fetch.firecrawl.*` to plugin-owned `plugins.entries.firecrawl.config.webFetch.*`. Migrate with `openclaw doctor --fix`.
+
+### Stats Update (v2026.4.2 docs snapshot)
+
+- **8,658 TypeScript files** analyzed (was 8,607 at v2026.4.1; +51 files, 284 commits)
+- **1,710,796 lines of TypeScript** (was 1,655,809; +54,987 lines)
+- **84 extension packages** (was 91 — consolidation) and **190 bundled skills** (was 65 — significant growth) in the released tree
 
 ---
 
