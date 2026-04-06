@@ -1,22 +1,22 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
+> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
 
 ## Overview
 
 | Module | Files | Lines | Purpose |
 |--------|-------|-------|---------|
-| src/cli/ | 261 | 38,455 | CLI commands, argument parsing, program construction |
-| src/commands/ | 322 | 59,211 | Command implementations (agent, doctor, onboard, etc.) |
+| src/cli/ | 313 | — | CLI commands, argument parsing, program construction |
+| src/commands/ | 469 | — | Command implementations (agent, doctor, onboard, etc.) |
 | src/tui/ | 45 | 7,589 | Terminal UI, interactive chat mode |
-| extensions/browser/ | 239 | 34,208 | Browser control, Chrome MCP attach, CDP/Playwright automation |
-| src/media/ | 34 | 3,962 | Media handling, MIME detection, storage |
-| src/media-understanding/ | 51 | 6,336 | Attachment processing (image/audio/video understanding) |
-| src/link-understanding/ | 6 | 333 | URL/link extraction and processing |
-| src/tts/ | 4 | 2,240 | Text-to-speech (Edge, OpenAI, ElevenLabs) |
-| src/markdown/ | 14 | 2,725 | Markdown → IR → platform-specific rendering |
-| src/canvas-host/ | 6 | 1,395 | Canvas/A2UI system for node displays |
+| extensions/browser/ | 258 | — | Browser control, Chrome MCP attach, CDP/Playwright automation |
+| src/media/ | 57 | — | Media handling, MIME detection, storage |
+| src/media-understanding/ | 56 | — | Attachment processing (image/audio/video understanding) |
+| src/link-understanding/ | 7 | — | URL/link extraction and processing |
+| src/tts/ | 15 | — | Text-to-speech and speech-provider plumbing |
+| src/markdown/ | 16 | — | Markdown → IR → platform-specific rendering |
+| src/canvas-host/ | 5 | — | Canvas/A2UI system for node displays |
 
 ---
 
@@ -911,9 +911,9 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 ### Memory
 
-- **Memory/multimodal — new opt-in multimodal image and audio indexing:** `src/memory/` — new opt-in multimodal memory indexing mode using `gemini-embedding-2-preview` for supported image and audio files discovered through `memorySearch.extraPaths`. Default memory roots remain Markdown-only unless extra paths are configured. Fixes #43460.
+- **Memory/multimodal — new opt-in multimodal image and audio indexing:** released memory indexing is split between `src/memory-host-sdk/host/internal.ts` (multimodal file discovery/building) and `extensions/memory-core/src/memory/manager-sync-ops.ts` (sync/index orchestration). Together they add opt-in multimodal memory indexing using `gemini-embedding-2-preview` for supported image and audio files discovered through `memorySearch.extraPaths`. Default memory roots remain Markdown-only unless extra paths are configured. Fixes #43460.
 
-- **Memory/Gemini embedding-2-preview — configurable output dimensions and automatic reindexing:** `src/memory/embeddings-gemini.ts` + `src/memory/manager-sync-ops.ts` — `gemini-embedding-2-preview` embeddings now support configurable `outputDimensionality`. Changing the dimensionality setting triggers automatic reindexing of the memory store. Fixes #42501.
+- **Memory/Gemini embedding-2-preview — configurable output dimensions and automatic reindexing:** `src/memory-host-sdk/host/embeddings-gemini.ts` + `extensions/memory-core/src/memory/manager-sync-ops.ts` — `gemini-embedding-2-preview` embeddings now support configurable `outputDimensionality`. Changing the dimensionality setting triggers automatic reindexing of the memory store. Fixes #42501.
 
 ### Models/Catalog
 
@@ -949,7 +949,7 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 - **Gateway/status — `--require-rpc` flag:** `src/cli/daemon-cli/register-service-commands.ts` adds `--require-rpc` (default `false`) to the `status` subcommand registered for both `openclaw gateway status` and `openclaw daemon status`. When set, the command exits non-zero if the RPC probe fails or cannot connect. Mutually exclusive with `--no-probe` (produces an explicit error). Covered by `src/cli/daemon-cli/status.test.ts` and `register-service-commands.test.ts`.
 
-- **Agents/memory bootstrap — single root memory file preference (`MEMORY.md` > `memory.md`):** `src/memory/internal.ts` and `src/memory/manager-sync-ops.ts` prefer `MEMORY.md` over `memory.md` as the single root memory file when both exist in the workspace (fixes #26054).
+- **Agents/memory bootstrap — single root memory file preference (`MEMORY.md` > `memory.md`):** `src/memory-host-sdk/host/internal.ts` and `extensions/memory-core/src/memory/manager-sync-ops.ts` prefer `MEMORY.md` over `memory.md` as the single root memory file when both exist in the workspace (fixes #26054).
 
 - **Build/plugin-sdk bundling — bundle subpath entries in one pass:** plugin-sdk subpath entries are bundled in a single pass during build, preventing memory blow-up on large plugin graphs (fixes #45426).
 
@@ -1014,18 +1014,15 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 - **OpenAI Responses `text.verbosity` is a released tool/runtime behavior:** CLI and tooling docs should treat it as part of the stable Responses surface, not a beta-only toggle.
 
-## v2026.4.2 Delta Notes
+## v2026.4.5 Delta Notes
 
-### Diffs
+### Music / Video Generation
 
-- **Plugin-owned `viewerBaseUrl`** (#59341): the diffs plugin now supports a plugin-owned `viewerBaseUrl` config so viewer links can use a stable proxy/public origin without passing `baseUrl` on every tool call.
+- **Built-in `music_generate` and `video_generate`:** the current release line adds first-class music and video generation tools rather than treating those flows as external-only extensions.
+- **Bundled provider/runtime coverage:** released media-generation paths now cover Google Lyria, MiniMax, Comfy-backed workflows, xAI video, Alibaba Model Studio Wan, and Runway.
+- **Async completion delivery:** media-generation completion can now wake requester sessions as before or optionally direct-send finished media, so generation changes have to be validated together with outbound delivery behavior.
 
-### Image Tool
+### Browser / Media / Tooling
 
-- **Relative path resolution against `workspaceDir`** (#57222): the image tool now resolves relative local media paths against the agent `workspaceDir` instead of `process.cwd()` so inputs like `inbox/receipt.png` pass the local-path allowlist reliably.
-- **Image generation routed through shared provider HTTP transport** (#59469): OpenAI, MiniMax, and fal image generation requests now route through the shared provider HTTP transport path so custom base URLs, guarded private-network routing, and provider request defaults stay aligned. Private-network access is no longer inferred from configured image base URLs; shared HTTP error-body reads are capped so hostile or misconfigured endpoints fail closed without relaxing SSRF policy.
-
-### Web Fetch
-
-- **Firecrawl config migrated to plugin boundary (BREAKING)** (#59465): Firecrawl `web_fetch` config moved from `tools.web.fetch.firecrawl.*` to `plugins.entries.firecrawl.config.webFetch.*`. `web_fetch` fallback now routes through a new fetch-provider boundary instead of a Firecrawl-only core branch. Legacy config migrated via `openclaw doctor --fix`.
-- **Provider runtime registries reused** (related #48380): `web_search` and `web_fetch` provider snapshot resolution now reuses compatible active registries so repeated runtime reads do not re-import the same bundled plugin set on each agent message.
+- **ClawHub search/install in the Skills panel:** CLI/TUI/UI skill workflows are now coupled more tightly to ClawHub discovery instead of manual package-name-only flows.
+- **Shared request-override policy reaches media paths:** model/media request overrides and the shared provider transport substrate now affect image, audio, music, and video generation, not just classic text calls.

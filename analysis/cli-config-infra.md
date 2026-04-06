@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1732,7 +1732,7 @@ User types: openclaw <command> [args]
 
 - **CLI/tables — ASCII borders on legacy Windows consoles:** `src/terminal/table.ts` — `resolveDefaultBorder()` defaults to `"ascii"` on `win32` when none of the modern-terminal signals (`WT_SESSION`, `xterm`/`cygwin`/`msys` in `TERM`, `vscode` in `TERM_PROGRAM`) are present. Modern Windows terminals continue to receive Unicode box-drawing borders. Fixes mojibake under GBK/936 code-page legacy consoles (fixes #40853, related #41015).
 
-- **CLI/memory teardown — close cached memory managers on CLI exit:** `src/cli/run-main.ts` now calls `closeAllMemorySearchManagers()` from `src/memory/search-manager.ts` during the one-shot CLI shutdown path. Watcher-backed memory caches (file-watching indexers) no longer keep the process alive after the command completes. Fixes #40389.
+- **CLI/memory teardown — close cached memory managers on CLI exit:** `src/cli/run-main.ts` now calls `closeActiveMemorySearchManagers()` from `src/plugins/memory-runtime.ts` during the one-shot CLI shutdown path. The plugin runtime then closes active plugin-backed memory search managers, so watcher-backed memory caches no longer keep the process alive after the command completes. Fixes #40389.
 
 - **CLI/daemon scheduled restarts — consistent scheduled gateway restart handling:** gateway scheduled restart path is now handled consistently across daemon lifecycle operations, preventing cases where a scheduled restart could be missed or duplicated.
 
@@ -1838,7 +1838,7 @@ User types: openclaw <command> [args]
 
 - **Gateway/status — clearer Linux non-interactive daemon-install failure reporting:** failure messages for the Linux non-interactive daemon install path are now more explicit about the failure reason.
 
-- **Agents/memory bootstrap — single root memory file preference:** `src/memory/internal.ts` and `src/memory/manager-sync-ops.ts` prefer `MEMORY.md` over `memory.md` as the single root memory file when both exist (fixes #26054).
+- **Agents/memory bootstrap — single root memory file preference:** `src/memory-host-sdk/host/internal.ts` and `extensions/memory-core/src/memory/manager-sync-ops.ts` prefer `MEMORY.md` over `memory.md` as the single root memory file when both exist (fixes #26054).
 
 - **Build/plugin-sdk bundling — bundle plugin-sdk subpath entries in one pass:** plugin-sdk subpath entries are bundled in a single pass to prevent memory blow-up during build (fixes #45426).
 
@@ -1922,34 +1922,25 @@ User types: openclaw <command> [args]
 - **Dangerous installs fail closed by default:** plugin installs and gateway-backed skill dependency installs now require an explicit `--dangerously-force-unsafe-install` override when built-in scan results are critical or errored.
 - **`mcp.servers` supports remote HTTP/SSE plus `streamable-http`:** stable MCP configuration is no longer limited to local stdio transport assumptions.
 
-## v2026.4.2 Delta Notes
+## v2026.4.5 Delta Notes
 
-### Breaking (Config)
+### Breaking / Config
 
-- **xAI `x_search` config migrated to plugin-owned path** (#59674): `x_search` settings moved from the legacy core `tools.web.x_search.*` path to `plugins.entries.xai.config.xSearch.*`. Auth standardized on `plugins.entries.xai.config.webSearch.apiKey` / `XAI_API_KEY`. Legacy config migrated via `openclaw doctor --fix`.
-- **Firecrawl `web_fetch` config migrated to plugin-owned path** (#59465): Firecrawl config moved from `tools.web.fetch.firecrawl.*` to `plugins.entries.firecrawl.config.webFetch.*`. `web_fetch` fallback now routes through the new fetch-provider boundary instead of a Firecrawl-only core branch. Legacy config migrated via `openclaw doctor --fix`.
+- **Legacy public config aliases are no longer the stable contract:** the release line removes documented support for old public aliases such as `talk.voiceId`, `talk.apiKey`, `agents.*.sandbox.perSession`, `browser.ssrfPolicy.allowPrivateNetwork`, `hooks.internal.handlers`, and channel/group/room `allow` toggles. Docs and examples should use canonical paths and `enabled`, with `openclaw doctor --fix` as the migration path.
+- **Bundled CLI text-provider backends are removed from the public surface:** `agents.defaults.cliBackends` and the old bundled CLI text-provider path are no longer part of the release-line config contract.
 
-### CLI
+### CLI / Onboarding
 
-- **`openclaw tasks flow` — Task Flow inspection/recovery CLI:** the core Task Flow substrate is restored with managed-vs-mirrored sync modes, durable flow state/revision tracking, and `openclaw tasks flow` inspection/recovery primitives for background orchestration. Managed child task spawning plus sticky cancel intent added so external orchestrators can stop scheduling immediately. (#58930, #59610)
-- **Exec defaults — YOLO mode:** gateway/node host exec now defaults to YOLO mode by requesting `security=full` with `ask=off`. Host approval-file fallbacks and doctor reporting aligned with the no-prompt default.
-- **`openclaw cron --tools` for per-job tool allowlists** (#58504): cron jobs now accept `--tools` for per-job tool allowlists.
-- **JSON5 plugin manifest support** (#59084): `openclaw.plugin.json` and bundle `plugin.json` manifests now accept JSON5 syntax (trailing commas, comments, unquoted keys) during install/validation.
-- **`--dangerously-force-unsafe-install` forwarding** (#58879): the flag is now forwarded through archive and npm-spec plugin install paths so the documented override reaches the security scanner.
-- **Podman launch improvements** (#59368): noisy container output removed from `scripts/run-openclaw-podman.sh` and Podman install guidance aligned with the quieter startup flow.
+- **Plugin-config prompts in setup flows:** guided onboarding and setup now include plugin-config prompts, which means setup behavior is more tightly coupled to plugin manifests and runtime config schemas than in earlier releases.
+- **`openclaw plugins install --force`:** existing plugin and hook-pack targets can now be replaced without the dangerous-code override flag, which changes the documented install/upgrade workflow.
+- **Skills panel / ClawHub CLI parity:** the release line expects ClawHub discovery and installation to be a first-class workflow rather than an external-only/manual step.
 
-### Config
+### Config / Schema
 
-- **Exec approvals normalization hardened** (#59112): invalid `security`, `ask`, and `askFallback` values are stripped from `~/.openclaw/exec-approvals.json` during normalization so malformed policy enums fall back to documented defaults.
-- **Exec `host=auto` routing-only** (#58897): `tools.exec.host=auto` is treated as routing-only. Implicit no-config exec stays on sandbox when available or gateway otherwise. Per-call host overrides that would bypass the configured sandbox or host target are rejected.
-- **Exec/env hardening** (#59233, #58473): additional host environment override pivots blocked for package roots, language runtimes, compiler include paths, and credential/config locations. Workspace `.env` files blocked from overriding `OPENCLAW_PINNED_PYTHON` and `OPENCLAW_PINNED_WRITE_PYTHON`.
+- **`openclaw config schema` is richer:** exported JSON Schema now includes titles and descriptions, which makes schema consumers more useful but also means config-help metadata has to stay aligned with the real schema.
+- **Shared model/media transport overrides:** current config docs need to treat request overrides as cross-provider surfaces used by model and media paths alike, not just classic text-generation requests.
+- **`channels.<channel>.contextVisibility`:** channel context filtering is now a documented config surface, so channel docs and CLI/config references need to include it.
 
-### Doctor
+### Doctor / Migration
 
-- **Doctor reports host policy sources from real approvals path** (#59367): `openclaw doctor` now reports host policy sources from the real approvals file path and ignores malformed host override values when attributing effective policy conflicts.
-- **Doctor warns on exec policy conflicts:** `openclaw doctor` warns when `tools.exec` is broader than `~/.openclaw/exec-approvals.json` so stricter host-policy conflicts are explicit.
-
-### Infra / Exec
-
-- **Exec/Windows hardening** (#59466, #58040, #59182, #56285): console windows hidden for `runExec`/`runCommandWithTimeout` child-process launches; drive-less rooted paths rejected; Windows-compatible env override keys bound in system-run approval; quote-aware `argPattern` matching restored for gateway and node exec.
-- **Node-host/exec approvals** (#58374): `pnpm dlx` invocations bound through the approval planner's mutable-script path. Gateway workspace cwd no longer forwarded to remote node exec when no workdir was explicitly requested (#58977).
+- **Doctor owns more release-line migration work:** config alias cleanup, stale Claude CLI state repair/removal, and release-line fixups are now part of the expected `openclaw doctor` path after upgrade rather than optional cleanup.

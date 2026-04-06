@@ -6,6 +6,43 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.4.5 — Release Summary
+
+> **Released:** 2026-04-06 (docs release) | upstream GitHub release `v2026.4.5` published 2026-04-06 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.2..v2026.4.5` | 2,562 commits, 5,746 files changed, +331,486 / -268,299 lines
+
+### Breaking
+
+- **Config/public aliases:** remove legacy public config aliases such as `talk.voiceId` / `talk.apiKey`, `agents.*.sandbox.perSession`, `browser.ssrfPolicy.allowPrivateNetwork`, `hooks.internal.handlers`, and channel/group/room `allow` toggles in favor of canonical public paths and `enabled`, while keeping load-time compatibility plus `openclaw doctor --fix` migration support for existing configs. (#60726) Thanks @vincentkoc.
+
+### Changes
+
+- **Media generation:** add built-in `video_generate` and `music_generate` tools, with bundled xAI, Alibaba Model Studio Wan, Runway, Google Lyria, MiniMax, and Comfy-backed provider paths for direct media generation plus async completion tracking.
+- **Comfy workflows:** add the bundled `comfy` workflow media plugin for local ComfyUI and Comfy Cloud workflows, covering shared image/video generation and workflow-backed music generation with optional reference-image upload.
+- **Providers:** add bundled Qwen, Fireworks AI, and StepFun providers; add Bedrock Mantle support with inference-profile discovery and automatic request-region injection for Bedrock-hosted Claude, GPT-OSS, Qwen, Kimi, GLM, and related routes.
+- **Control UI:** add multilingual support across the released Control UI, add plugin-config prompts to guided onboarding, and bring ClawHub search/detail/install flows directly into the Skills panel. (#60590, #60544, #60134)
+- **Exec approvals:** add generic APNs approval notifications that open an in-app modal after authenticated operator reconnect, and add Matrix-native exec approval prompts with account-scoped approvers plus room/thread-aware resolution. (#60239, #58635)
+- **Channels/context routing:** add per-channel `contextVisibility` (`all`, `allowlist`, `allowlist_quote`) so supplemental context can be filtered by sender allowlists instead of always passing through unchanged.
+- **Provider transport overrides:** add shared request transport overrides for model and media requests across OpenAI-, Anthropic-, Google-, and compatible provider paths, including headers, auth, proxy, and TLS controls. (#60200)
+- **OpenAI/Codex runtime:** add forward-compat `openai-codex/gpt-5.4-mini`, an opt-in GPT personality, and provider-owned GPT-5 prompt contributions so Codex/GPT runs stay cache-stable even when bundled catalogs lag.
+- **Claude CLI / ACPX:** expose OpenClaw tools to background Claude CLI runs through a loopback MCP bridge, embed ACPX directly in the bundled plugin, and add a generic `reply_dispatch` hook so bundled plugins can own reply interception without hardcoded core routing.
+- **Progress reporting:** add experimental structured plan updates and structured execution item events so compatible UIs can render clearer step-by-step progress during long-running runs.
+- **Memory / dreaming:** add weighted short-term recall promotion, `/dreaming`, Dreams UI, multilingual conceptual tagging, configurable aging controls, REM preview tooling, replay-safe promotion, and the `dreams.md` trail model for durable memory promotion.
+- **Prompt caching:** stabilize cache-relevant prompt fingerprints, keep stable files above volatile `HEARTBEAT.md`, remove duplicate in-band tool inventories from system prompts, and surface cache diagnostics more clearly in `openclaw status --verbose`.
+- **Config/schema:** enrich `openclaw config schema` JSON Schema output with field titles and descriptions so editors, agents, and other schema consumers get the same config help metadata. (#60067)
+
+### Fixes
+
+- **Security:** preserve restrictive plugin-only tool allowlists, require owner access for `/allowlist add` and `/allowlist remove`, fail closed when `before_tool_call` hooks crash, and block browser SSRF redirect bypasses earlier in the request path. (#58476, #59836, #59822, #58771, #59120)
+- **OpenAI reply delivery:** make GPT-5 and Codex runs act sooner with lower-verbosity defaults, retry one-shot planning-only turns, preserve native strict schemas and `reasoning.effort: "none"` where supported, and keep commentary buffered until `final_answer` so planning text no longer leaks into user-visible replies. Fixes #59150, #59643, #61282.
+- **Telegram:** fix model-picker checks, topic replies, reaction ownership persistence, media placeholder preservation, DM voice-note preflight transcription, reasoning preview leaks, and long command-menu truncation.
+- **Discord / Slack / WhatsApp:** keep Discord traffic on configured proxies, preserve reply-tag threading and generated media paths, route Slack DM replies back to the concrete inbound DM channel, and restore WhatsApp streaming-block config plus reconnect watchdog resets.
+- **Matrix / Teams:** harden Matrix exec approvals and DM session scoping, improve Matrix recovery when secret storage is missing, and fix Teams inline-image downloads plus proactive thread fallback.
+- **Gateway restarts:** improve gateway restart reliability across macOS and Windows, default `gateway.mode` to `local` when unset, detect lockfile PID recycling, and recover installed-but-unloaded launch agents or scheduled-task restarts more accurately.
+- **CLI / Cron:** route `skills --json` output to stdout again, preserve Commander-computed exit codes, replay interrupted recurring jobs on the first gateway restart, and send cron failure notifications through the job's primary delivery channel when `failureDestination` is unset.
+- **Claude CLI hardening:** clear inherited Claude Code config/plugin/provider-routing env overrides, force host-managed runs to `--setting-sources user`, keep explicit `--session-id` bindings resumable, and stabilize image path hydration for local CLI runs.
+- **Plugin runtime / tasks:** preserve plugin activation provenance, reuse compatible runtime registries and snapshot caches, export missing context-engine/plugin SDK types, and reconcile stale cron/chat-backed task rows against live ownership instead of treating persisted session keys as proof of liveness.
+
 ## OpenClaw v2026.4.2 — Release Summary
 
 > **Released:** 2026-04-03 (docs release) | upstream GitHub release `v2026.4.2` published 2026-04-02 UTC | **Policy note:** latest *documented* released section stays at top.

@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-03 (docs snapshot: v2026.4.2) | Released baseline: GitHub `v2026.4.2`
+> Updated: 2026-04-06 (docs snapshot: v2026.4.5-1) | Released baseline: GitHub `v2026.4.5`
 
 ---
 
@@ -28,9 +28,9 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.2`), the `agents` module is the largest core subtree at roughly 1,070 `.ts` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 373 `.ts` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery. The `tasks` module (`src/tasks/`) provides the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, and status surfaces. In `v2026.4.2`, the tasks module gains the **Task Flow Registry** — a durable flow orchestration substrate with managed-vs-mirrored sync modes, revision tracking, child task spawning with sticky cancel intent, and `openclaw tasks flow` inspection/recovery primitives.
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.5`), the `agents` module remains the largest core subtree at roughly 1,172 `.ts` / `.tsx` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 385 `.ts` / `.tsx` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery. The `tasks` module (`src/tasks/`) still provides the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (84 extension packages as of `v2026.4.2`, consolidated from 91 in v2026.4.1). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (94 extension packages as of `v2026.4.5`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -120,10 +120,10 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
                     ▼                  ▼                  ▼
            ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐
            │   MEMORY      │  │    CRON       │  │    HOOKS         │  │    TASKS         │
-           │ (src/memory/) │  │ (src/cron/)   │  │ (src/hooks/)     │  │ (src/tasks/)     │
-           │ SQLite+FTS5   │  │ Scheduled     │  │ Event bus,       │  │ SQLite-backed    │
-           │ Vector search │  │ agent jobs    │  │ lifecycle events │  │ background task  │
-           │ Embeddings    │  │               │  │ Gmail watcher    │  │ control plane    │
+           │(src/memory-   │  │ (src/cron/)   │  │ (src/hooks/)     │  │ (src/tasks/)     │
+           │ host-sdk/)    │  │ Scheduled     │  │ Event bus,       │  │ SQLite-backed    │
+           │ embeddings +  │  │ agent jobs    │  │ lifecycle events │  │ background task  │
+           │ dreaming      │  │               │  │ Gmail watcher    │  │ control plane    │
            └──────────────┘  └──────────────┘  └──────────────────┘  └──────────────────┘
                                        │
                                        ▼
@@ -175,21 +175,21 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `extensions/whatsapp/` | 132 | ~18,000+ | WhatsApp channel runtime via Baileys: session, pairing, media send/receive, replies, reactions, and delivery policy | config, auto-reply, channels |
 | `extensions/qqbot/` | 45 | ~12,000+ | QQ Bot bundled channel plugin: multi-account setup, slash commands, reminders, media send/receive, and released allowlist hardening | config, auto-reply, channels |
 | `web-search/` | 2 | ~500+ | Shared web-search runtime wiring and provider selection for bundled search plugins (including SearXNG) and Pi/native search flows | agents, config |
-| `memory/` | 84 | ~17,000+ | Semantic search: SQLite + sqlite-vec + FTS5, embeddings (OpenAI/Gemini/Voyage/local) | config, agents, logging |
-| `tasks/` | 34 | ~8,000+ | SQLite-backed background task control plane: task registry, executor, ownership, audit, maintenance, status, and task-flow linkage for ACP/subagent/cron/CLI detached runs. In v2026.4.2, includes **Task Flow Registry** (`task-flow-registry.ts`, `.types.ts`, `.store.ts`, `.store.sqlite.ts`, `.paths.ts`, `.audit.ts`, `.maintenance.ts`, `task-flow-runtime-internal.ts`): durable flow orchestration with managed-vs-mirrored sync modes, revision tracking, child task spawning with sticky cancel intent, and `openclaw tasks flow` inspection/recovery primitives | config, agents, gateway |
+| `memory-host-sdk/` | 87 | ~20,000+ | Released memory host/runtime helpers: semantic-search host backends, embeddings, dreaming, promotion, and shared memory provider orchestration. Current QMD/search/sync logic is split into `extensions/memory-core/src/memory/` on `v2026.4.5` | config, agents, logging |
+| `tasks/` | 44 | ~10,000+ | SQLite-backed background task control plane: task registry, executor, ownership, audit, maintenance, status, and task-flow linkage for ACP/subagent/cron/CLI detached runs. The stable line includes Task Flow orchestration plus the surrounding control-plane/runtime glue used by structured progress and embedded ACPX flows | config, agents, gateway |
 | `web-fetch/` | 2 | ~400+ | Web fetch runtime boundary: Firecrawl `web_fetch` moved from core to plugin-owned path via `runtime.ts`; provides the fetch-provider abstraction that plugins implement | config, plugins |
 | `cron/` | 71 | ~14,800+ | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
 | `hooks/` | 38 | ~6,600+ | Event-driven hooks: lifecycle events, Gmail integration, slug generation | config, agents, plugins |
 | `plugins/` | 273 | ~63,000+ | Plugin discovery, loading (jiti), registry, hook runner, HTTP routes, services, auth scoping, and bundled runtime ownership seams | config, agents, channels |
-| `plugin-sdk/` | 317 | ~22,000+ | Released SDK surface and runtime helpers for plugin authors; current public path is `openclaw/plugin-sdk/*`. In v2026.4.2, adds `api.runtime.taskFlow` seam so plugins can create and drive managed Task Flows from host-resolved context | channels, config, routing, tasks |
-| `cli/` | 254 | ~35,900+ | CLI entry point (Commander.js), subcommands, argument parsing | commands, config, agents |
-| `commands/` | 304 | ~52,400+ | Command implementations: agent, doctor, onboard, configure, models, status | cli, config, agents, gateway, daemon |
+| `plugin-sdk/` | 323 | ~22,000+ | Released SDK surface and runtime helpers for plugin authors; current public path is `openclaw/plugin-sdk/*`. The stable line includes `api.runtime.taskFlow`, generic reply-dispatch seams, and the provider/plugin runtime hooks used by newer media and ACPX flows | channels, config, routing, tasks |
+| `cli/` | 313 | ~35,900+ | CLI entry point (Commander.js), subcommands, argument parsing | commands, config, agents |
+| `commands/` | 469 | ~52,400+ | Command implementations: agent, doctor, onboard, configure, models, status | cli, config, agents, gateway, daemon |
 | `tui/` | 45 | ~7,500+ | Terminal UI (pi-tui): interactive chat, slash commands, streaming | @mariozechner/pi-tui, gateway |
-| `extensions/browser/` | 239 | ~34,000+ | Current released browser automation runtime: Chrome MCP attach, Playwright flows, session/runtime management, and browser tool surfaces | plugin-sdk, config, agents |
-| `media/` | 30 | ~3,800+ | Media handling: MIME detection, store with TTL, SSRF-safe fetch, image ops | file-type, sharp, express |
-| `media-understanding/` | 51 | ~6,300+ | AI media analysis: audio transcription, image/video description, multi-provider | agents (model-auth), media |
-| `link-understanding/` | 6 | ~300+ | URL extraction and CLI-based content summarization | media-understanding (scope), process |
-| `tts/` | 4 | ~2,200+ | Text-to-speech: Edge TTS, OpenAI, ElevenLabs; auto-mode, directives | node-edge-tts, agents (model-auth) |
+| `extensions/browser/` | 258 | ~34,000+ | Current released browser automation runtime: Chrome MCP attach, Playwright flows, session/runtime management, and browser tool surfaces | plugin-sdk, config, agents |
+| `media/` | 57 | ~3,800+ | Media handling: MIME detection, store with TTL, SSRF-safe fetch, image ops | file-type, sharp, express |
+| `media-understanding/` | 56 | ~6,300+ | AI media analysis: audio transcription, image/video description, multi-provider | agents (model-auth), media |
+| `link-understanding/` | 7 | ~300+ | URL extraction and CLI-based content summarization | media-understanding (scope), process |
+| `tts/` | 15 | ~2,200+ | Text-to-speech and speech-provider plumbing for auto-mode, directives, and delivery | node-edge-tts, agents (model-auth) |
 | `markdown/` | 14 | ~2,600+ | Markdown IR parser/renderer, WhatsApp conversion, frontmatter, tables | markdown-it, yaml |
 | `canvas-host/` | 5 | ~1,100+ | Canvas/A2UI web server for node displays with live-reload | ws, chokidar |
 | `security/` | 29 | ~10,800+ | Audit framework, content sanitization, code scanning, SSRF, permission fix | config, agents, channels |
@@ -198,7 +198,10 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `daemon/` | 40 | ~5,700+ | OS service management: launchd (macOS), systemd (Linux), schtasks (Windows) | infra, cli |
 | `routing/` | 10 | ~1,800+ | Agent route resolution, session key construction, binding matching | config, channels, sessions |
 | `sessions/` | 8 | ~600+ | Session utilities: key parsing, send policy, transcript events, provenance | config, channels |
-| `providers/` | 11 | ~1,200+ | Provider-specific auth: GitHub Copilot OAuth, Qwen refresh. In v2026.4.2, transport centralization moves request auth, proxy, TLS, header shaping, and endpoint classification into shared HTTP/stream/websocket paths | config, agents (auth-profiles) |
+| `music-generation/` | — | — | Released music-generation runtime used by `music_generate`, async completion, provider routing, and workflow-backed audio generation | agents, media, plugins |
+| `video-generation/` | — | — | Released video-generation runtime used by `video_generate`, provider routing, and async delivery | agents, media, plugins |
+| `media-generation/` | — | — | Shared media-generation helpers and provider abstractions consumed by image/music/video generation paths | agents, media, plugins |
+| `providers/` | 0 | — | Standalone `src/providers/` no longer exists on `v2026.4.5`; provider auth/runtime logic is distributed across `src/agents/`, `src/plugin-sdk/`, and bundled provider extensions | config, agents (auth-profiles), plugin-sdk |
 | `acp/` | 43 | ~2,800+ | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
 | `pairing/` | 7 | ~1,500+ | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
 | `node-host/` | 11 | ~2,300+ | Remote node agent: gateway connection, command invocation, browser proxy, APNs wake support | gateway, browser, config |
@@ -209,7 +212,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `compat/` | 1 | ~20 | Legacy project name constants | — |
 | `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
 | `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | 84 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs` diff-viewer plugin); consolidated from 91 dirs in v2026.4.1 | plugin-sdk |
+| `extensions/` | 94 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs`, `comfy`, and the expanded provider/plugin set on `v2026.4.5`) | plugin-sdk |
 | `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 | `packages/` | — | — | Workspace compatibility shims (clawdbot, moltbot) for legacy package name consumers | — |
@@ -937,11 +940,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 84 (consolidated from 91 in v2026.4.1) |
-| Extension packages (`extensions/*/package.json`) | 84 |
-| Bundled skills (`skills/*`) | 190 |
+| Extension directories (`extensions/*`) | 94 |
+| Extension packages (`extensions/*/package.json`) | 94 |
+| Released skill entrypoints (`skills/`, `.agents/skills/`, extensions) | 73 |
 
-> Current analyzed source package: released `v2026.4.2`. Counts measured from the `v2026.4.2` released tree.
+> Current analyzed source package: released `v2026.4.5`. Counts measured from the `v2026.4.5` released tree.
 
 ### Key External Dependencies
 
@@ -1493,7 +1496,30 @@ See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for detai
 
 ---
 
-## v2026.4.2 Released Changes (2026-04-03 docs snapshot)
+## v2026.4.5 Released Changes (2026-04-06 docs snapshot)
+
+### New Architectural Components
+
+- **Released memory surfaces are split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`:** current embeddings, dreaming, promotion, and host/runtime helpers live under `src/memory-host-sdk/`, while QMD, search managers, and sync/index orchestration live under `extensions/memory-core/src/memory/`. Older `src/memory/` references in earlier snapshots are historical.
+- **Music/video/media generation surfaces:** `src/music-generation/`, `src/video-generation/`, and `src/media-generation/` join the released runtime, while `extensions/comfy/` adds bundled workflow-backed media generation.
+- **Embedded ACPX runtime:** bundled ACPX now runs in process and uses the generic `reply_dispatch` hook instead of depending on an extra external CLI hop.
+
+### Runtime / UX Changes
+
+- **Structured plan updates and execution-item events:** long-running runs can emit structured progress to compatible UIs.
+- **OpenAI/GPT commentary buffering:** planning/commentary text is now buffered until `final_answer`, which affects gateway, replay, previews, and channel delivery.
+- **Per-channel context filtering:** `contextVisibility` changes how quote/thread/fetched context reaches the runtime.
+
+### Stats Update (v2026.4.5 docs snapshot)
+
+- **9,766 TypeScript files** analyzed in `src/`, `extensions/`, `ui/`, `test/`, and `scripts/`
+- **1,893,328 lines of TypeScript** in the same scope
+- **94 extension packages** and **73 released skill entrypoints** in the released tree
+- **Window:** `v2026.4.2..v2026.4.5` spans 2,562 commits and 5,746 changed files
+
+---
+
+## v2026.4.2 Released Changes (2026-04-03 docs snapshot, historical)
 
 ### New Architectural Components
 

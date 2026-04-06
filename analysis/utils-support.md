@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-03 | **Version:** v2026.4.2 | **Codebase:** OpenClaw release tag `v2026.4.2`
+**Updated:** 2026-04-06 | **Version:** v2026.4.5 | **Codebase:** OpenClaw release tag `v2026.4.5`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** stable release-line snapshot across 14 support modules plus `apps/macos`
 
@@ -1072,7 +1072,7 @@ Shared test utilities and mock factories.
 
 ### Auto-Reply <!-- v2026.3.13 -->
 
-- **Agents/memory bootstrap — `MEMORY.md` preferred over `memory.md`:** `src/memory/internal.ts` tries `MEMORY.md` first when scanning for the root memory file, falling back to `memory.md` only when the uppercase variant is absent. `src/memory/manager-sync-ops.ts` follows the same preference order (fixes #26054).
+- **Agents/memory bootstrap — `MEMORY.md` preferred over `memory.md`:** `src/memory-host-sdk/host/internal.ts` tries `MEMORY.md` first when scanning for the root memory file, falling back to `memory.md` only when the uppercase variant is absent. `extensions/memory-core/src/memory/manager-sync-ops.ts` follows the same preference order during sync/index operations (fixes #26054).
 
 ### General Utilities <!-- v2026.3.13 -->
 
@@ -1143,27 +1143,17 @@ Shared test utilities and mock factories.
 
 - **Wizard safety improved on remote-gateway decline:** onboarding support paths now reset back to the safe loopback default after rejecting a discovered remote URL.
 
-## v2026.4.2 Delta Notes
+## v2026.4.5 Delta Notes
 
-### Plugins / Activation
+### Auto-reply / Reply Delivery
 
-- **Preserve activation provenance and reason metadata** (#59641): Plugin activation state now preserves explicit, auto-enabled, and default activation provenance plus reason metadata across CLI, gateway bootstrap, and status surfaces. This ensures plugin enablement state stays accurate after auto-enable resolution, so `openclaw status`, `openclaw plugins`, and similar surfaces display the correct activation source (e.g. "auto-enabled: required by channel" vs "explicit: user-configured") instead of losing provenance during resolution.
+- **Commentary is buffered until `final_answer` on OpenAI/GPT paths:** utility/support code that formats previews, block replies, session summaries, or channel partials can no longer assume commentary text is immediately user-visible.
+- **Planning-only retries are part of the runtime contract:** support modules around reply orchestration and run accounting now have to tolerate one-shot retries when the model narrates a plan without acting.
 
-### Plugins / Runtime
+### Subagent / Completion Delivery
 
-- **Reuse active registries for `web_search`/`web_fetch` resolution**: Compatible active plugin registries are now reused for `web_search` and `web_fetch` provider snapshot resolution. Previously, repeated runtime reads re-imported the same bundled plugin set on each agent message, adding unnecessary overhead. Registry reuse keeps provider resolution fast without redundant plugin loading.
+- **Completion delivery context is merged more defensively:** current release-line fixes merge completion announce delivery context with requester-session fallback so missing `to` still resolves to the original channel more reliably.
 
-### Exec Approvals / Channels
+### Plugin / Runtime Support
 
-- **Auto-enable DM-first native chat approvals**: Native chat approval prompts are now auto-enabled when supported channels can infer approvers from existing owner config. DM-first delivery is preferred, while channel fanout remains explicit. This reduces configuration friction for operators who already have owner/approver config but had to manually enable native approval delivery for each channel.
-- **Decouple approval availability from native delivery enablement** (#59776): Initiating-surface approval availability is now decoupled from native delivery enablement, so Telegram, Slack, and Discord still expose approval prompts when approvers exist even when native target routing is configured separately.
-
-### Webhooks / Secret Comparison
-
-- **Shared `safeEqualSecret` helper** (#58432): Ad-hoc timing-safe secret comparisons across BlueBubbles, Feishu, Mattermost, Telegram, Twilio, and Zalo webhook handlers are replaced with the shared `safeEqualSecret` helper from `src/security/`. Empty auth tokens are now explicitly rejected in BlueBubbles. This centralizes webhook secret comparison logic and ensures consistent timing-safe behavior across all webhook-capable channels.
-
-### Telegram / Exec Approvals
-
-- **Topic-aware exec approval routing** (#58783): Exec approval followups in Telegram forum topics now route through Telegram-owned threading and approval-target parsing, so forum-topic approvals stay in the originating topic instead of falling back to the root chat.
-- **Callback data rewriting for `allow-always`** (#59217): Shared `/approve ... allow-always` callback payloads are rewritten to `/approve ... always` before Telegram button rendering so plugin approval IDs fit within Telegram's `callback_data` size limit while keeping the Allow Always action visible.
-- **Session key fallback for async approvals** (#59351): Async approval followups now fall back to the origin session key, and resume-failure status delivery is sanitized so Telegram followups still land without leaking raw exec metadata.
+- **Activation provenance and registry reuse remain core support behavior:** activation-source metadata and compatible-registry reuse are still important, but `v2026.4.5` extends the support surface with embedded ACPX runtime ownership and generic reply-dispatch interception.

@@ -1,12 +1,13 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
+> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Release note: the current released memory surface is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`. Historical `src/memory/` references below describe the older pre-split layout and should be read as historical context only.
 
 ---
 
 ## Table of Contents
-1. [src/memory](#srcmemory)
+1. [Memory / Released Surfaces](#memory--released-surfaces)
 2. [src/cron](#srccron)
 3. [src/media](#srcmedia)
 4. [src/media-understanding](#srcmedia-understanding)
@@ -16,10 +17,10 @@
 
 ---
 
-## src/memory
+## Memory / Released Surfaces
 
 ### Module Overview
-The memory module provides **semantic search over markdown files and session transcripts** using vector embeddings. It supports multiple embedding providers (OpenAI, Gemini, Voyage, Mistral, local llama.cpp), stores chunks in SQLite with optional sqlite-vec for native vector search, and implements hybrid search (vector + BM25 full-text). An alternative backend (`qmd`) delegates to an external QMD binary for indexing/search.
+On `v2026.4.5`, released memory is split between `src/memory-host-sdk/` (embeddings, dreaming, promotion, multimodal helpers, and host/runtime utilities) and `extensions/memory-core/src/memory/` (QMD, search managers, SQLite indexing, and sync orchestration). Together these surfaces provide **semantic search over markdown files and session transcripts** using vector embeddings. They support multiple embedding providers (OpenAI, Gemini, Voyage, Mistral, local llama.cpp), store chunks in SQLite with optional sqlite-vec for native vector search, and implement hybrid search (vector + BM25 full-text). An alternative backend (`qmd`) delegates to an external QMD binary for indexing/search. Historical bullets that still say `src/memory/` are describing the older pre-split layout.
 
 **Architecture Pattern:** Manager singleton with lazy initialization, file watcher for live reindexing, mixin-style ops classes (`manager-embedding-ops.ts`, `manager-sync-ops.ts` mixed into `MemoryIndexManager`).
 
@@ -39,7 +40,7 @@ The memory module provides **semantic search over markdown files and session tra
 
 ### v2026.2.21 Changes <!-- v2026.2.21 -->
 
-- **QMD manager reliability** — `src/memory/qmd-manager.ts` received significant changes improving QMD (query-managed document) search reliability. Key improvements: better error handling for missing files, improved index consistency. Source: `qmd-manager.test.ts` (332 lines of updated tests).
+- **QMD manager reliability** — `extensions/memory-core/src/memory/qmd-manager.ts` received significant changes improving QMD (query-managed document) search reliability. Key improvements: better error handling for missing files, improved index consistency. Source: `qmd-manager.test.ts` (332 lines of updated tests).
 
 - **Memory ENOENT handling** — The memory system now handles missing file errors (ENOENT) gracefully. Previously a missing memory file could cause a crash; now it returns an empty result and continues.
 
@@ -1174,16 +1175,18 @@ The helper module `src/utils/cjk-chars.ts` exports `estimateStringChars(text)`, 
 
 - **Cron work now shares the same durable task ledger as ACP and subagents:** release-line cron documentation should treat task records, audit, and maintenance as part of normal detached-run behavior rather than an ACP-only implementation detail.
 
-## v2026.4.2 Delta Notes
+## v2026.4.5 Delta Notes
 
-### Cron
+### Memory / Dreaming
 
-- **Exec timeout visibility** (#58247): timed-out `exec` and `bash` failures in isolated cron runs are now surfaced even when `verbose: off`, including custom session-target cron jobs. Scheduled runs no longer fail silently on exec timeouts.
-- **Per-job tool allowlists** (#58504): `openclaw cron --tools` added for per-job tool allowlists, enabling finer-grained tool access control for cron jobs.
-- **Isolated session retry stability** (#57972): the full live-session provider, model, and auth-profile selection is now carried across retry restarts so cron jobs with model overrides no longer fail or loop on mid-run model-switch requests.
+- **Released memory surfaces are split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`:** embeddings, dreaming, and promotion live under `src/memory-host-sdk/`; QMD/search backends and sync/index orchestration live under `extensions/memory-core/src/memory/` rather than the older standalone `src/memory/` tree referenced by earlier snapshots.
+- **Dreaming is a stable-line feature:** weighted recall promotion, `/dreaming`, Dreams UI, multilingual conceptual tagging, aging controls, REM preview tooling, and `dreams.md` are now part of the released memory surface.
+- **Bedrock embeddings join the released memory provider set:** Bedrock Titan, Cohere, Nova, and TwelveLabs embeddings are now part of the stable memory/search story.
 
-### Tasks / Task Flow
+### Cron / Background Work
 
-- **Core Task Flow substrate restored** (#58930, #59610): managed-vs-mirrored sync modes, durable flow state/revision tracking, and `openclaw tasks flow` inspection/recovery primitives are now part of the released surface. Managed child task spawning plus sticky cancel intent added so external orchestrators can stop scheduling immediately and let parent Task Flows settle to `cancelled` once active child tasks finish.
-- **Plugin `api.runtime.taskFlow` seam** (#59622): plugins and trusted authoring layers can now create and drive managed Task Flows from host-resolved OpenClaw context without passing owner identifiers on each call.
-- **Cron/task interop:** cron work continues to share the same durable task ledger as ACP and subagents. Task Flow documentation should treat the `openclaw tasks flow` surface as the primary orchestration primitive for background work.
+- **Cron remains on the shared task ledger:** the `v2026.4.5` line keeps cron, ACP, subagents, and detached CLI runs tied to the same durable task/control-plane surfaces, with more emphasis on automatic completion wake behavior and primary-channel failure delivery.
+
+### Media Generation
+
+- **Music and video generation join the cluster:** the released line adds dedicated music/video generation surfaces and async completion behavior, so media docs can no longer treat image/media understanding as the only major media runtime.

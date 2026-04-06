@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-03 | **Version:** v2026.4.2
-**Codebase:** OpenClaw release tag `v2026.4.2`
+**Updated:** 2026-04-06 | **Version:** v2026.4.5
+**Codebase:** OpenClaw release tag `v2026.4.5`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -933,55 +933,22 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 - **HTTP tool-invoke and plugin-auth routing are tighter:** stable `v2026.3.31` narrows plugin route runtime scopes and keeps HTTP invoke authorization closer to the effective runtime boundary.
 - **Remote MCP transports are stable behavior:** gateway/infrastructure assumptions now need to account for remote HTTP/SSE servers plus `streamable-http`, not only local stdio workers.
 
-## v2026.4.2 Changes
+## v2026.4.5 Changes
 
-### Gateway / Exec Defaults — YOLO Mode
-- **Gateway and node host exec default to YOLO mode:** exec defaults now request `security=full` with `ask=off`, meaning tool executions run without interactive approval prompts by default. Host approval-file fallbacks and `openclaw doctor` reporting are aligned with this no-prompt default. This changes the out-of-box exec posture: operators who relied on per-execution prompts must now explicitly set `ask=on` or configure approval policies.
+### Gateway / Startup and Restart Behavior
 
-### Gateway / Exec Loopback (#59092)
-- **Legacy-role fallback restored for empty paired-device token maps:** local exec and node clients that had empty paired-device token maps were failing with `pairing required` errors after v2026.3.31. The gateway now falls back to the legacy role and allows silent local role upgrades so loopback exec clients reconnect without needing explicit re-pairing. Source: `src/gateway/` auth path.
+- **`gateway.mode` defaults to `local` when unset:** the current release line assumes local mode by default and hardens lock/restart handling on macOS and Windows.
+- **Restart reliability is a headline fix area:** launchd/scheduled-task recovery, stale lock detection, and shutdown bounding all received release-line fixes, so restart semantics are materially different from earlier snapshots.
 
-### Gateway / Node-Pending-Work Pruning (#58179)
-- **Empty `node-pending-work` state entries pruned after acknowledgments and expiry:** the per-node pending-work state map previously grew indefinitely as entries were acknowledged but never removed. The gateway now prunes empty entries after explicit acknowledgments and natural expiry, preventing unbounded state growth on long-running gateways with active node hosts.
+### Gateway / Reply Delivery
 
-### Gateway / Session Kill Scope Enforcement (#59128)
-- **HTTP operator scopes enforced on session kill:** session kill requests now require HTTP operator scopes, and authorization is gated before session lookup. Previously, unauthenticated callers could probe session existence by attempting kills. The authorization check now runs first, so unauthorized requests are rejected without revealing whether the target session exists.
+- **Commentary buffering reaches the gateway layer:** `/v1/responses`, replay, embedded replies, previews, and channel partials now expect commentary to stay buffered until `final_answer`.
+- **Structured plan/progress surfaces:** the gateway has to pass through structured plan/update events for compatible UIs alongside classic commentary/final text.
 
-### Channels / Session Routing — Plugin-Owned Surfaces
-- **Session conversation routing moved to plugin-owned session-key surfaces:** provider-specific session conversation grammar is now owned by the respective channel plugins rather than core routing. Telegram topic routing and Feishu scoped inheritance are preserved across bootstrap, model override, restart, and tool-policy paths. This decouples session key construction from core and allows channel plugins to define their own session semantics.
+### Approval / Channel Runtime
 
-### Exec Approvals / Config Normalization (#59112)
-- **Invalid approval policy values stripped during normalization:** `security`, `ask`, and `askFallback` values in `~/.openclaw/exec-approvals.json` are now validated and stripped when malformed. Invalid policy enums fall back cleanly to documented defaults instead of corrupting runtime policy resolution.
+- **APNs and Matrix approvals are part of the stable gateway path:** approval state and delivery now span mobile reconnect, modal fetch-after-auth, and Matrix room/thread-native resolution in addition to older approval channels.
 
-### Exec Approvals / Doctor (#59367)
-- **Doctor reports from real approvals file path:** `openclaw doctor` host policy source reporting now uses the real approvals file path and ignores malformed host override values when attributing effective policy conflicts.
+### Channel / Runtime Registry
 
-### Exec / Runtime Host Routing (#58897)
-- **`tools.exec.host=auto` treated as routing-only:** `host=auto` no longer changes the effective exec target; implicit no-config exec stays on sandbox when available or gateway otherwise. Per-call host overrides that would bypass the configured sandbox or host target are now rejected.
-
-### Exec / Environment Hardening (#59233)
-- **Additional host environment override pivots blocked:** request-scoped exec can no longer override package roots, language runtimes, compiler include paths, or credential/config locations. This prevents exec requests from redirecting trusted toolchains or config lookups via environment variable injection.
-
-### Dotenv / Workspace Overrides (#58473)
-- **Workspace `.env` blocked from overriding pinned Python:** workspace `.env` files can no longer override `OPENCLAW_PINNED_PYTHON` and `OPENCLAW_PINNED_WRITE_PYTHON`, so trusted helper interpreters cannot be redirected by repo-local env injection.
-
-### OpenShell / Mirror Path Constraints (#58515)
-- **`remoteWorkspaceDir` and `remoteAgentWorkspaceDir` constrained to managed roots:** OpenShell mirror now restricts these paths to the managed `/sandbox` and `/agent` roots. Mirror sync no longer overwrites or removes user-added shell roots during config synchronization, preventing path traversal outside the managed sandbox boundary.
-
-### Channels / Setup Trust (#59158)
-- **Untrusted workspace channel plugins ignored during setup resolution:** a shadowing workspace plugin can no longer override built-in channel setup/login flows (e.g. `openclaw channels add`) unless explicitly trusted in config. This prevents untrusted third-party plugins from hijacking the onboarding flow.
-
-### Exec / Windows Fixes
-- **Console window visibility (#59466):** transient console windows for `runExec` and `runCommandWithTimeout` child-process launches are now hidden on Windows, stopping visible shell flashes during tool runs.
-- **Drive-less rooted paths (#58040):** malformed drive-less rooted executable paths like `:\Users\...` are now rejected so approval and allowlist candidate resolution no longer treats them as cwd-relative commands.
-- **Environment override keys (#59182):** Windows-compatible env override keys like `ProgramFiles(x86)` are now included in system-run approval binding so changed approved values are rejected instead of silently passing unbound.
-- **Allowlist argPattern enforcement (#56285):** quote-aware `argPattern` matching is restored across gateway and node exec, with accurate dynamic pre-approved executable hints surfaced in the exec tool description.
-
-### Exec / Node Hosts (#58977)
-- **Gateway cwd no longer forwarded to remote node exec:** when no workdir is explicitly requested, remote node exec now falls back to the node default cwd instead of inheriting the gateway workspace cwd. This fixes cross-platform node approvals that were failing with `SYSTEM_RUN_DENIED`.
-
-### Node-Host / Exec Approvals (#58374)
-- **`pnpm dlx` bound through approval planner:** `pnpm dlx` invocations are now routed through the approval planner's mutable-script path so the effective runtime command is resolved for approval instead of being left unbound.
-
-### Exec Approvals / Channels (#59776)
-- **Approval availability decoupled from native delivery:** Telegram, Slack, and Discord still expose approvals when approvers exist even when native target routing is configured separately. Initiating-surface approval availability is no longer tied to native delivery enablement.
+- **Initial channel registry is pinned more defensively:** the stable line explicitly guards against later plugin-registry churn emptying `channels.status` or losing configured channel visibility.

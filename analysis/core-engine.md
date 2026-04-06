@@ -1,8 +1,8 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
-> Modules: agents (1,070 files), gateway (438 files), tasks (42 files), sessions (15 files), routing (11 files), hooks (51 files), context-engine (7 files)
+> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Modules: agents (1,172 files), gateway (472 files), tasks (44 files), sessions (17 files), routing (11 files), hooks (52 files), context-engine (7 files)
 
 ---
 
@@ -1501,69 +1501,25 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **`agents.defaults.compaction.model`:** compaction model override resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints.
 - **Failover rate-limit caps:** prompt-side and assistant-side same-provider auth-profile retries capped for rate-limit failures before cross-provider model fallback. New knob: `auth.cooldowns.rateLimitedProfileRotations`.
 
-## v2026.4.2 Delta Notes
+## v2026.4.5 Delta Notes
 
-### Tasks / Task Flow Substrate (#58930, #59610, #59622)
+### Agents / Reply Runtime
 
-The Task Flow registry, scaffolded in v2026.4.1, is now a fully restored core subsystem in `src/tasks/` with 42 files (up from 26 in v2026.4.1). The Task Flow substrate provides durable orchestration state for background work (ACP, subagents, cron, CLI runs).
+- **Structured plan updates and execution-item events:** long-running runs can now emit structured progress artifacts in addition to commentary, which changes the agent-to-UI runtime contract.
+- **OpenAI/GPT final-answer gating:** commentary is buffered until `final_answer`, GPT-5/Codex defaults are shorter and lower-verbosity, and planning-only turns get a retry before the run is considered complete.
+- **Forward-compat GPT surface:** `openai-codex/gpt-5.4-mini` and provider-owned GPT-5 prompt contributions are part of the stable runtime.
 
-**New and expanded files:**
+### Tasks / Flows / ACPX
 
-| File | Description |
-|------|-------------|
-| `task-flow-registry.ts` | Core Task Flow registry — create, query, and drive managed flows |
-| `task-flow-registry.types.ts` | Task Flow type definitions (flow state, revision, sync modes) |
-| `task-flow-registry.store.ts` | Task Flow persistent store interface |
-| `task-flow-registry.store.sqlite.ts` | SQLite-backed Task Flow store implementation |
-| `task-flow-registry.paths.ts` | Task Flow file/directory path resolution |
-| `task-flow-registry.audit.ts` | Task Flow audit trail and history tracking |
-| `task-flow-registry.maintenance.ts` | Task Flow maintenance sweeps and orphan recovery |
-| `task-flow-runtime-internal.ts` | Internal runtime bridge between Task Flow registry and agent runtime |
+- **Embedded ACPX runtime:** ACPX now runs in process rather than through an extra external ACP CLI hop.
+- **Generic `reply_dispatch` hook:** bundled plugins can intercept reply delivery without special-casing ACP in the core auto-reply router.
+- **Task/flow surfaces remain central:** Task Flow stays part of the orchestration core, but the `v2026.4.5` line leans on it alongside structured progress and embedded runtime ownership rather than treating it as the only major change.
 
-**Key capabilities:**
-- **Managed-vs-mirrored sync modes:** managed flows are fully owned by the Task Flow registry; mirrored flows track external state for observability without ownership.
-- **Durable flow state and revision tracking:** flow state persisted in SQLite with revision numbers for conflict-free updates.
-- **`openclaw tasks flow` CLI:** inspection and recovery primitives for background orchestration — list flows, show flow details, recover orphaned flows.
-- **Managed child task spawning with sticky cancel intent (#59610):** external orchestrators can stop scheduling immediately; parent Task Flows settle to `cancelled` once active child tasks finish.
-- **Plugin `api.runtime.taskFlow` seam (#59622):** bound plugin API surface in `src/plugin-sdk/` so plugins and trusted authoring layers can create and drive managed Task Flows from host-resolved OpenClaw context without passing owner identifiers on each call.
+### Provider / Runtime Expansion
 
-### Providers / Transport Centralization (#59682, #59644, #59542, #59469, #59433, #59608)
+- **Bundled providers expanded:** Qwen, Fireworks AI, and StepFun land on the stable line, while Bedrock Mantle adds automatic discovery/region injection.
+- **Request overrides cover model and media paths:** the shared transport layer now governs not just text generation but the released media-generation request paths too.
 
-Major provider transport refactoring centralizing request handling across all provider communication paths:
+### Sessions / Channels
 
-- **Request auth, proxy, TLS, header shaping:** centralized across shared HTTP, stream, and websocket paths. Insecure TLS/runtime transport overrides blocked; proxy-hop TLS kept separate from target mTLS settings (#59682).
-- **Provider endpoint classification hardened:** native GitHub Copilot API hosts classified in the shared provider endpoint resolver; token-derived proxy endpoint parsing fails closed on malformed hints (#59644). Native-vs-proxy endpoint classification centralized for direct Anthropic `service_tier` handling so spoofed or proxied hosts do not inherit native Anthropic defaults (#59608).
-- **Streaming header merging centralized:** default and attribution header merging unified across OpenAI websocket, embedded-runner, and proxy stream paths (#59542).
-- **Media HTTP handling centralized:** base URL normalization, default auth/header injection, and explicit header override handling unified across OpenAI-compatible audio, Deepgram audio, Gemini media/image, and Moonshot video request paths (#59469).
-- **Native-vs-proxy request policy:** centralized for OpenAI-compatible routing so hidden attribution and related OpenAI-family defaults only apply on verified native endpoints (#59433).
-
-### Providers / Replay Hook Surfaces (#59143)
-
-Provider-owned replay hook surfaces added for transcript policy, replay cleanup, and reasoning-mode dispatch. Providers can now own their replay behavior through registered hooks rather than relying on ad-hoc core logic.
-
-### Hooks / `before_agent_reply` (#20067)
-
-New plugin hook `before_agent_reply` added. Plugins can short-circuit the LLM with synthetic replies after inline actions, enabling plugin-driven response interception before the agent runtime invokes the model.
-
-### Agents / Compaction Configuration
-
-- **`agents.defaults.compaction.notifyUser` (#54251):** opt-in config so the `Compacting context...` start notice is only shown when explicitly enabled.
-- **`agents.defaults.compaction.model` (#56710):** resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints.
-
-### Agents / Exec Defaults
-
-Gateway/node host exec defaults to YOLO mode (`security=full`, `ask=off`). Host approval-file fallbacks and docs/doctor reporting aligned with the no-prompt default.
-
-### Agents / Subagents (#59555)
-
-Admin-only subagent gateway calls pinned to `operator.admin` while keeping `agent` at least privilege, so `sessions_spawn` no longer fails on loopback scope-upgrade pairing with `close(1008) "pairing required"`.
-
-### Sessions / Channel Session Routing
-
-Channel session routing moved to plugin-owned session-key surfaces. Provider-specific session conversation grammar (e.g. Telegram topic routing, Feishu scoped inheritance) is now managed through plugin-owned session-key surfaces, preserving correct routing across bootstrap, model override, restart, and tool-policy paths.
-
-### Gateway Fixes
-
-- **Exec loopback (#59092):** legacy-role fallback restored for empty paired-device token maps; silent local role upgrades allowed so local exec and node clients stop failing with pairing-required errors after `2026.3.31`.
-- **Session kill (#59128):** HTTP operator scopes enforced on session kill requests; authorization gated before session lookup so unauthenticated callers cannot probe session existence.
-- **Node-pending-work pruning (#58179):** empty `node-pending-work` state entries pruned after explicit acknowledgments and natural expiry so the per-node state map no longer grows indefinitely.
+- **Channel context filtering is now part of the core contract:** per-channel `contextVisibility` changes what thread/quote/history context reaches the agent, so core session/channel reasoning has to account for filtered context rather than assuming full pass-through.

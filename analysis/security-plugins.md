@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-03 | Version: v2026.4.2 | Codebase: OpenClaw release tag `v2026.4.2`
+> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1111,40 +1111,19 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 ---
 
-## v2026.4.2 Delta Notes
+## v2026.4.5 Delta Notes
 
-### Breaking — Config Migration
+### Breaking / Public Config Surface
 
-- **xAI `x_search` config path migration:** `tools.web.x_search.*` settings moved to plugin-owned `plugins.entries.xai.config.xSearch.*`; `x_search` auth standardized on `plugins.entries.xai.config.webSearch.apiKey` / `XAI_API_KEY`. Legacy config migrated automatically with `openclaw doctor --fix`. (#59674, @vincentkoc)
-- **Firecrawl `web_fetch` config path migration:** `tools.web.fetch.firecrawl.*` settings moved to plugin-owned `plugins.entries.firecrawl.config.webFetch.*`; `web_fetch` fallback now routes through the new fetch-provider boundary instead of a Firecrawl-only core branch. Legacy config migrated automatically with `openclaw doctor --fix`. (#59465, @vincentkoc)
+- **Legacy public aliases are retired:** the stable docs surface no longer treats old public aliases such as `talk.voiceId`, `talk.apiKey`, `agents.*.sandbox.perSession`, `browser.ssrfPolicy.allowPrivateNetwork`, `hooks.internal.handlers`, and channel/group/room `allow` toggles as first-class configuration.
 
-### Plugin Hooks
+### Plugin Runtime
 
-- **`before_agent_reply` hook:** new plugin hook allows plugins to short-circuit the LLM with synthetic replies after inline actions, enabling reply interception before the model is invoked. (#20067, @JoshuaLelon)
+- **Embedded ACPX runtime:** bundled ACPX now owns its runtime in process instead of relying on an extra external CLI hop, which changes how plugin/runtime isolation and reply interception should be documented.
+- **Generic `reply_dispatch` hook:** bundled plugins can now intercept reply delivery through a generic hook rather than core ACP-specific paths.
+- **Plugin install/update UX expanded:** plugin-config prompts in onboarding and `openclaw plugins install --force` are now part of the release-line plugin management story.
 
-### Plugin Runtime & Features
+### Security / Allowlists / Hook Failure
 
-- **Task Flow plugin seam (`api.runtime.taskFlow`):** plugins and trusted authoring layers can now create and drive managed Task Flows from host-resolved OpenClaw context via the bound `api.runtime.taskFlow` seam without passing owner identifiers on each call. (#59622, @mbelinky)
-- **JSON5 manifest support:** `openclaw.plugin.json` and bundle `plugin.json` manifests now accept JSON5 syntax (trailing commas, comments, unquoted keys), so third-party plugins with non-strict JSON no longer fail to install or validate. (#59084, @singleGanghood)
-- **Plugin activation provenance:** explicit, auto-enabled, and default activation provenance plus reason metadata are preserved across CLI, gateway bootstrap, and status surfaces so plugin enablement state stays accurate after auto-enable resolution. (#59641, @vincentkoc)
-- **Plugin runtime registry reuse:** compatible active registries are reused for `web_search` and `web_fetch` provider snapshot resolution so repeated runtime reads do not re-import the same bundled plugin set on each agent message. (Related #48380)
-- **Plugin-owned `viewerBaseUrl` for diffs:** viewer links can now use a stable proxy/public origin without passing `baseUrl` on every tool call, via a plugin-owned `viewerBaseUrl` config. (#59341, @gumadeiras)
-
-### Exec Approval Hardening
-
-- **Exec approvals/config strip invalid values:** invalid `security`, `ask`, and `askFallback` values are stripped from `~/.openclaw/exec-approvals.json` during normalization so malformed policy enums fall back cleanly to documented defaults instead of corrupting runtime policy resolution. (#59112, @openperf)
-- **`host=auto` routing-only:** `tools.exec.host=auto` is now treated as routing-only; implicit no-config exec uses sandbox when available or gateway otherwise; per-call host overrides that would bypass the configured sandbox or host target are rejected. (#58897, @vincentkoc)
-
-### Exec / Environment Hardening
-
-- **Exec env override pivots blocked:** additional host environment override pivots for package roots, language runtimes, compiler include paths, and credential/config locations are blocked so request-scoped exec cannot redirect trusted toolchains or config lookups. (#59233, @drobison00)
-- **Dotenv workspace overrides blocked:** workspace `.env` files can no longer override `OPENCLAW_PINNED_PYTHON` and `OPENCLAW_PINNED_WRITE_PYTHON` so trusted helper interpreters cannot be redirected by repo-local env injection. (#58473, @eleqtrizit)
-
-### Security — Channels & Setup
-
-- **Untrusted workspace channel plugins ignored during setup:** shadowing workspace channel plugins cannot override built-in channel setup/login flows unless explicitly trusted in config. (#59158, @mappel-nv)
-- **Gateway session kill scope enforcement:** HTTP operator scopes are enforced on session kill requests and authorization is gated before session lookup so unauthenticated callers cannot probe session existence. (#59128, @jacobtomlinson)
-
-### Agents / Output
-
-- **`antml:thinking` output sanitization:** namespaced `antml:thinking` blocks are stripped from user-visible text so Anthropic-style internal monologue tags do not leak into replies. (#59550, @obviyus)
+- **Plugin-only allowlists stay restrictive:** release-line security fixes explicitly preserve restrictive plugin-only tool allowlists and require owner access for `/allowlist add` and `/allowlist remove`.
+- **`before_tool_call` failure is fail-closed:** crashing tool hooks are now part of the release-line fail-closed security behavior rather than an edge case left to plugin authors.

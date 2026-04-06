@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.2-1 (2026-04-03).** Latest published upstream release: v2026.4.2 (published 2026-04-02 UTC).
+> **Current docs version: v2026.4.5-1 (2026-04-06).** Latest published upstream release: v2026.4.5 (published 2026-04-06 UTC).
 
 ---
 
@@ -67,15 +67,15 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.2 additions (current release line):**
+**v2026.4.5 additions (current release line):**
 
-- **Task Flow registry (`src/tasks/task-flow-registry.*`):** managed-vs-mirrored sync modes, durable flow state/revision tracking, `openclaw tasks flow` CLI for inspection/recovery, managed child task spawning with sticky cancel intent, and a bound `api.runtime.taskFlow` seam for plugins. Key files: `task-flow-registry.ts`, `.types.ts`, `.store.ts`, `.store.sqlite.ts`, `.paths.ts`, `.audit.ts`, `.maintenance.ts`, `task-flow-runtime-internal.ts`. If you touch `src/tasks/`, test task lifecycle (create, sync, cancel, maintenance sweep) and `openclaw tasks flow` output.
-- **Provider transport centralization:** request auth, proxy, TLS, and header shaping are now centralized across shared HTTP, stream, and websocket paths. Insecure TLS/runtime transport overrides are blocked. Proxy-hop TLS is separate from target mTLS. If you change provider transport or auth, test across all three transport modes (HTTP, stream, websocket).
-- **Exec defaults: YOLO mode:** gateway/node host exec now defaults to `security=full` with `ask=off`. Host approval-file fallbacks and docs/doctor reporting align with the no-prompt default. Changes to exec defaults have cross-platform implications (Windows, node host).
-- **Plugin hook `before_agent_reply`:** plugins can now short-circuit the LLM with synthetic replies after inline actions. If you change plugin hook dispatch or reply pipeline, test `before_agent_reply` alongside `before_tool_call` and `before_dispatch`.
-- **Config migrations: xAI and Firecrawl:** `x_search` settings moved from `tools.web.x_search.*` to `plugins.entries.xai.config.xSearch.*`. Firecrawl `web_fetch` moved from `tools.web.fetch.firecrawl.*` to `plugins.entries.firecrawl.config.webFetch.*`. Both require `openclaw doctor --fix` migration testing.
-- **`web-fetch/runtime.ts` (new):** web fetch fallback now routes through a fetch-provider boundary instead of Firecrawl-only core branch. If you touch `src/web-fetch/`, test provider routing across Firecrawl and non-Firecrawl paths.
-- **`agents/exec-approval-result.ts` and `agents/internal-runtime-context.ts` (new):** exec approval result types and internal runtime context are now separate modules. If you touch exec approval or agent runtime internals, verify these are imported correctly.
+- **Released memory runtime is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`:** dreaming, embeddings, host backends, and memory promotion live under `src/memory-host-sdk/`; QMD, search managers, and sync/index orchestration live under `extensions/memory-core/src/memory/`. If you touch memory, inspect both surfaces instead of older standalone `src/memory/` references from earlier releases.
+- **Built-in media-generation tools:** `music_generate` and `video_generate` are now first-class tool surfaces, with supporting runtime code under `src/music-generation/`, `src/video-generation/`, `src/media-generation/`, and bundled Comfy workflow support in `extensions/comfy/`.
+- **Provider/runtime expansion:** bundled Qwen, Fireworks AI, and StepFun providers are on the released line, alongside Bedrock Mantle discovery, shared model/media transport overrides, and forward-compat `openai-codex/gpt-5.4-mini`.
+- **OpenAI/GPT reply-delivery changes:** commentary is buffered until `final_answer`, GPT-5/Codex defaults are shorter and lower-verbosity, and planning-only turns get a one-shot retry. If you touch reply streaming or block delivery, test that planning text does not leak to user-visible channels.
+- **Structured plan updates:** compatible UIs can now receive structured plan/event progress from long-running runs. If you change run-event emission, verify both commentary and structured progress paths.
+- **ACPX/runtime ownership:** the bundled ACPX plugin now embeds its runtime directly and uses the generic `reply_dispatch` hook to intercept reply delivery without hardcoded core ACP routing.
+- **Approval UX surface expanded:** APNs modal approvals and Matrix-native exec approvals are now part of the released approval paths; approval changes must be tested beyond the older Web UI / Slack / Discord / Telegram paths.
 
 **v2026.4.1 additions (historical):**
 
@@ -480,7 +480,7 @@ CLAWDBOT_LIVE_TEST=1 pnpm test:live
 - `src/config/test-helpers.ts` - Config-specific test helpers
 - `src/cron/service.test-harness.ts` - Cron service test fixture
 - `src/cron/isolated-agent.test-harness.ts` - Isolated agent test fixture
-- `src/memory/embedding-manager.test-harness.ts` - Embedding test fixture
+- `extensions/memory-core/src/memory/embedding-manager.test-harness.ts` - Embedding test fixture
 
 ### CI Pipeline
 
@@ -531,6 +531,15 @@ Conditional checks:
 pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
+
+### Release-window Workflow Additions (v2026.4.5)
+
+- **Treat released memory as a split surface:** if you change dreaming, embeddings, or promotion logic, start in `src/memory-host-sdk/`; if you change QMD, search, or memory sync/indexing, start in `extensions/memory-core/src/memory/`. Older `src/memory/` references in historical notes are no longer the current inspection path.
+- **Media-generation changes span multiple modules:** `music_generate` and `video_generate` touch agent tools, provider/runtime policy, async completion, and outbound media delivery. Test generation, async completion, and final delivery together.
+- **OpenAI reply delivery must hide planning text:** changes in reply streaming, block delivery, or `/v1/responses` compatibility need explicit checks that commentary stays buffered until `final_answer`.
+- **`contextVisibility` changes channel context semantics:** if you touch channel context assembly or quoted/thread history paths, test all `contextVisibility` modes (`all`, `allowlist`, `allowlist_quote`) with both allowed and disallowed senders.
+- **Approval flows are broader than before:** APNs modal approvals and Matrix-native approvals are on the current line. If you change approval state or exec approval delivery, include iOS reconnect and Matrix room/thread resolution in validation.
+- **Bundled CLI backend assumptions changed:** the old bundled CLI text-provider surface is gone. If you touch CLI backend routing or onboarding, validate Claude CLI legacy-profile migration and ensure native bundled providers still work without the removed `agents.defaults.cliBackends` surface.
 
 ### Release-window Workflow Additions (v2026.4.2)
 
@@ -731,6 +740,8 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 >
 > **v2026.3.13 additions:** `agents.defaults.compaction.customInstructions` (string) — per-agent instructions for compaction to preserve language/style continuity. `OPENCLAW_TZ` environment variable for Docker timezone pinning. `agents.list[].params`, `tools.web.fetch.readability`, `tools.web.fetch.firecrawl`, `channels.signal.groups`, `discovery.wideArea.domain` are now accepted config keys (previously Zod-rejected as unknown).
 >
+> **v2026.4.5 additions:** `channels.<channel>.contextVisibility` (enum) — filter supplemental quote/thread/fetched context by allowlist. Shared model/media request transport overrides across OpenAI-, Anthropic-, Google-, and compatible providers. Dreaming config/operations on the released line now include user-facing `enabled` and optional `frequency` plus aging controls (`recencyHalfLifeDays`, `maxAgeDays`) and `dreams.md` trail output. Media generation surfaces add built-in `music_generate`, `video_generate`, and `tools.media.asyncCompletion.directSend`. `agents.defaults.videoGenerationModel` is part of the released config surface.
+>
 > **v2026.4.2 additions:** `plugins.entries.xai.config.xSearch.*` — plugin-owned xAI x_search config (migrated from `tools.web.x_search.*`). `plugins.entries.xai.config.webSearch.apiKey` — xAI web search API key. `plugins.entries.firecrawl.config.webFetch.*` — plugin-owned Firecrawl web_fetch config (migrated from `tools.web.fetch.firecrawl.*`). `agents.defaults.compaction.notifyUser` (bool) — opt-in compaction start notice. Provider transport policy: insecure TLS/runtime overrides blocked; proxy-hop TLS separated from target mTLS.
 >
 > **v2026.4.1 additions:** `agents.defaults.params` (object) — global default provider parameters applied to all model calls unless overridden per-agent or per-model. `gateway.webchat.chatHistoryMaxChars` (number) — configurable chat history text truncation for webchat. `auth.cooldowns.rateLimitedProfileRotations` (number) — cap for same-provider auth-profile retries before cross-provider fallback. `channels.telegram.errorPolicy` (string) and `channels.telegram.errorCooldownMs` (number) — per-account/chat/topic error suppression. `channels.whatsapp.reactionLevel` (string) — agent reaction guidance level. `webSearch.searxng.host` (string) — SearXNG instance host for bundled web search provider.
@@ -830,6 +841,8 @@ src/<module>/
 - **Breaking Changes (v2026.3.7):** #106
 - **Breaking Changes (v2026.3.28):** #107, #108, #109, #110
 - **Behavioral Shifts (v2026.4.1):** #121, #122, #123, #124, #125, #126, #127, #128
+- **Breaking Changes (v2026.4.5):** #135, #136, #137
+- **Behavioral Shifts (v2026.4.5):** #138, #139, #140
 - **Breaking Changes (v2026.4.2):** #129, #130, #131, #132, #133, #134
 - **Operational Notes (v2026.3.28):** #111, #112, #113
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
@@ -1137,6 +1150,24 @@ src/<module>/
 119. **Task state is now first-class runtime data** — status, recovery, and detached-delivery investigations should read `src/tasks/*` in addition to the old cron/ACP/subagent paths.
 
 120. **Remote MCP transports are part of the stable surface** — `mcp.servers` URL configs, auth headers, and provider-safe tool naming now matter for correctness reviews.
+
+### v2026.4.5 Specific
+
+**BREAKING CHANGES (v2026.4.5):**
+
+135. **Legacy public config aliases are removed from the documented surface** - old public keys such as `talk.voiceId`, `talk.apiKey`, `agents.*.sandbox.perSession`, `browser.ssrfPolicy.allowPrivateNetwork`, `hooks.internal.handlers`, and channel/group/room `allow` toggles must be migrated to canonical paths and `enabled`. `openclaw doctor --fix` remains the supported migration path.
+
+136. **Bundled CLI text-provider backends are no longer the release-line contract** - the old bundled CLI text-provider surface and `agents.defaults.cliBackends` are removed from the public surface. Native bundled providers and ACP harness sessions remain, but new code should not depend on the removed CLI-backend configuration path.
+
+137. **Anthropic onboarding no longer treats Claude CLI as a new default backend** - new onboarding removes the Claude CLI backend/setup token from fresh Anthropic setup; existing configured legacy profiles still run, but stale `anthropic:claude-cli` state now relies on `openclaw doctor` migration/repair behavior.
+
+**BEHAVIORAL SHIFTS (v2026.4.5):**
+
+138. **The released memory surface is split, with host/runtime code in `src/memory-host-sdk/`** - dreaming, embeddings, Bedrock embeddings, replay-safe promotion, `dreams.md`, and related host/runtime logic live under `src/memory-host-sdk/`, while QMD/search/sync logic lives under `extensions/memory-core/src/memory/`. Old `src/memory/` references in historical docs are no longer the current path to inspect.
+
+139. **Media generation is now a first-class runtime path** - `music_generate` and `video_generate` are built-in tools with async completion and optional direct-send delivery. Changes now span agent tools, provider transport, media persistence, and outbound delivery, so testing only the tool schema is insufficient.
+
+140. **OpenAI/GPT replies now buffer commentary until `final_answer`** - planning text should no longer leak into user-visible channels. GPT-5/Codex defaults are shorter and lower-verbosity, and planning-only turns get a one-shot retry. If a change affects reply delivery or Responses compatibility, verify commentary/final separation explicitly.
 
 ### v2026.4.1 Specific
 
