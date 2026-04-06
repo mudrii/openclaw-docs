@@ -3,7 +3,7 @@
 **Audit date:** 2026-04-06
 **Source repo:** `~/src/open_claw/openclaw/` (tag: `v2026.4.5`)
 **Docs repo:** `~/src/open_claw/openclaw-docs/`
-**Docs snapshot:** All documents updated to `v2026.4.5` baseline
+**Docs snapshot:** Published docs snapshot `v2026.4.5-2`, validated against upstream `v2026.4.5`
 
 ---
 
@@ -80,7 +80,7 @@
 
 ## 3. Corrections Applied in This Docs Snapshot
 
-| Previous docs state | Corrected in `v2026.4.5-1` docs |
+| Previous docs state | Corrected in `v2026.4.5-2` docs |
 |---------------------|----------------------------------|
 | Latest documented upstream release was `v2026.4.2` | Updated to `v2026.4.5` |
 | TypeScript inventory stated `8,658` files / `1,710,796` lines | Updated to `9,766` files / `1,893,328` lines |

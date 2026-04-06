@@ -1347,7 +1347,7 @@ When event fires:
 
 ### Memory / Dreaming
 
-- **Released memory runtime moved to `src/memory-host-sdk/`:** current memory, embeddings, and dreaming logic live under `src/memory-host-sdk/` rather than the older `src/memory/` path referenced by previous docs snapshots.
+- **Released memory surfaces split between `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`:** current embeddings, dreaming, and host/runtime helpers live under `src/memory-host-sdk/`, while QMD, search, and sync/index orchestration live under `extensions/memory-core/src/memory/` rather than the older standalone `src/memory/` path referenced by previous docs snapshots.
 - **Dreaming surfaces:** the released line adds weighted recall promotion, `/dreaming`, Dreams UI, REM preview tooling, replay-safe promotion, and `dreams.md` as the explicit dreaming trail file.
 
 ### ACPX / Runtime

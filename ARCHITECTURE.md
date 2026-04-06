@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-06 (docs snapshot: v2026.4.5-1) | Released baseline: GitHub `v2026.4.5`
+> Updated: 2026-04-06 (docs snapshot: v2026.4.5-2) | Released baseline: GitHub `v2026.4.5`
 
 ---
 
@@ -1036,7 +1036,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 ### Security (7 fixes)
 
-See [§9 v2026.2.21 Security Hardening](#v20262121-security-hardening) for details.
+See [§9 v2026.2.21 Security Hardening](#v2026221-security-hardening) for details.
 
 1. **SHA-1 → SHA-256 synthetic IDs** — Internal ID generation migrated; external systems must regenerate stored IDs
 2. **`--no-sandbox` disabled in containers** — Chrome sandbox enabled by default; container environments need `SYS_ADMIN` or explicit opt-out
