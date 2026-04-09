@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1922,7 +1922,7 @@ User types: openclaw <command> [args]
 - **Dangerous installs fail closed by default:** plugin installs and gateway-backed skill dependency installs now require an explicit `--dangerously-force-unsafe-install` override when built-in scan results are critical or errored.
 - **`mcp.servers` supports remote HTTP/SSE plus `streamable-http`:** stable MCP configuration is no longer limited to local stdio transport assumptions.
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Breaking / Config
 

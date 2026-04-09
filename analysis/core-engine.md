@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
 > Modules: agents (1,172 files), gateway (472 files), tasks (44 files), sessions (17 files), routing (11 files), hooks (52 files), context-engine (7 files)
 
 ---
@@ -1501,7 +1501,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **`agents.defaults.compaction.model`:** compaction model override resolved consistently for manual `/compact` and engine-owned compaction paths across all runtime entrypoints.
 - **Failover rate-limit caps:** prompt-side and assistant-side same-provider auth-profile retries capped for rate-limit failures before cross-provider model fallback. New knob: `auth.cooldowns.rateLimitedProfileRotations`.
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Agents / Reply Runtime
 
@@ -1513,7 +1513,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 - **Embedded ACPX runtime:** ACPX now runs in process rather than through an extra external ACP CLI hop.
 - **Generic `reply_dispatch` hook:** bundled plugins can intercept reply delivery without special-casing ACP in the core auto-reply router.
-- **Task/flow surfaces remain central:** Task Flow stays part of the orchestration core, but the `v2026.4.5` line leans on it alongside structured progress and embedded runtime ownership rather than treating it as the only major change.
+- **Task/flow surfaces remain central:** Task Flow stays part of the orchestration core, but the `v2026.4.9` line leans on it alongside structured progress and embedded runtime ownership rather than treating it as the only major change.
 
 ### Provider / Runtime Expansion
 

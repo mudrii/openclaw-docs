@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
@@ -1598,7 +1598,7 @@ Changes in the current released line are recorded inline above under each channe
 
 ---
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Channels (shared infrastructure)
 
@@ -1612,5 +1612,5 @@ Changes in the current released line are recorded inline above under each channe
 
 ### Telegram / Discord / Slack / WhatsApp
 
-- **Reply-delivery hardening carries across major channels:** the `v2026.4.5` release fixes leaked control tags, stale routing metadata, proxy handling, reaction ownership, and reconnect/watchdog behavior across Telegram, Discord, Slack, and WhatsApp.
+- **Reply-delivery hardening carries across major channels:** the `v2026.4.9` release fixes leaked control tags, stale routing metadata, proxy handling, reaction ownership, and reconnect/watchdog behavior across Telegram, Discord, Slack, and WhatsApp.
 - **OpenAI commentary buffering matters at the channel layer:** planning/commentary text is now supposed to stay hidden until `final_answer`, so channel streaming/delivery code must no longer assume that all partial commentary is user-visible text.

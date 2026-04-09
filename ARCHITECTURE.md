@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-06 (docs snapshot: v2026.4.5-2) | Released baseline: GitHub `v2026.4.5`
+> Updated: 2026-04-06 (docs snapshot: v2026.4.9-2) | Released baseline: GitHub `v2026.4.9`
 
 ---
 
@@ -28,9 +28,9 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.5`), the `agents` module remains the largest core subtree at roughly 1,172 `.ts` / `.tsx` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 385 `.ts` / `.tsx` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery. The `tasks` module (`src/tasks/`) still provides the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.9`), the `agents` module remains the largest core subtree at roughly 1,172 `.ts` / `.tsx` files, covering model selection, system prompt construction, tool registration, streaming response processing, sandbox management, and the embedded pi-agent integration (`@mariozechner/pi-ai`). The `auto-reply` module remains the message processing pipeline that sits between channels and agents — roughly 385 `.ts` / `.tsx` files on the stable tag — handling commands, directives, session management, model routing, queue management, and reply delivery. The `tasks` module (`src/tasks/`) still provides the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (94 extension packages as of `v2026.4.5`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (97 extension packages as of `v2026.4.9`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -175,7 +175,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `extensions/whatsapp/` | 132 | ~18,000+ | WhatsApp channel runtime via Baileys: session, pairing, media send/receive, replies, reactions, and delivery policy | config, auto-reply, channels |
 | `extensions/qqbot/` | 45 | ~12,000+ | QQ Bot bundled channel plugin: multi-account setup, slash commands, reminders, media send/receive, and released allowlist hardening | config, auto-reply, channels |
 | `web-search/` | 2 | ~500+ | Shared web-search runtime wiring and provider selection for bundled search plugins (including SearXNG) and Pi/native search flows | agents, config |
-| `memory-host-sdk/` | 87 | ~20,000+ | Released memory host/runtime helpers: semantic-search host backends, embeddings, dreaming, promotion, and shared memory provider orchestration. Current QMD/search/sync logic is split into `extensions/memory-core/src/memory/` on `v2026.4.5` | config, agents, logging |
+| `memory-host-sdk/` | 87 | ~20,000+ | Released memory host/runtime helpers: semantic-search host backends, embeddings, dreaming, promotion, and shared memory provider orchestration. Current QMD/search/sync logic is split into `extensions/memory-core/src/memory/` on `v2026.4.9` | config, agents, logging |
 | `tasks/` | 44 | ~10,000+ | SQLite-backed background task control plane: task registry, executor, ownership, audit, maintenance, status, and task-flow linkage for ACP/subagent/cron/CLI detached runs. The stable line includes Task Flow orchestration plus the surrounding control-plane/runtime glue used by structured progress and embedded ACPX flows | config, agents, gateway |
 | `web-fetch/` | 2 | ~400+ | Web fetch runtime boundary: Firecrawl `web_fetch` moved from core to plugin-owned path via `runtime.ts`; provides the fetch-provider abstraction that plugins implement | config, plugins |
 | `cron/` | 71 | ~14,800+ | Scheduled jobs: cron/interval/one-shot, isolated agent sessions, delivery | config, agents, routing |
@@ -201,7 +201,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `music-generation/` | — | — | Released music-generation runtime used by `music_generate`, async completion, provider routing, and workflow-backed audio generation | agents, media, plugins |
 | `video-generation/` | — | — | Released video-generation runtime used by `video_generate`, provider routing, and async delivery | agents, media, plugins |
 | `media-generation/` | — | — | Shared media-generation helpers and provider abstractions consumed by image/music/video generation paths | agents, media, plugins |
-| `providers/` | 0 | — | Standalone `src/providers/` no longer exists on `v2026.4.5`; provider auth/runtime logic is distributed across `src/agents/`, `src/plugin-sdk/`, and bundled provider extensions | config, agents (auth-profiles), plugin-sdk |
+| `providers/` | 0 | — | Standalone `src/providers/` no longer exists on `v2026.4.9`; provider auth/runtime logic is distributed across `src/agents/`, `src/plugin-sdk/`, and bundled provider extensions | config, agents (auth-profiles), plugin-sdk |
 | `acp/` | 43 | ~2,800+ | Agent Client Protocol bridge for IDE/editor integration | @agentclientprotocol/sdk, gateway |
 | `pairing/` | 7 | ~1,500+ | Device pairing: code generation, approval, account-scoped channel allowlists | channels, config, infra |
 | `node-host/` | 11 | ~2,300+ | Remote node agent: gateway connection, command invocation, browser proxy, APNs wake support | gateway, browser, config |
@@ -212,7 +212,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `compat/` | 1 | ~20 | Legacy project name constants | — |
 | `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
 | `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | 94 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs`, `comfy`, and the expanded provider/plugin set on `v2026.4.5`) | plugin-sdk |
+| `extensions/` | 109 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs`, `comfy`, and the expanded provider/plugin set on `v2026.4.9`) | plugin-sdk |
 | `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 | `packages/` | — | — | Workspace compatibility shims (clawdbot, moltbot) for legacy package name consumers | — |
@@ -940,11 +940,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 94 |
-| Extension packages (`extensions/*/package.json`) | 94 |
-| Released skill entrypoints (`skills/`, `.agents/skills/`, extensions) | 73 |
+| Extension directories (`extensions/*`) | 109 |
+| Extension packages (`extensions/*/package.json`) | 97 |
+| Released skill entrypoints (`skills/`, `.agents/skills/`, extensions) | 75 |
 
-> Current analyzed source package: released `v2026.4.5`. Counts measured from the `v2026.4.5` released tree.
+> Current analyzed source package: released `v2026.4.9`. Counts measured from the `v2026.4.9` released tree.
 
 ### Key External Dependencies
 
@@ -1496,7 +1496,7 @@ See [§9 v2026.2.21 Security Hardening](#v2026221-security-hardening) for detail
 
 ---
 
-## v2026.4.5 Released Changes (2026-04-06 docs snapshot)
+## v2026.4.9 Released Changes (2026-04-06 docs snapshot)
 
 ### New Architectural Components
 
@@ -1510,12 +1510,11 @@ See [§9 v2026.2.21 Security Hardening](#v2026221-security-hardening) for detail
 - **OpenAI/GPT commentary buffering:** planning/commentary text is now buffered until `final_answer`, which affects gateway, replay, previews, and channel delivery.
 - **Per-channel context filtering:** `contextVisibility` changes how quote/thread/fetched context reaches the runtime.
 
-### Stats Update (v2026.4.5 docs snapshot)
+### Stats Update (v2026.4.9 docs snapshot)
 
-- **9,766 TypeScript files** analyzed in `src/`, `extensions/`, `ui/`, `test/`, and `scripts/`
-- **1,893,328 lines of TypeScript** in the same scope
-- **94 extension packages** and **73 released skill entrypoints** in the released tree
-- **Window:** `v2026.4.2..v2026.4.5` spans 2,562 commits and 5,746 changed files
+- **10,454 TypeScript files** analyzed in `src/`, `extensions/`, `ui/`, `test/`, and `scripts/`
+- **97 extension packages** and **75 released skill entrypoints** in the released tree
+- **Window:** `v2026.4.8..v2026.4.9` spans 331 commits and 1,052 changed files
 
 ---
 

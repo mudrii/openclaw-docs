@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
 > Release note: the current released memory surface is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`. Historical `src/memory/` references below describe the older pre-split layout and should be read as historical context only.
 
 ---
@@ -20,7 +20,7 @@
 ## Memory / Released Surfaces
 
 ### Module Overview
-On `v2026.4.5`, released memory is split between `src/memory-host-sdk/` (embeddings, dreaming, promotion, multimodal helpers, and host/runtime utilities) and `extensions/memory-core/src/memory/` (QMD, search managers, SQLite indexing, and sync orchestration). Together these surfaces provide **semantic search over markdown files and session transcripts** using vector embeddings. They support multiple embedding providers (OpenAI, Gemini, Voyage, Mistral, local llama.cpp), store chunks in SQLite with optional sqlite-vec for native vector search, and implement hybrid search (vector + BM25 full-text). An alternative backend (`qmd`) delegates to an external QMD binary for indexing/search. Historical bullets that still say `src/memory/` are describing the older pre-split layout.
+On `v2026.4.9`, released memory is split between `src/memory-host-sdk/` (embeddings, dreaming, promotion, multimodal helpers, and host/runtime utilities) and `extensions/memory-core/src/memory/` (QMD, search managers, SQLite indexing, and sync orchestration). Together these surfaces provide **semantic search over markdown files and session transcripts** using vector embeddings. They support multiple embedding providers (OpenAI, Gemini, Voyage, Mistral, local llama.cpp), store chunks in SQLite with optional sqlite-vec for native vector search, and implement hybrid search (vector + BM25 full-text). An alternative backend (`qmd`) delegates to an external QMD binary for indexing/search. Historical bullets that still say `src/memory/` are describing the older pre-split layout.
 
 **Architecture Pattern:** Manager singleton with lazy initialization, file watcher for live reindexing, mixin-style ops classes (`manager-embedding-ops.ts`, `manager-sync-ops.ts` mixed into `MemoryIndexManager`).
 
@@ -1175,7 +1175,7 @@ The helper module `src/utils/cjk-chars.ts` exports `estimateStringChars(text)`, 
 
 - **Cron work now shares the same durable task ledger as ACP and subagents:** release-line cron documentation should treat task records, audit, and maintenance as part of normal detached-run behavior rather than an ACP-only implementation detail.
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Memory / Dreaming
 
@@ -1185,7 +1185,7 @@ The helper module `src/utils/cjk-chars.ts` exports `estimateStringChars(text)`, 
 
 ### Cron / Background Work
 
-- **Cron remains on the shared task ledger:** the `v2026.4.5` line keeps cron, ACP, subagents, and detached CLI runs tied to the same durable task/control-plane surfaces, with more emphasis on automatic completion wake behavior and primary-channel failure delivery.
+- **Cron remains on the shared task ledger:** the `v2026.4.9` line keeps cron, ACP, subagents, and detached CLI runs tied to the same durable task/control-plane surfaces, with more emphasis on automatic completion wake behavior and primary-channel failure delivery.
 
 ### Media Generation
 

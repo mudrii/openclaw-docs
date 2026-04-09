@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-06 | **Version:** v2026.4.5
-**Codebase:** OpenClaw release tag `v2026.4.5`
+**Updated:** 2026-04-06 | **Version:** v2026.4.9
+**Codebase:** OpenClaw release tag `v2026.4.9`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -933,7 +933,7 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 - **HTTP tool-invoke and plugin-auth routing are tighter:** stable `v2026.3.31` narrows plugin route runtime scopes and keeps HTTP invoke authorization closer to the effective runtime boundary.
 - **Remote MCP transports are stable behavior:** gateway/infrastructure assumptions now need to account for remote HTTP/SSE servers plus `streamable-http`, not only local stdio workers.
 
-## v2026.4.5 Changes
+## v2026.4.9 Changes
 
 ### Gateway / Startup and Restart Behavior
 

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1111,7 +1111,7 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 ---
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Breaking / Public Config Surface
 

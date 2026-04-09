@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.5-2 (2026-04-06).** Latest published upstream release: v2026.4.5 (published 2026-04-06 UTC).
+> **Current docs version: v2026.4.9-2 (2026-04-06).** Latest published upstream release: v2026.4.9 (published 2026-04-06 UTC).
 
 ---
 
@@ -67,7 +67,7 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.5 additions (current release line):**
+**v2026.4.9 additions (current release line):**
 
 - **Released memory runtime is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`:** dreaming, embeddings, host backends, and memory promotion live under `src/memory-host-sdk/`; QMD, search managers, and sync/index orchestration live under `extensions/memory-core/src/memory/`. If you touch memory, inspect both surfaces instead of older standalone `src/memory/` references from earlier releases.
 - **Built-in media-generation tools:** `music_generate` and `video_generate` are now first-class tool surfaces, with supporting runtime code under `src/music-generation/`, `src/video-generation/`, `src/media-generation/`, and bundled Comfy workflow support in `extensions/comfy/`.
@@ -532,7 +532,7 @@ pnpm format:fix          # oxfmt --write — auto-fix formatting
 pnpm lint:fix            # oxlint --fix + format — auto-fix lint + format
 ```
 
-### Release-window Workflow Additions (v2026.4.5)
+### Release-window Workflow Additions (v2026.4.9)
 
 - **Treat released memory as a split surface:** if you change dreaming, embeddings, or promotion logic, start in `src/memory-host-sdk/`; if you change QMD, search, or memory sync/indexing, start in `extensions/memory-core/src/memory/`. Older `src/memory/` references in historical notes are no longer the current inspection path.
 - **Media-generation changes span multiple modules:** `music_generate` and `video_generate` touch agent tools, provider/runtime policy, async completion, and outbound media delivery. Test generation, async completion, and final delivery together.
@@ -740,7 +740,7 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 >
 > **v2026.3.13 additions:** `agents.defaults.compaction.customInstructions` (string) — per-agent instructions for compaction to preserve language/style continuity. `OPENCLAW_TZ` environment variable for Docker timezone pinning. `agents.list[].params`, `tools.web.fetch.readability`, `tools.web.fetch.firecrawl`, `channels.signal.groups`, `discovery.wideArea.domain` are now accepted config keys (previously Zod-rejected as unknown).
 >
-> **v2026.4.5 additions:** `channels.<channel>.contextVisibility` (enum) — filter supplemental quote/thread/fetched context by allowlist. Shared model/media request transport overrides across OpenAI-, Anthropic-, Google-, and compatible providers. Dreaming config/operations on the released line now include user-facing `enabled` and optional `frequency` plus aging controls (`recencyHalfLifeDays`, `maxAgeDays`) and `dreams.md` trail output. Media generation surfaces add built-in `music_generate`, `video_generate`, and `tools.media.asyncCompletion.directSend`. `agents.defaults.videoGenerationModel` is part of the released config surface.
+> **v2026.4.9 additions:** `channels.<channel>.contextVisibility` (enum) — filter supplemental quote/thread/fetched context by allowlist. Shared model/media request transport overrides across OpenAI-, Anthropic-, Google-, and compatible providers. Dreaming config/operations on the released line now include user-facing `enabled` and optional `frequency` plus aging controls (`recencyHalfLifeDays`, `maxAgeDays`) and `dreams.md` trail output. Media generation surfaces add built-in `music_generate`, `video_generate`, and `tools.media.asyncCompletion.directSend`. `agents.defaults.videoGenerationModel` is part of the released config surface.
 >
 > **v2026.4.2 additions:** `plugins.entries.xai.config.xSearch.*` — plugin-owned xAI x_search config (migrated from `tools.web.x_search.*`). `plugins.entries.xai.config.webSearch.apiKey` — xAI web search API key. `plugins.entries.firecrawl.config.webFetch.*` — plugin-owned Firecrawl web_fetch config (migrated from `tools.web.fetch.firecrawl.*`). `agents.defaults.compaction.notifyUser` (bool) — opt-in compaction start notice. Provider transport policy: insecure TLS/runtime overrides blocked; proxy-hop TLS separated from target mTLS.
 >
@@ -841,8 +841,8 @@ src/<module>/
 - **Breaking Changes (v2026.3.7):** #106
 - **Breaking Changes (v2026.3.28):** #107, #108, #109, #110
 - **Behavioral Shifts (v2026.4.1):** #121, #122, #123, #124, #125, #126, #127, #128
-- **Breaking Changes (v2026.4.5):** #135, #136, #137
-- **Behavioral Shifts (v2026.4.5):** #138, #139, #140
+- **Breaking Changes (v2026.4.9):** #135, #136, #137
+- **Behavioral Shifts (v2026.4.9):** #138, #139, #140
 - **Breaking Changes (v2026.4.2):** #129, #130, #131, #132, #133, #134
 - **Operational Notes (v2026.3.28):** #111, #112, #113
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
@@ -1151,9 +1151,9 @@ src/<module>/
 
 120. **Remote MCP transports are part of the stable surface** — `mcp.servers` URL configs, auth headers, and provider-safe tool naming now matter for correctness reviews.
 
-### v2026.4.5 Specific
+### v2026.4.9 Specific
 
-**BREAKING CHANGES (v2026.4.5):**
+**BREAKING CHANGES (v2026.4.9):**
 
 135. **Legacy public config aliases are removed from the documented surface** - old public keys such as `talk.voiceId`, `talk.apiKey`, `agents.*.sandbox.perSession`, `browser.ssrfPolicy.allowPrivateNetwork`, `hooks.internal.handlers`, and channel/group/room `allow` toggles must be migrated to canonical paths and `enabled`. `openclaw doctor --fix` remains the supported migration path.
 
@@ -1161,7 +1161,7 @@ src/<module>/
 
 137. **Anthropic onboarding no longer treats Claude CLI as a new default backend** - new onboarding removes the Claude CLI backend/setup token from fresh Anthropic setup; existing configured legacy profiles still run, but stale `anthropic:claude-cli` state now relies on `openclaw doctor` migration/repair behavior.
 
-**BEHAVIORAL SHIFTS (v2026.4.5):**
+**BEHAVIORAL SHIFTS (v2026.4.9):**
 
 138. **The released memory surface is split, with host/runtime code in `src/memory-host-sdk/`** - dreaming, embeddings, Bedrock embeddings, replay-safe promotion, `dreams.md`, and related host/runtime logic live under `src/memory-host-sdk/`, while QMD/search/sync logic lives under `extensions/memory-core/src/memory/`. Old `src/memory/` references in historical docs are no longer the current path to inspect.
 

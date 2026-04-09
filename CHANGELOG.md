@@ -6,6 +6,91 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.4.9 — Release Summary
+
+> **Released:** 2026-04-09 (docs release) | upstream GitHub release `v2026.4.9` published 2026-04-09 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.8..v2026.4.9` | 331 commits, 1,052 files changed, +40,773 / -24,675 lines
+
+### Changes
+
+- **Dreaming/memory:** surface the grounded scene lane in dreaming (#63395) so memory promotion can trace real-event anchors; feed grounded backfill into short-term promotion pipeline (#63370); harden grounded backfill follow-up logic and align dreaming status payloads.
+- **MS Teams:** isolate channel thread sessions by `replyToId` so concurrent threads do not collide (#62713); route thread replies to the correct thread via `replyToId` (#62715); pin reply target at inbound time to prevent DM/channel leak (#62716).
+- **Ollama:** enable thinking-block support for the Ollama API (#62712) so reasoning-capable local models can produce structured thinking output.
+- **Slack:** deduplicate partial streaming replies (#62859); key turn-local dedupe by dispatch kind to eliminate duplicate blocks; treat ACP block text as visible output in Slack thread context (#62858).
+- **Plugin setup wizard:** add explicit skip option so operators can bypass optional plugin wizard steps (#63436).
+- **Providers:** add lightweight Anthropic Vertex provider discovery; keep Google provider policy lightweight for startup.
+- **Auth:** filter provider auth aliases by plugin trust level to prevent cross-plugin auth leakage.
+- **Plugin SDK:** split command status surface; keep command status compatibility path light.
+
+### Fixes
+
+- **Gateway:** suppress announce/reply skip chat leakage (#51739); drop raw gateway chat control replies that leak internal control messages; classify dream diary actions correctly.
+- **Matrix/doctor:** add migration for legacy `channels.matrix.dm.policy: "trusted"` value (#62942) — run `openclaw doctor --fix` to migrate.
+- **OpenRouter:** fix stale model picker refs (#63416) that caused model selection inconsistencies.
+- **Browser:** surface delayed navigation blocks so callers receive explicit errors instead of silent timeouts.
+- **Sessions/routing:** prevent inter-session messages from overwriting an established external `lastRoute`.
+- **Windows:** repair dev-channel updater breakage.
+- **Security/deps:** patch `basic-ftp` advisory.
+- **Config:** stop owner-display barrel cycles; break console/logger type cycle; extract exec approvals allowlist types.
+- **Commands:** split doctor prompt option types; split auth choice apply types.
+
+---
+
+## OpenClaw v2026.4.8 — Release Summary
+
+> **Released:** 2026-04-08 (docs release) | upstream GitHub release `v2026.4.8` published 2026-04-08 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.7..v2026.4.8` | 42 commits, 269 files changed, +4,413 / -1,468 lines
+> **Note:** incorporates `v2026.4.7-1` hotfix (revert bundled channel fallback masking).
+
+### Changes
+
+- **Slack/proxy:** honor `HTTPS_PROXY` and `HTTP_PROXY` environment variables for Socket Mode WebSocket connections (#62878); handle leading-dot `NO_PROXY` entries that match apex domains.
+- **Slack/downloads:** pass resolved `botToken` through to `downloadSlackFile` so authenticated file downloads work in all routing paths (#62097).
+- **Net/proxy:** skip DNS pinning before dispatching through trusted environment proxy, preventing false SSRF rejections on proxy-routed traffic.
+- **Z.AI:** default to GLM-5.1 instead of the deprecated GLM-5 base model (#61998).
+- **Docs:** refresh config schema baseline, slash command references, and TTS endpoint documentation.
+
+### Fixes
+
+- **Bundled channels:** revert bundled channel entry fallback resolution masking that broke plugin sidecar lookups (incorporated from `v2026.4.7-1`).
+
+---
+
+## OpenClaw v2026.4.7 — Release Summary
+
+> **Released:** 2026-04-08 (docs release) | upstream GitHub release `v2026.4.7` published 2026-04-08 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.5..v2026.4.7` | 1,663 commits, 4,916 files changed, +206,144 / -104,901 lines
+
+### Changes
+
+- **Memory Wiki:** add belief-layer digests with compat migration, per-claim health reports, compiled digest prompts, and wiki-based memory retrieval so agents can perform structured recall against a maintained belief graph rather than raw memory search.
+- **Compaction:** add pluggable compaction provider registry (#56224) so channel/plugin authors can register custom compaction strategies; add gateway compaction checkpoints (#62146) to stabilize long-session context management.
+- **CLI / `openclaw infer`:** add first-class `openclaw infer` command (#62129) for direct inference workflows from the CLI without running a full gateway.
+- **Arcee AI provider:** add bundled Arcee AI provider plugin with OpenRouter integration and updated onboarding docs.
+- **Discord:** add cover image support to event creation (#60883).
+- **Ollama:** auto-detect vision capability from `/api/show` and set image input flags accordingly (#62193).
+- **Slack:** add `channels.slack.thread.requireExplicitMention` config option (#58276) so Slack thread replies only trigger the agent when explicitly mentioned.
+- **iOS:** improve gateway connection error UX with clearer error messaging (#62650).
+- **Context engine:** expose prompt-cache runtime context to context engines (#62179) so providers can make cache-aware prompt decisions.
+- **Google:** add Gemma 4 model entries.
+- **Media:** preserve media generation intent across provider fallback so partial-failure routes keep the original generation request intact.
+- **GitHub:** add `gh-read` GitHub App helper for repository read operations.
+
+### Fixes
+
+- **Security/allowlist:** gate `/allowlist add` and `/allowlist remove` behind owner check before channel resolution (#62383).
+- **Security/SSRF:** stop SSRF guard from rejecting operator-configured proxy hostnames (#62312); harden browser SSRF redirect guard against non-navigation document hops (#62355); drop request body on cross-origin unsafe-method redirects (#62357).
+- **Browser:** align `browser.proxy` profile mutation guards (#60489).
+- **Heartbeat:** always target main session — prevent routing to active subagent sessions (#61803).
+- **Exec/env:** expand host-exec environment variable blocklist to cover Java, Rust, and Cargo toolchain variables (#62291); align inherited host-exec env filtering (#59119); expand git env denylist coverage (#62002).
+- **Compaction:** fix agent infinite loop triggered after tool-use abortion (#62600).
+- **Doctor:** warn when stale Codex provider overrides shadow OAuth credentials (#40143).
+- **Daemon:** skip machine-scope DBus fallback on `permission-denied` errors (#62337).
+- **Logging:** correct `levelToMinLevel` mapping and related filter logic for tslog v4 (#44646).
+- **Sessions/routing:** prevent inter-session messages from overwriting an established external `lastRoute` (#58013).
+
+---
+
 ## OpenClaw v2026.4.5 — Release Summary
 
 > **Released:** 2026-04-06 (docs release) | upstream GitHub release `v2026.4.5` published 2026-04-06 UTC | **Policy note:** latest *documented* released section stays at top.

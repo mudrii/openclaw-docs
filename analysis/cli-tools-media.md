@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
 
 ## Overview
 
@@ -1014,7 +1014,7 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 - **OpenAI Responses `text.verbosity` is a released tool/runtime behavior:** CLI and tooling docs should treat it as part of the stable Responses surface, not a beta-only toggle.
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Music / Video Generation
 

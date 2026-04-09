@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web Search, WhatsApp & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1277,11 +1277,11 @@ The following entries are added to the Security Model section for `src/browser`:
 
 ---
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Security — Request Transport and Media Paths
 
-- **Shared request overrides now span model and media traffic:** security review for `v2026.4.5` has to treat model/media request overrides as one surface covering text, audio, image, music, and video generation paths.
+- **Shared request overrides now span model and media traffic:** security review for `v2026.4.9` has to treat model/media request overrides as one surface covering text, audio, image, music, and video generation paths.
 - **Browser SSRF and redirect handling remain release-critical:** the stable line keeps pushing SSRF hardening earlier in the decision path, including redirect handling and guarded fetch policy.
 
 ### Security — Reply Visibility

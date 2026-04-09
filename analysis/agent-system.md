@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-06 | Version: v2026.4.5 | Codebase: OpenClaw release tag `v2026.4.5`
+> Updated: 2026-04-06 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -554,11 +554,11 @@ Send policy: evaluated during reply dispatch to gate outbound messages
 ## 4. Released Memory Surfaces — `src/memory-host-sdk/` + `extensions/memory-core/src/memory/`
 
 ### Purpose
-Semantic memory system. On `v2026.4.5`, the released tree splits memory responsibilities between `src/memory-host-sdk/host/` (host/runtime helpers, embeddings, multimodal file handling) and `extensions/memory-core/src/memory/` (QMD, search managers, sync/indexing, and SQLite-backed memory orchestration). Together they index workspace files (`MEMORY.md`, `memory/*.md`, session transcripts) into SQLite with vector embeddings + full-text search. Supports hybrid search (BM25 + cosine similarity), multiple embedding providers (OpenAI, Gemini, Voyage, local llama), batch embedding, and QMD (Query-Memory-Document) scoped search.
+Semantic memory system. On `v2026.4.9`, the released tree splits memory responsibilities between `src/memory-host-sdk/host/` (host/runtime helpers, embeddings, multimodal file handling) and `extensions/memory-core/src/memory/` (QMD, search managers, sync/indexing, and SQLite-backed memory orchestration). Together they index workspace files (`MEMORY.md`, `memory/*.md`, session transcripts) into SQLite with vector embeddings + full-text search. Supports hybrid search (BM25 + cosine similarity), multiple embedding providers (OpenAI, Gemini, Voyage, local llama), batch embedding, and QMD (Query-Memory-Document) scoped search.
 
 ### Key Files
 
-> File basenames below map to the released `v2026.4.5` split: host/runtime helpers live under `src/memory-host-sdk/host/`; search, QMD, and sync managers live under `extensions/memory-core/src/memory/`.
+> File basenames below map to the released `v2026.4.9` split: host/runtime helpers live under `src/memory-host-sdk/host/`; search, QMD, and sync managers live under `extensions/memory-core/src/memory/`.
 
 #### Core
 | File | Role |
@@ -1337,7 +1337,7 @@ When event fires:
 - **Idle stream timeout is now configurable:** stalled embedded model streams can abort cleanly instead of waiting for the broader run timeout, which changes how long-running agent failures surface.
 - **OpenAI Responses verbosity is forwarded:** `text.verbosity` now travels across Responses transports and status surfaces, so runtime and docs should treat verbosity as a released config/runtime behavior.
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Agents / Runtime
 

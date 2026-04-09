@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-06 | **Version:** v2026.4.5 | **Codebase:** OpenClaw release tag `v2026.4.5`
+**Updated:** 2026-04-06 | **Version:** v2026.4.9 | **Codebase:** OpenClaw release tag `v2026.4.9`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** stable release-line snapshot across 14 support modules plus `apps/macos`
 
@@ -1143,7 +1143,7 @@ Shared test utilities and mock factories.
 
 - **Wizard safety improved on remote-gateway decline:** onboarding support paths now reset back to the safe loopback default after rejecting a discovered remote URL.
 
-## v2026.4.5 Delta Notes
+## v2026.4.9 Delta Notes
 
 ### Auto-reply / Reply Delivery
 
@@ -1156,4 +1156,4 @@ Shared test utilities and mock factories.
 
 ### Plugin / Runtime Support
 
-- **Activation provenance and registry reuse remain core support behavior:** activation-source metadata and compatible-registry reuse are still important, but `v2026.4.5` extends the support surface with embedded ACPX runtime ownership and generic reply-dispatch interception.
+- **Activation provenance and registry reuse remain core support behavior:** activation-source metadata and compatible-registry reuse are still important, but `v2026.4.9` extends the support surface with embedded ACPX runtime ownership and generic reply-dispatch interception.
