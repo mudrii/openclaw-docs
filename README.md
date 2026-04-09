@@ -3,7 +3,7 @@
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
 **Latest published upstream release: v2026.4.9 (published 2026-04-09 UTC).**
-**Current validated docs snapshot: v2026.4.9-2 (validated against `v2026.4.9`).**
+**Current validated docs snapshot: v2026.4.9-3 (validated against `v2026.4.9`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -56,6 +56,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each documented release tracks an OpenClaw stable release line. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream release; same-base npm correction builds are noted inside the matching docs snapshot rather than treated as separate published GitHub releases:
+- `v2026.4.9-3` (2026-04-09, docs release) - Comprehensive validation pass against the `v2026.4.9` source tree. Added documentation for modules introduced in v2026.4.7 that had no analysis coverage: Memory Wiki (`extensions/memory-wiki/`) in `memory-cron-media.md`; `openclaw infer` CLI in `cli-tools-media.md`; Arcee AI, Amazon Bedrock Mantle, Microsoft Foundry, OpenShell, and Tavily plugins in `security-plugins.md` (tables + v2026.4.7 delta notes). All 4 parallel validation agents confirmed CHANGELOG stats, module paths, and AGENTS.md/AGENT_README.md file references are accurate.
 - `v2026.4.9-2` (2026-04-09, docs release) - Follow-up factual correction release for the `v2026.4.9` docs line. Fixed agent-introduced errors: wrong docs version suffix (`-2` → `-1`), stale snapshot date (`2026-04-06` → `2026-04-09`) in ARCHITECTURE.md/AGENT_README.md; stale inventory counts (9,766 TS files, 94 packages, 73 skills) and stale CHANGELOG description endpoint in README.md; and stale `Updated` date (`2026-04-06` → `2026-04-09`) in all 10 analysis doc headers.
 - `v2026.4.9-1` (2026-04-09, docs release) - Synced docs snapshot to the current stable line: published GitHub release `v2026.4.9`. Adds release summaries for v2026.4.7, v2026.4.8, and v2026.4.9. Key updates: MS Teams thread isolation via replyToId; Dreaming grounded scene lane and short-term promotion; Ollama thinking support; Slack streaming dedup; plugin setup wizard skip; Anthropic Vertex discovery; Matrix trusted-DM-policy migration; OpenRouter model picker fix; and 331 additional commits of fixes and hardening since v2026.4.8.
 - `v2026.4.5-2` (2026-04-06, docs release) - Follow-up factual correction release for the `v2026.4.5` docs line. Corrected the released memory-surface wording in the README and analysis docs to reflect the split between `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`, fixed the published docs snapshot label in the integrity audit, and repaired an internal `ARCHITECTURE.md` anchor.
