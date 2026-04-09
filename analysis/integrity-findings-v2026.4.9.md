@@ -3,7 +3,7 @@
 **Audit date:** 2026-04-09
 **Source repo:** `~/src/open_claw/openclaw/` (tag: `v2026.4.9`)
 **Docs repo:** `~/src/open_claw/openclaw-docs/`
-**Docs snapshot:** Published docs snapshot `v2026.4.9-1`, validated against upstream `v2026.4.9`
+**Docs snapshot:** Published docs snapshot `v2026.4.9-2`, validated against upstream `v2026.4.9`
 
 ---
 
