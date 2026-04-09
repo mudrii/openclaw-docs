@@ -17,7 +17,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [AGENT_README.md](AGENT_README.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.5); tracks released upstream tags and synthesis status. |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.9); tracks released upstream tags and synthesis status. |
 | [AGENTS.md](AGENTS.md) | AI agent guidelines for working with the OpenClaw codebase — repo structure, build commands, testing, PR workflow, security practices. |
 
 ### Detailed Analysis
@@ -86,10 +86,9 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **9,766 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.5`)
-- **1,893,328 lines of TypeScript** covered (same scope as above)
-- **94 extension packages** and **73 released skill entrypoints** (`skills/`, `.agents/skills/`, and extension skill surfaces) reflected in the current released snapshot
-- **16 Markdown documents** in this repo (5 core docs + 10 analysis docs + 1 integrity audit)
+- **10,454 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.9`)
+- **97 extension packages** and **75 released skill entrypoints** (`skills/`, `.agents/skills/`, and extension skill surfaces) reflected in the current released snapshot
+- **17 Markdown documents** in this repo (5 core docs + 10 analysis docs + 2 integrity audits)
 
 ## Contributing
 

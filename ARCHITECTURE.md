@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-06 (docs snapshot: v2026.4.9-2) | Released baseline: GitHub `v2026.4.9`
+> Updated: 2026-04-09 (docs snapshot: v2026.4.9-1) | Released baseline: GitHub `v2026.4.9`
 
 ---
 
@@ -1496,7 +1496,7 @@ See [§9 v2026.2.21 Security Hardening](#v2026221-security-hardening) for detail
 
 ---
 
-## v2026.4.9 Released Changes (2026-04-06 docs snapshot)
+## v2026.4.9 Released Changes (2026-04-09 docs snapshot)
 
 ### New Architectural Components
 
