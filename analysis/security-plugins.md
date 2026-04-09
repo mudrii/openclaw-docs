@@ -786,11 +786,29 @@ Documentation generation (only test files found).
 
 ### Provider Plugins (auth/model providers)
 
+> **Note:** The table below is representative, not exhaustive. OpenClaw ships ~40 bundled provider plugins. Only notable or recently-added entries are listed here; see `extensions/` in the source tree for the full set.
+
 | Extension | Description |
 |-----------|-------------|
+| `amazon-bedrock/` | Amazon Bedrock provider |
+| `amazon-bedrock-mantle/` | Amazon Bedrock Mantle — OpenAI-compatible Bedrock surface (added v2026.4.7) |
+| `anthropic/` | Anthropic (Claude) provider |
+| `anthropic-vertex/` | Anthropic on Vertex AI provider |
+| `arcee/` | Arcee AI provider — direct API + OpenRouter routing (added v2026.4.7, #62068) |
 | `copilot-proxy/` | Copilot Proxy provider |
+| `deepseek/` | DeepSeek provider |
+| `google/` | Google Gemini provider |
 | `google-gemini-cli-auth/` | Gemini CLI OAuth provider |
+| `groq/` | Groq provider |
+| `microsoft/` | Microsoft Azure OpenAI provider |
+| `microsoft-foundry/` | Microsoft Foundry provider with Entra ID and API key auth (added v2026.4.7) |
 | `minimax-portal-auth/` | MiniMax Portal OAuth provider |
+| `ollama/` | Ollama local-model provider (with vision auto-detection and thinking support) |
+| `openai/` | OpenAI provider |
+| `openrouter/` | OpenRouter provider |
+| `qwen/` | Alibaba Qwen provider |
+| `xai/` | xAI (Grok) provider |
+| `zai/` | Z.AI provider |
 
 ### Tool/Feature Plugins
 
@@ -798,14 +816,20 @@ Documentation generation (only test files found).
 |-----------|-------------|
 | `device-pair/` | Device pairing flow (bundled, enabled by default) |
 | `diagnostics-otel/` | OpenTelemetry diagnostics exporter |
+| `diffs/` | Diff viewer and diffs skill pack |
 | `llm-task/` | JSON-only LLM task tool |
 | `lobster/` | Lobster workflow tool (typed pipelines + resumable approvals) |
-| `memory-core/` | Core memory search |
+| `memory-core/` | Core memory search, QMD, and sync orchestration |
 | `memory-lancedb/` | LanceDB-backed long-term memory with auto-recall |
+| `memory-wiki/` | Persistent wiki compiler — durable knowledge vault with claim/evidence metadata and Obsidian integration (added v2026.4.7) |
 | `open-prose/` | OpenProse VM skill pack |
+| `openshell/` | OpenShell sandbox backend — alternative to the default node-host exec sandbox (added v2026.4.7) |
 | `phone-control/` | Phone control (bundled, enabled by default) |
+| `searxng/` | SearXNG self-hosted web search provider (added v2026.4.1) |
 | `talk-voice/` | Talk voice (bundled, enabled by default) |
+| `tavily/` | Tavily search + extract plugin — registers `web_search` provider and `tavily_search`/`tavily_extract` agent tools (added v2026.4.7) |
 | `thread-ownership/` | Thread ownership management |
+| `webhooks/` | Inbound/outbound webhook support |
 
 ### Extension Structure (typical)
 ```
@@ -1108,6 +1132,32 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 ### ACP Security
 
 - **Dangerous-tool semantic approval classes:** ACP's dangerous-tool name override replaced with semantic approval classes so only narrow readonly reads/searches can auto-approve while indirect exec-capable and control-plane tools always require explicit prompt approval.
+
+---
+
+## v2026.4.7 Delta Notes
+
+### New Provider Plugins
+
+- **Arcee AI provider (`extensions/arcee/`, #62068):** first-party Arcee AI provider plugin. Supports direct Arcee platform API key auth (`arceeaiApiKey` / `ARCEE_AI_API_KEY`) and OpenRouter-routed Arcee models. Uses `openai-compatible` replay family hooks. Config path: `providers.arcee` or `providers.arcee-openrouter`.
+- **Amazon Bedrock Mantle (`extensions/amazon-bedrock-mantle/`):** OpenAI-compatible Bedrock surface via the `@aws/bedrock-token-generator` runtime dependency. Distinct from the existing `amazon-bedrock` provider; targets the Bedrock Converse / OpenAI-compat endpoint.
+- **Microsoft Foundry (`extensions/microsoft-foundry/`):** Microsoft Foundry provider with both Entra ID (service-principal) and API key authentication paths. Separate from the existing `microsoft` (Azure OpenAI) provider.
+
+### New Tool/Feature Plugins
+
+- **OpenShell sandbox (`extensions/openshell/`):** alternative sandbox backend implementing the `registerSandboxBackend("openshell", ...)` plugin-sdk seam. Registers a factory and manager for OpenShell-backed exec/file-tool sandboxes. Config path: `plugins.entries.openshell.config`. Useful for operators who want an OpenShell-native isolation layer instead of the default node-host sandbox.
+- **Tavily (`extensions/tavily/`):** registers a Tavily web-search provider (`createTavilyWebSearchProvider`) plus two agent tools — `tavily_search` and `tavily_extract`. Config path: `plugins.entries.tavily.config`; requires a Tavily API key.
+- **Memory Wiki (`extensions/memory-wiki/`):** see v2026.4.9 Delta Notes in `memory-cron-media.md` for full coverage.
+
+### Pluggable Compaction Provider Registry (#56224)
+
+- **`feat: add pluggable compaction provider registry`:** the compaction subsystem gains a provider registry API so plugins can register custom compaction backends. Previously compaction was hard-wired to built-in strategies; the registry seam allows extension-level compaction policies and checkpointing strategies.
+
+### Security Hardening (v2026.4.7 window)
+
+- **`openclaw infer` exec approval path hardened:** the new `openclaw infer` CLI respects the same exec approval gates as other OpenClaw CLI commands; no separate approval bypass.
+- **SSRF guard no longer rejects operator-configured proxy hostnames (#62312):** `fix(gateway): stop SSRF guard rejecting operator-configured proxy hostnames` — operators who configure a forward proxy via `gateway.proxy` or `HTTPS_PROXY` no longer have those hostnames blocked by the SSRF guard.
+- **Heartbeat targets main session only (#61803):** `fix(agents): heartbeat always targets main session — prevent routing to active subagent sessions` — prevents heartbeat messages from incorrectly being delivered to a running subagent session instead of the main session.
 
 ---
 

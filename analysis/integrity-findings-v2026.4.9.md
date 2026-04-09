@@ -123,7 +123,7 @@
 
 | Area | Note | Severity |
 |------|------|----------|
-| Analysis deep-dive sections | `analysis/*.md` prose sections retain detailed content from the v2026.4.5 baseline; new modules introduced in v2026.4.7 (Memory Wiki, Arcee AI provider, pluggable compaction registry, `openclaw infer` CLI) are not covered in dedicated analysis sections | MEDIUM |
+| Analysis deep-dive sections | `analysis/*.md` prose sections retain detailed content from the v2026.4.5 baseline. In `v2026.4.9-2`, delta-notes sections were added for Memory Wiki (`memory-cron-media.md`), `openclaw infer` CLI (`cli-tools-media.md`), and new providers Arcee/Bedrock Mantle/MS Foundry/OpenShell/Tavily (`security-plugins.md`). Full re-analysis of entire module sections against v2026.4.9 source would require a complete codebase re-review. | LOW |
 | AGENT_README behavioral sections | `AGENT_README.md` "BREAKING CHANGES" and "BEHAVIORAL SHIFTS" sections were renamed to `v2026.4.9` but content still reflects v2026.4.5 era additions; v2026.4.7–4.9 additions not fully enumerated | LOW |
 | Lines of TypeScript | Line count not re-verified at `v2026.4.9` tag (would require full tree checkout); estimated ~2,000,000 lines based on v2026.4.5 baseline (1,893,328) plus net diff insertions | LOW |
 

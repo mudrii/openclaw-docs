@@ -1016,6 +1016,21 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 ## v2026.4.9 Delta Notes
 
+### `openclaw infer` CLI (added v2026.4.7, #62129)
+
+`openclaw infer` is the canonical headless surface for provider-backed inference workflows. It exposes capability families (not raw gateway RPC names or agent tool IDs) and is the recommended path for scripts and automation that need stable, JSON-shaped output.
+
+**Subcommand families:**
+- `openclaw infer model run` — text model runs
+- `openclaw infer image generate` — image generation
+- `openclaw infer audio transcribe` — audio transcription
+- `openclaw infer tts convert` — text-to-speech
+- `openclaw infer video generate` — video generation
+- `openclaw infer web search` — web search via configured provider
+- `openclaw infer embedding create` — embedding vector creation
+
+**Key properties:** uses providers and models already configured in `openclaw.json` (no separate wiring); `--json` flag for stable script-safe output; does not require the gateway for most subcommands; intended as the first-party surface for agent-driven and skill-driven inference workflows (see `docs/cli/infer.md` in the source tree).
+
 ### Music / Video Generation
 
 - **Built-in `music_generate` and `video_generate`:** the current release line adds first-class music and video generation tools rather than treating those flows as external-only extensions.

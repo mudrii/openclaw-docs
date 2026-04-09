@@ -1183,6 +1183,27 @@ The helper module `src/utils/cjk-chars.ts` exports `estimateStringChars(text)`, 
 - **Dreaming is a stable-line feature:** weighted recall promotion, `/dreaming`, Dreams UI, multilingual conceptual tagging, aging controls, REM preview tooling, and `dreams.md` are now part of the released memory surface.
 - **Bedrock embeddings join the released memory provider set:** Bedrock Titan, Cohere, Nova, and TwelveLabs embeddings are now part of the stable memory/search story.
 
+### Memory Wiki (`extensions/memory-wiki/`)
+
+Added in the v2026.4.7 window. A separate persistent wiki compiler plugin distinct from the active-memory plugin (`extensions/memory-core/`). Where `memory-core` handles recall, promotion, and dreaming, `memory-wiki` compiles durable knowledge into a navigable markdown vault with deterministic indexes, provenance, and structured claim/evidence metadata.
+
+**Operating modes:**
+- `isolated` (default) — own vault, own sources, no `memory-core` dependency
+- `bridge` — reads public memory artifacts and memory events through public seams; indexes dream reports, daily notes, and memory roots
+- `unsafe-local` — explicit same-machine escape hatch for private local paths
+
+**Key surfaces:**
+- `extensions/memory-wiki/index.ts` — plugin entry; registers wiki tools and CLI commands
+- `extensions/memory-wiki/src/compile.ts` — vault compilation pipeline (digest prompts, belief-layer, provenance)
+- `extensions/memory-wiki/src/bridge.ts` — bridge-mode integration with memory-core public seams
+- `extensions/memory-wiki/src/apply.ts` — claim/evidence application and health reporting
+- `extensions/memory-wiki/skills/wiki-maintainer/SKILL.md` — bundled wiki-maintainer skill
+- `extensions/memory-wiki/skills/obsidian-vault-maintainer/SKILL.md` — bundled Obsidian vault skill
+
+**Config path:** `plugins.entries.memory-wiki.config` — key fields: `vaultMode`, `vault.path`, `vault.renderMode` (`"obsidian"` or `"native"`), `obsidian.enabled`, `bridge.enabled`, `ingest.autoCompile`, `search.corpus` (`"wiki"`, `"memory"`, or `"all"`).
+
+**Search integration:** when `search.corpus = "all"`, agents can use `memory_search` with `corpus=all` to search both active memory and the compiled wiki in one pass; `wiki_search` / `wiki_get` tools are available for wiki-specific ranked retrieval.
+
 ### Cron / Background Work
 
 - **Cron remains on the shared task ledger:** the `v2026.4.9` line keeps cron, ACP, subagents, and detached CLI runs tied to the same durable task/control-plane surfaces, with more emphasis on automatic completion wake behavior and primary-channel failure delivery.
