@@ -6,6 +6,72 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.4.11-2 — Release Summary
+
+> **Released:** 2026-04-13 (docs release) | upstream GitHub release `v2026.4.11` unchanged | **Policy note:** latest *documented* released section stays at top.
+
+### Corrections
+
+- **Changelog structure:** fixed an ordering/copy-paste issue where `v2026.4.10` and `v2026.4.9` release summaries were collapsed inside a single section.
+- **Version alignment:** corrected docs snapshot/release metadata in architecture and repository overview files to match the validated `v2026.4.11` source tree (104 extension directories, 98 extension packages, 10,969 `.ts`/`.tsx` files).
+
+## OpenClaw v2026.4.11 — Release Summary
+
+> **Released:** 2026-04-12 (docs release) | upstream GitHub release `v2026.4.11` published 2026-04-12 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.10..v2026.4.11` | 276 commits, 1,717 files changed, +66,624 / -17,099 lines
+
+### Changes
+
+- **Dreaming/memory/wiki:** add imported-insight entrypoints for Dreaming (`Imported Insights`, `Memory Palace`) and expanded narrative/diary tooling for sourced memory workflows. (#64505)
+- **Control UI/webchat:** add structured embed tags and richer media/reply/voice card rendering; gate embed URL behavior behind config surfaces. (#64104)
+- **`video_generate` output and schema:** support URL-only generation responses, provider options metadata, optional audio references, per-asset role hints, and adaptive aspect-ratio inputs to improve plugin parity. (#61987, #61988)
+- **Feishu:** improve document comment workflows with richer session context parsing, reaction handling, and typing feedback.
+- **Microsoft Teams:** add reaction listing/actions and delegated OAuth handling improvements.
+- **Plugins runtime:** plugin manifests can now declare activation/setup descriptors so setup flows can model provider/pairing/config requirements consistently.
+- **Models/providers:** cache and classify OpenAI-compatible provider metadata with better debug visibility for capability and route diagnostics.
+- **Gateway/QA:** add GPT-5.4 vs Opus 4.6 parity report gating and stricter scenario checks for qa verification.
+
+### Fixes
+
+- **OpenAI/Codex OAuth:** fix OAuth scope rewrite regressions for upstream authorize URL parameters.
+- **Audio transcription:** scope DNS pinning adjustments to OpenAI-compatible multipart requests only; preserve host validation in other paths.
+- **macOS Talk Mode:** after microphone permission grant, startup path continues without requiring a second UI toggle.
+- **Control UI/webchat media:** persist TTS replies and tool-card pairing in webchat history so mixed output remains traceable.
+- **WhatsApp routing:** preserve default account routing for active listener helpers and keep reconnect recovery for replies/media attached to expected accounts.
+- **ACP/agent streaming:** stop leaking hidden tool-call payloads and progress chatter in parent ACP session streams.
+- **Agent runtime:** align timeout/watchdog behavior with explicit run timeouts and avoid default timeouts ending valid long-running provider calls.
+- **Config validation:** include async completion surfaces in generated schema and avoid orphaned required fields in Gemini tool unions.
+- **Google Veo:** remove unsupported request fields that caused early failure before generation start.
+- **Web search/web_fetch:** route QA and QA packaging artifacts from bundled release assets and avoid repo-only scenario coupling.
+
+---
+
+## OpenClaw v2026.4.10 — Release Summary
+
+> **Released:** 2026-04-11 (docs release) | upstream GitHub release `v2026.4.10` published 2026-04-11 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.9..v2026.4.10` | 885 commits, 2,533 files changed, +99,364 / -25,126 lines
+
+### Changes
+
+- **Models/provider architecture:** add bundled Codex provider path and app-server auth seams so Codex-native model behavior stays in the provider plugin contract.
+- **Memory:** add optional `extensions/active-memory` runtime for pre-reply recall and context-rich memory workflows with `/verbose` diagnostics and prompt tuning.
+- **TTS/Talk:** add experimental local MLX provider flow for Talk mode, including local playback and interruption handling.
+- **Teams and matrix QA/agent runtime:** add richer message actions and add dedicated verification lanes for Matrix/Telegram with improved coverage output and artifact handling.
+- **Command surface:** introduce `commands.list` RPC and strengthen model/provider request routing, including allowPrivateNetwork controls for trusted self-hosted endpoints.
+- **Gateway/exec:** add `openclaw exec-policy` for syncing and persisting execution policy settings; harden CLI exec host-policy interactions.
+- **Provider transports:** route provider fallback and request transport metadata updates across runtime refresh paths and WebSocket manager caches.
+- **Control UI/dreaming:** stabilize status surfaces and diary ordering for deterministic Dreaming visibility and scene/diary state transitions.
+
+### Fixes
+
+- **Browser security:** tighten SSRF and navigation hardening across strict profiles, redirects, CDP session recovery, and act/runtime enforcement paths.
+- **Security and execution:** harden preflight reads, host allowlists, plugin install scanning, ACP tool hooks, Gmail watcher redaction, and oversized realtime frame handling.
+- **Chat/communication:** preserve routing targets and threaded delivery for Slack, Telegram, WhatsApp, Teams, QQBot, and Matrix on edge cases and reconnects.
+- **Model/fallback behavior:** preserve fallback state across transient model failures and classify model-provider errors with fewer false `reason=unknown` outcomes.
+- **Tooling and tasks:** improve cron/task cancellation, session reset hooks, heartbeat recovery, flow ownership, and run-context cleanup to prevent stale states.
+- **Config/tooling migrations:** avoid hard failures in schema migration and ensure `plugins.allow`, plugin command metadata, and auth-profile bindings resolve to current active providers.
+- **UX and state handling:** stabilize `/btw` handling, ensure deterministic planning/summary ordering, and keep assistant output clean from hidden/reasoning tool payloads.
+
 ## OpenClaw v2026.4.9 — Release Summary
 
 > **Released:** 2026-04-09 (docs release) | upstream GitHub release `v2026.4.9` published 2026-04-09 UTC | **Policy note:** latest *documented* released section stays at top.

@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.9-3 (2026-04-09).** Latest published upstream release: v2026.4.9 (published 2026-04-09 UTC).
+> **Current docs version: v2026.4.11-2 (2026-04-13).** Latest published upstream release: v2026.4.11 (published 2026-04-12 UTC).
 
 ---
 
@@ -67,15 +67,18 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.9 additions (current release line):**
+**v2026.4.11 additions (current release line):**
 
-- **Released memory runtime is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`:** dreaming, embeddings, host backends, and memory promotion live under `src/memory-host-sdk/`; QMD, search managers, and sync/index orchestration live under `extensions/memory-core/src/memory/`. If you touch memory, inspect both surfaces instead of older standalone `src/memory/` references from earlier releases.
-- **Built-in media-generation tools:** `music_generate` and `video_generate` are now first-class tool surfaces, with supporting runtime code under `src/music-generation/`, `src/video-generation/`, `src/media-generation/`, and bundled Comfy workflow support in `extensions/comfy/`.
-- **Provider/runtime expansion:** bundled Qwen, Fireworks AI, and StepFun providers are on the released line, alongside Bedrock Mantle discovery, shared model/media transport overrides, and forward-compat `openai-codex/gpt-5.4-mini`.
-- **OpenAI/GPT reply-delivery changes:** commentary is buffered until `final_answer`, GPT-5/Codex defaults are shorter and lower-verbosity, and planning-only turns get a one-shot retry. If you touch reply streaming or block delivery, test that planning text does not leak to user-visible channels.
-- **Structured plan updates:** compatible UIs can now receive structured plan/event progress from long-running runs. If you change run-event emission, verify both commentary and structured progress paths.
-- **ACPX/runtime ownership:** the bundled ACPX plugin now embeds its runtime directly and uses the generic `reply_dispatch` hook to intercept reply delivery without hardcoded core ACP routing.
-- **Approval UX surface expanded:** APNs modal approvals and Matrix-native exec approvals are now part of the released approval paths; approval changes must be tested beyond the older Web UI / Slack / Discord / Telegram paths.
+- **Active Memory plugin (v2026.4.10):** each message can now optionally flow through a memory agent context before the main reply; this is controlled in `extensions/active-memory` with per-agent modes, `/verbose` introspection, and prompt/thinking overrides.
+- **Codex/OAI/Codex model routing (v2026.4.10):** Codex models are now handled through a bundled provider path (`codex/gpt-*`) and plugin-owned app-server auth/multiple provider discovery so OpenAI-native paths and Codex-native paths remain separate.
+- **Execution policy command surface (v2026.4.10):** `openclaw exec-policy` (`show`, `preset`, `set`) is now the canonical operator path to sync runtime and `tools.exec` preferences; approvals and node-host policy regressions should be validated with both local and remote gateway clients.
+- **Gateway command discovery (v2026.4.10):** added `commands.list` RPC surface for runtime-native command introspection, so plugin/runtime command surfaces are discoverable by remote UIs.
+- **Model/provider transport controls (v2026.4.10):** `models.providers.*.request.allowPrivateNetwork` and Codex/Google/OpenAI request transport overrides now participate in runtime refresh and fallback behavior.
+- **Web QA lanes and testing reliability (v2026.4.10):** `openclaw qa matrix` and `openclaw qa telegram` are now available with shared runbook artifacts, and `openclaw qa suite --runner multipass` supports VM-backed validation lanes.
+- **Gateway startup and thread routing (v2026.4.10):** startup now preserves websocket RPC availability while plugin sidecars initialize; route restoration and thread targeting on Slack/Telegram/ACPX/cron/session updates were strengthened.
+- **Memory/wiki and dreaming UI updates (v2026.4.11):** imported Dreaming sources support `Imported Insights` and `Memory Palace` workflows, plus diary narrative safety and fallback hardening updates in request-scope execution.
+- **Webchat and media output (v2026.4.11):** webchat now supports richer structured media/reply/voice presentation (`[embed ...]`) and video generation URL-first outputs with typed provider options.
+- **Feishu and Teaming UX improvements (v2026.4.11):** Feishu document comment sessions and reactions include more context/routing behavior; Microsoft Teams gained reaction list/listing + attachment pagination and delegated OAuth actions.
 
 **v2026.4.1 additions (historical):**
 
