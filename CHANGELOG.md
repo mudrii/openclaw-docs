@@ -21,6 +21,14 @@ Release policy: this file tracks published releases only (stable tags). It does 
 - **Memory/utility reliability (`v2026.4.12`):** protect QMD startup and command path handling; keep qmd service startup and sync paths stable under the new release.
 - **Docs release alignment (`v2026.4.12`):** synced repository metadata to upstream `v2026.4.12` and integrated freshly generated docs artifact sets (`docs/**`, i18n glossary, automation/release docs, updated provider/channel/plugin mirror files).
 
+## OpenClaw v2026.4.12-1 — Release Summary
+
+> **Released:** 2026-04-14 (docs correction) | upstream GitHub release `v2026.4.12` unchanged
+
+### Corrections
+
+- **Release metadata verification:** corrected README markdown catalog count to the validated 100-document total and aligned AGENT_README `v2026.4.12` behavioral checklist to explicitly documented 2026.4.11..2026.4.12 deltas.
+
 ## OpenClaw v2026.4.11-2 — Release Summary
 
 > **Released:** 2026-04-13 (docs release) | upstream GitHub release `v2026.4.11` unchanged | **Policy note:** latest *documented* released section stays at top.

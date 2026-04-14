@@ -70,7 +70,7 @@ Released channel implementations mostly live in `extensions/` (`telegram/`, `dis
 **v2026.4.12 additions (current release line):**
 
 - **Release-line sync and documentation metadata:** this docs snapshot is aligned to upstream `v2026.4.12`; include `docs` updates for `feishu`, `docs/reference/`, provider pages, and generated artifact baselines, plus `extensions/lmstudio` docs/plugin entrypoint coverage, for full end-to-end release validity checks.
-- **Behavioral change surface (unpacked from `v2026.4.11..v2026.4.12`):** source release notes include active-memory/dreaming continuity, Telegram approval callback sequencing, gateway keepalive handling hardening, and `openclaw wiki`/memory-wiki runtime path hardening; verify these when touching those paths.
+- **Behavioral change surface (unpacked from `v2026.4.11..v2026.4.12`):** verify the Feishu QR scan-to-create path, LM Studio provider follow-up handling, matrix/QA media and runtime packaging paths, shell-wrapper/security hardening, QMD startup command handling, and Control UI command-sync behavior before touching those paths.
 
 **v2026.4.11 additions (historical):**
 

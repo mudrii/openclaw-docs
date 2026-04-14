@@ -93,7 +93,7 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 - **11,101 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.12`)
 - **112 extension directories**, **99 extension packages**, and **75 released skill entrypoints** (`skills/`, `.agents/skills/`, and `extensions/` skill surfaces) reflected in the current released snapshot
-- **101 Markdown documents** in this repo (5 core docs + 10 analysis docs + 2 integrity audits + 84 docs-portal mirror pages)
+- **100 Markdown documents** in this repo (5 core docs + 12 analysis/integrity docs + 83 docs-portal mirror pages)
 
 ## Contributing
 
