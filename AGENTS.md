@@ -155,15 +155,15 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
-## v2026.4.11 Behavioral Changes
+## v2026.4.12 Behavioral Changes
 
-- **Active Memory plugin added (`v2026.4.10`):** memory recalls can now be injected as a pre-reply surface before main agent planning, and session diagnostics now include richer memory-mode visibility.
-- **Codex model ownership and provider routing hardened (`v2026.4.10`):** codex/OAI/Codex request handling is split through provider-owned auth and runtime boundaries, with `models.providers.*.request.allowPrivateNetwork` introducing stricter trust-aware routing controls for OpenAI-compatible endpoints.
-- **Command surfaces expanded (`v2026.4.10`):** `commands.list` RPC is now part of gateway command discovery; `openclaw exec-policy` now centralizes `tools.exec` policy synchronization and host-mode policy state.
-- **Startup and thread-targeting resilience (`v2026.4.10`):** websocket RPC stays available during plugin boot while channel/thread targeting and queue behavior were stabilized for cron/WhatsApp/Slack/ACPX flows.
-- **QA and tooling improvements (`v2026.4.10`):** `openclaw qa matrix` and `openclaw qa telegram`, plus `--runner multipass`, were added for deterministic release-path verification.
-- **Media and memory UX updates (`v2026.4.11`):** memory wiki import flows, richer dreaming status traces, and webchat embed/media card rendering were tightened while preserving release guardrails.
-- **Video and web generation output controls (`v2026.4.11`):** provider options and output delivery now include URL-first video pathing, with stricter request/validation handling for provider-specific fields.
+- **Feishu stability and onboarding improvements (`v2026.4.12`):** reduce auth-cycle regressions, guard app registration lookups, and keep scan-to-create onboarding paths resilient (`feat: Streamline Feishu channel onboarding with QR code scan-to-create flow`).
+- **LM Studio provider integration hardening (`v2026.4.12`):** finish provider header auth follow-up handling, validate runtime dependencies and docker build/runtime lockfile paths for bundled plugins.
+- **Session runtime and QA reliability (`v2026.4.12`):** preserve session status runtime extraction flow, improve inbound media handling in QA channels, and refresh slash-command discovery from runtime metadata for Control UI parity.
+- **Matrix/bundled runtime packaging (`v2026.4.12`):** stabilize matrix runtime packaging and staged dependency mirror paths across docker and plugin runtimes.
+- **Security hardening (`v2026.4.12`):** broaden shell-wrapper injection detection and tighten approval-authorization edge cases, reducing approval-policy escape paths.
+- **QMD and memory service reliability (`v2026.4.12`):** avoid regressions in QMD command path handling and startup sequencing for memory-indexed services.
+- **Docs and release-process validation (`v2026.4.12`):** docs snapshot now targets upstream `v2026.4.12`; sync generated docs content, i18n glossary, and module map artifacts to the same release line.
 - **Approval and routing behavior continue to evolve:** keep APNs/Matrix-native approval flows and `reply_dispatch` behavior in regression scope when changing callback, routing, or delivery logic.
 
 ## v2026.3.31 Breaking Changes

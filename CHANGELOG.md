@@ -6,6 +6,21 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.4.12 — Release Summary
+
+> **Released:** 2026-04-14 (docs release) | upstream GitHub release `v2026.4.12` published 2026-04-13 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.11..v2026.4.12` | 436 commits, 1200 files changed, +64,259 / -21,041 lines
+
+### Changes
+
+- **Feishu onboarding and auth hardening (`v2026.4.12`):** streamline QR scan-to-create onboarding; guard app registration fetches and local API barrel paths to avoid auth loops/regressions.
+- **LM Studio provider behavior (`v2026.4.12`):** fix follow-up handling for header-auth flows and strengthen LM Studio provider runtime behavior in bundled/plugin runtime contexts.
+- **Runtime packaging and dependencies (`v2026.4.12`):** refresh runtime dependency pinning/mirroring for Matrix and QA paths; restore 2026.4.11 appcast packaging safeguards while preparing the v2026.4.12 snapshot.
+- **Security and approvals (`v2026.4.12`):** harden shell-wrapper detection, block env-argv assignment injection patterns, and prevent empty approval allowlists from enabling implicit authorization.
+- **Session and control/runtime parity (`v2026.4.12`):** improve runtime session status extraction behavior, refresh Control UI slash-command discovery from live runtime command lists, and broaden QA channel attachment/media coverage.
+- **Memory/utility reliability (`v2026.4.12`):** protect QMD startup and command path handling; keep qmd service startup and sync paths stable under the new release.
+- **Docs release alignment (`v2026.4.12`):** synced repository metadata to upstream `v2026.4.12` and integrated freshly generated docs artifact sets (`docs/**`, i18n glossary, automation/release docs, updated provider/channel/plugin mirror files).
+
 ## OpenClaw v2026.4.11-2 — Release Summary
 
 > **Released:** 2026-04-13 (docs release) | upstream GitHub release `v2026.4.11` unchanged | **Policy note:** latest *documented* released section stays at top.

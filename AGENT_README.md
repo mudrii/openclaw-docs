@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.11-2 (2026-04-13).** Latest published upstream release: v2026.4.11 (published 2026-04-12 UTC).
+> **Current docs version: v2026.4.12 (2026-04-13).** Latest published upstream release: v2026.4.12 (published 2026-04-13 UTC).
 
 ---
 
@@ -67,7 +67,12 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.11 additions (current release line):**
+**v2026.4.12 additions (current release line):**
+
+- **Release-line sync and documentation metadata:** this docs snapshot is aligned to upstream `v2026.4.12`; include `docs` updates for `feishu`, `docs/reference/`, provider pages, and generated artifact baselines, plus `extensions/lmstudio` docs/plugin entrypoint coverage, for full end-to-end release validity checks.
+- **Behavioral change surface (unpacked from `v2026.4.11..v2026.4.12`):** source release notes include active-memory/dreaming continuity, Telegram approval callback sequencing, gateway keepalive handling hardening, and `openclaw wiki`/memory-wiki runtime path hardening; verify these when touching those paths.
+
+**v2026.4.11 additions (historical):**
 
 - **Active Memory plugin (v2026.4.10):** each message can now optionally flow through a memory agent context before the main reply; this is controlled in `extensions/active-memory` with per-agent modes, `/verbose` introspection, and prompt/thinking overrides.
 - **Codex/OAI/Codex model routing (v2026.4.10):** Codex models are now handled through a bundled provider path (`codex/gpt-*`) and plugin-owned app-server auth/multiple provider discovery so OpenAI-native paths and Codex-native paths remain separate.
