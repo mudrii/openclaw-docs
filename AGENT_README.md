@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.12 (2026-04-13).** Latest published upstream release: v2026.4.12 (published 2026-04-13 UTC).
+> **Current docs version: v2026.4.14 (2026-04-14).** Latest published upstream release: v2026.4.14 (published 2026-04-14 UTC).
 
 ---
 
@@ -67,10 +67,15 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.12 additions (current release line):**
+**v2026.4.14 additions (current release line):**
 
-- **Release-line sync and documentation metadata:** this docs snapshot is aligned to upstream `v2026.4.12`; include `docs` updates for `feishu`, `docs/reference/`, provider pages, and generated artifact baselines, plus `extensions/lmstudio` docs/plugin entrypoint coverage, for full end-to-end release validity checks.
-- **Behavioral change surface (unpacked from `v2026.4.11..v2026.4.12`):** verify the Feishu QR scan-to-create path, LM Studio provider follow-up handling, matrix/QA media and runtime packaging paths, shell-wrapper/security hardening, QMD startup command handling, and Control UI command-sync behavior before touching those paths.
+- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.4.14`; include updated `docs/reference/`, provider pages, and generated artifact baselines, plus additional coverage for codex/gpt-5.4 model routing and browser/security-related runtime surfaces.
+- **Behavioral change surface (`v2026.4.12..v2026.4.14`):** verify codex provider and model alias compatibility, browser strict-policy/loopback/CDP readiness behavior, media-understanding proxy and attachment edge cases, and qmd/session-compaction paths when changing model/provider, session, gateway, or tool-routing logic.
+
+**v2026.4.12 additions (historical):**
+
+- **Release-line sync and documentation metadata (`v2026.4.12`):** this docs snapshot aligned upstream `v2026.4.12` and included docs updates for `feishu`, `docs/reference/`, provider pages, generated artifact baselines, and `extensions/lmstudio` entrypoint coverage.
+- **Behavioral change surface (`v2026.4.11..v2026.4.12`):** verify the Feishu QR scan-to-create path, LM Studio provider follow-up handling, matrix/QA media and runtime packaging paths, shell-wrapper/security hardening, QMD startup command handling, and Control UI command-sync behavior before touching those paths.
 
 **v2026.4.11 additions (historical):**
 

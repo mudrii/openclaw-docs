@@ -6,6 +6,27 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.4.14 — Release Summary
+
+> **Released:** 2026-04-14 (docs release) | upstream GitHub release `v2026.4.14` published 2026-04-14 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.12..v2026.4.14` | 266 commits, 598 files changed, +31,730 / -4,973 lines
+
+### Changes
+
+- **Model/runtime compatibility (`v2026.4.14`):** add forward-compatibility coverage for `gpt-5.4-pro`, keep Codex model aliases consistent, and normalize Google Vertex Flash-Lite/model-prefix behavior for stable routing.
+- **Provider and media robustness (`v2026.4.14`):** improve Telegram/Discord/Slack/Ollama/media runtime behavior by hardening proxy resolution, media MIME remapping (`AAC` → `M4A`), trusted proxy upgrade paths for media-understanding, and stable media command routing under `ollama`/OpenAI-compatible paths.
+- **Session/task reliability (`v2026.4.14`):** tighten gateway session/runtime assertions, context-engine compaction per-iteration behavior, and QA/lab recovery paths for broken-turn and scenario catalog reliability.
+- **Security and execution controls (`v2026.4.14`):** harden approval timeout handling, browser strict/proxy SSRF behavior, and outbound/proxy DNS follow-through paths so edge-case auth and session handling stays closed-fail by default.
+- **Documentation and release operations (`v2026.4.14`):** refresh release verification baselines, regenerate supporting runtime artifact hashes, and publish a synchronized v2026.4.14 docs snapshot.
+
+### Fixes
+
+- **Model/provider behavior:** preserve ollama embedding adapter behavior, fix LM Studio/Google model header handling, and stabilize runtime path handling across codex/agent session surfaces.
+- **Browser and outbound transport:** preserve legacy strict-SSRF compatibility while tightening loopback/CDP readiness, redirect handling, and hostname policy for stricter proxy defaults.
+- **Media and storage command paths:** harden media-understanding provider helper routing, trust explicit proxy DNS in Telegram flows, and eliminate empty-allowlist execution-policy regressions.
+- **Runtime lifecycle polish:** refresh queue/session behavior, task ownership surfaces, and task/flow registry stability for release-cycle QA and gateway stress paths.
+
+
 ## OpenClaw v2026.4.12 — Release Summary
 
 > **Released:** 2026-04-14 (docs release) | upstream GitHub release `v2026.4.12` published 2026-04-13 UTC | **Policy note:** latest *documented* released section stays at top.

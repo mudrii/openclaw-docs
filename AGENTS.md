@@ -155,15 +155,14 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
-## v2026.4.12 Behavioral Changes
+## v2026.4.14 Behavioral Changes
 
-- **Feishu stability and onboarding improvements (`v2026.4.12`):** reduce auth-cycle regressions, guard app registration lookups, and keep scan-to-create onboarding paths resilient (`feat: Streamline Feishu channel onboarding with QR code scan-to-create flow`).
-- **LM Studio provider integration hardening (`v2026.4.12`):** finish provider header auth follow-up handling, validate runtime dependencies and docker build/runtime lockfile paths for bundled plugins.
-- **Session runtime and QA reliability (`v2026.4.12`):** preserve session status runtime extraction flow, improve inbound media handling in QA channels, and refresh slash-command discovery from runtime metadata for Control UI parity.
-- **Matrix/bundled runtime packaging (`v2026.4.12`):** stabilize matrix runtime packaging and staged dependency mirror paths across docker and plugin runtimes.
-- **Security hardening (`v2026.4.12`):** broaden shell-wrapper injection detection and tighten approval-authorization edge cases, reducing approval-policy escape paths.
-- **QMD and memory service reliability (`v2026.4.12`):** avoid regressions in QMD command path handling and startup sequencing for memory-indexed services.
-- **Docs and release-process validation (`v2026.4.12`):** docs snapshot now targets upstream `v2026.4.12`; sync generated docs content, i18n glossary, and module map artifacts to the same release line.
+- **Codex/provider routing and compatibility (`v2026.4.14`):** add `gpt-5.4-pro` forward compatibility, stabilize Codex alias handling, and tighten model/provider follow-up behavior across OpenAI/Google-compatible paths.
+- **Session/task reliability and QA coverage (`v2026.4.14`):** improve session-runtime status extraction, context-engine compaction sequencing, and qa-lab failure-recovery scenarios for broken turns and scenario catalog stability.
+- **Media and provider transports (`v2026.4.14`):** refine media-understanding trusted-proxy behavior, fix Telegram media DNS/proxy edge paths, and keep media generation request/type handling stable for OCR/audio/image/video toolchains.
+- **Browser and security hardening (`v2026.4.14`):** preserve strict SSRF compatibility while tightening loopback/CDP readiness, strict hostname handling, and outbound/proxy follow-through in hard security edge cases.
+- **Security and execution controls (`v2026.4.14`):** harden shell-wrapper detection/approval timing behavior, tighten approval timeout handling, and prevent allowlist edge-cases from expanding execution policy.
+- **Release operations and release integrity (`v2026.4.14`):** synchronized docs snapshot to upstream `v2026.4.14` and refreshed baselines for release verification, runtime artifact hashes, and high-signal release metadata.
 - **Approval and routing behavior continue to evolve:** keep APNs/Matrix-native approval flows and `reply_dispatch` behavior in regression scope when changing callback, routing, or delivery logic.
 
 ## v2026.3.31 Breaking Changes
