@@ -10,8 +10,12 @@ title: "Moonshot AI"
 # Moonshot AI (Kimi)
 
 Moonshot provides the Kimi API with OpenAI-compatible endpoints. Configure the
-provider and set the default model to `moonshot/kimi-k2.5`, or use
+provider and set the default model to `moonshot/kimi-k2.6`, or use
 Kimi Coding with `kimi/kimi-code`.
+
+<Note>
+As of v2026.4.20, the default Moonshot model is `kimi-k2.6`. `kimi-k2.5` remains available but is no longer the default. `thinking.keep = "all"` is supported on K2.6; it is stripped for other Moonshot models.
+</Note>
 
 <Warning>
 Moonshot and Kimi Coding are **separate providers**. Keys are not interchangeable, endpoints differ, and model refs differ (`moonshot/...` vs `kimi/...`).
@@ -23,6 +27,7 @@ Moonshot and Kimi Coding are **separate providers**. Keys are not interchangeabl
 
 | Model ref                         | Name                   | Reasoning | Input       | Context | Max output |
 | --------------------------------- | ---------------------- | --------- | ----------- | ------- | ---------- |
+| `moonshot/kimi-k2.6`              | Kimi K2.6 *(default)*  | No        | text, image | 262,144 | 262,144    |
 | `moonshot/kimi-k2.5`              | Kimi K2.5              | No        | text, image | 262,144 | 262,144    |
 | `moonshot/kimi-k2-thinking`       | Kimi K2 Thinking       | Yes       | text        | 262,144 | 262,144    |
 | `moonshot/kimi-k2-thinking-turbo` | Kimi K2 Thinking Turbo | Yes       | text        | 262,144 | 262,144    |
@@ -61,7 +66,7 @@ Choose your provider and follow the setup steps.
         {
           agents: {
             defaults: {
-              model: { primary: "moonshot/kimi-k2.5" },
+              model: { primary: "moonshot/kimi-k2.6" },
             },
           },
         }
@@ -81,9 +86,10 @@ Choose your provider and follow the setup steps.
       env: { MOONSHOT_API_KEY: "sk-..." },
       agents: {
         defaults: {
-          model: { primary: "moonshot/kimi-k2.5" },
+          model: { primary: "moonshot/kimi-k2.6" },
           models: {
             // moonshot-kimi-k2-aliases:start
+            "moonshot/kimi-k2.6": { alias: "Kimi K2.6" },
             "moonshot/kimi-k2.5": { alias: "Kimi K2.5" },
             "moonshot/kimi-k2-thinking": { alias: "Kimi K2 Thinking" },
             "moonshot/kimi-k2-thinking-turbo": { alias: "Kimi K2 Thinking Turbo" },
@@ -101,6 +107,15 @@ Choose your provider and follow the setup steps.
             api: "openai-completions",
             models: [
               // moonshot-kimi-k2-models:start
+              {
+                id: "kimi-k2.6",
+                name: "Kimi K2.6",
+                reasoning: false,
+                input: ["text", "image"],
+                cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+                contextWindow: 262144,
+                maxTokens: 262144,
+              },
               {
                 id: "kimi-k2.5",
                 name: "Kimi K2.5",

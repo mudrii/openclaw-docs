@@ -158,7 +158,7 @@ The bundled `openai` plugin registers image generation through the `image_genera
 
 | Capability                | Value                              |
 | ------------------------- | ---------------------------------- |
-| Default model             | `openai/gpt-image-1`               |
+| Default model             | `openai/gpt-image-2`               |
 | Max images per request    | 4                                  |
 | Edit mode                 | Enabled (up to 5 reference images) |
 | Size overrides            | Supported                          |
@@ -168,7 +168,7 @@ The bundled `openai` plugin registers image generation through the `image_genera
 {
   agents: {
     defaults: {
-      imageGenerationModel: { primary: "openai/gpt-image-1" },
+      imageGenerationModel: { primary: "openai/gpt-image-2" },
     },
   },
 }
