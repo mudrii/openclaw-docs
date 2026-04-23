@@ -155,6 +155,18 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
+## v2026.4.21 Behavioral Changes
+
+- **Default models updated (`v2026.4.15–v2026.4.21`):** Anthropic default is now `claude-opus-4-7`; Moonshot default is `kimi-k2.6`; OpenAI image generation default is `gpt-image-2`. Config that hardcodes the old defaults will continue to work but diverges from bundled behavior.
+- **Cron state split (`v2026.4.20`):** mutable runtime state (last run, retry counts) moved to `jobs-state.json`; `jobs.json` is definitions-only. Code reading execution state from `jobs.json` will miss it.
+- **Dreaming storage is now `"separate"` by default (`v2026.4.15`):** dreaming output goes to `memory/dreaming/{phase}/YYYY-MM-DD.md`. Set `plugins.entries.memory-core.config.dreaming.storage.mode: "inline"` to restore old behavior.
+- **Unknown-tool stream guard on by default (`v2026.4.15`):** agents referencing unregistered tools will stop immediately. Plugins that register tools lazily must complete registration before the first agent turn.
+- **`memory_get` restricted to canonical paths (`v2026.4.15`):** only reads `MEMORY.md`, `memory/**`, and active QMD workspace docs. Use `read` tool with tool-policy config for other workspace files.
+- **SSRF hardening broadened (`v2026.4.21`):** Synology Chat file URLs, LINE media URLs, and Google Chat auth endpoints are now SSRF-validated. External content strips LLM special-token literals (Qwen/ChatML, Llama, Gemma, Mistral, Phi, GPT-OSS) to prevent role-boundary spoofing.
+- **Skill Workshop plugin (`v2026.4.21`):** new `extensions/skill-workshop` plugin captures workflow corrections as workspace skills. Review config before enabling in production workspaces.
+- **QQBot self-contained engine (`v2026.4.20`):** full QR-onboarding, native approval, per-account resource stacks, and credential backup now in `extensions/qqbot/`.
+- **Channel startup performance (`v2026.4.21`):** Matrix saves ~1.8s, Telegram saves ~14s, Discord cuts ~98% of registration time via narrow sidecar and lazy-load patterns. Changes to these startup paths require regression testing on cold registration.
+
 ## v2026.4.14 Behavioral Changes
 
 - **Codex/provider routing and compatibility (`v2026.4.14`):** add `gpt-5.4-pro` forward compatibility, stabilize Codex alias handling, and tighten model/provider follow-up behavior across OpenAI/Google-compatible paths.
