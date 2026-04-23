@@ -2,8 +2,8 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Latest published upstream release: v2026.4.14 (published 2026-04-14 UTC).**
-**Current validated docs snapshot: v2026.4.14 (validated against `v2026.4.14`).**
+**Latest published upstream release: v2026.4.21 (published 2026-04-23 UTC).**
+**Current validated docs snapshot: v2026.4.21 (validated against `v2026.4.21`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -17,7 +17,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [AGENT_README.md](AGENT_README.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.14); tracks released upstream tags and synthesis status. |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.21); tracks released upstream tags and synthesis status. |
 | [AGENTS.md](AGENTS.md) | AI agent guidelines for working with the OpenClaw codebase — repo structure, build commands, testing, PR workflow, security practices. |
 
 ### Detailed Analysis
@@ -56,6 +56,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each documented release tracks an OpenClaw stable release line. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream release; same-base npm correction builds are noted inside the matching docs snapshot rather than treated as separate published GitHub releases:
+- `v2026.4.21` (2026-04-23, docs release) - Synced snapshot to upstream `v2026.4.21`. Covers v2026.4.15, v2026.4.20, and v2026.4.21 upstream releases (1,931 total commits). Key additions: Google Gemini TTS speech provider; Model Auth OAuth health card in Control UI; unknown-tool stream guard enabled by default; dreaming default storage mode changed to `separate`; Anthropic default model updated to `claude-opus-4-7`; Moonshot default updated to `kimi-k2.6` with `thinking.keep="all"` support; OpenAI image generation default updated to `gpt-image-2`; cron runtime state split into `jobs-state.json` (definitions stay in `jobs.json`); Skill Workshop plugin for capturing workflow corrections; QQBot engine rewrite; and memory_get query restriction hardening.
 - `v2026.4.14` (2026-04-14, docs release) - Synced snapshot to upstream `v2026.4.14` with reliability and security hardening updates across gateway/session lifecycle, cron/agent workflow isolation, Telegram/WhatsApp, matrix/thread routing, provider/model execution boundaries, browser/SSRF strict-mode controls, and memory/dreaming session/diary safety paths. Added docs metadata for latest fixes and provider/session behavior in AGENTS.md/ARCHITECTURE.md and analysis docs.
 - `v2026.4.12` (2026-04-13, docs release) - Synced docs, generated metadata, i18n glossary snapshots, and extension/provider documentation surface from source tag `v2026.4.12`; added new docs coverage for `lmstudio` provider/plugin docs and updated Feishu guide screenshots/assets.
 - `v2026.4.11-2` (2026-04-13, docs release) - Corrected changelog structure and architecture snapshot metadata for the v2026.4.11 line: aligned extension directory/package counts and corrected docs release metadata across release overviews.
@@ -92,8 +93,8 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **11,422 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.14`)
-- **112 extension directories**, **99 extension packages**, and **75 released skill entrypoints** (`skills/`, `.agents/skills/`, and `extensions/` skill surfaces) reflected in the current released snapshot
+- **12,027 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.21`)
+- **119 extension directories**, **104 extension packages**, and **107 released skill entrypoints** (`skills/`, `.agents/skills/`, and `extensions/` skill surfaces) reflected in the current released snapshot
 - **100 Markdown documents** in this repo (5 core docs + 12 analysis/integrity docs + 83 docs-portal mirror pages)
 
 ## Contributing
