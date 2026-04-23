@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.14 (2026-04-14).** Latest published upstream release: v2026.4.14 (published 2026-04-14 UTC).
+> **Current docs version: v2026.4.21 (2026-04-23).** Latest published upstream release: v2026.4.21 (published 2026-04-22 UTC).
 
 ---
 
@@ -856,6 +856,9 @@ src/<module>/
 - **Behavioral Shifts (v2026.4.1):** #121, #122, #123, #124, #125, #126, #127, #128
 - **Breaking Changes (v2026.4.9):** #135, #136, #137
 - **Behavioral Shifts (v2026.4.9):** #138, #139, #140
+- **Behavioral Shifts (v2026.4.15):** #141, #142, #143, #144
+- **Behavioral Shifts (v2026.4.20):** #145, #146
+- **Behavioral Shifts (v2026.4.21):** #147, #148
 - **Breaking Changes (v2026.4.2):** #129, #130, #131, #132, #133, #134
 - **Operational Notes (v2026.3.28):** #111, #112, #113
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
@@ -1181,6 +1184,30 @@ src/<module>/
 139. **Media generation is now a first-class runtime path** - `music_generate` and `video_generate` are built-in tools with async completion and optional direct-send delivery. Changes now span agent tools, provider transport, media persistence, and outbound delivery, so testing only the tool schema is insufficient.
 
 140. **OpenAI/GPT replies now buffer commentary until `final_answer`** - planning text should no longer leak into user-visible channels. GPT-5/Codex defaults are shorter and lower-verbosity, and planning-only turns get a one-shot retry. If a change affects reply delivery or Responses compatibility, verify commentary/final separation explicitly.
+
+### v2026.4.15–v2026.4.21 Specific
+
+**BEHAVIORAL SHIFTS (v2026.4.15):**
+
+141. **Dreaming storage mode defaults to `"separate"`** — dreaming phase blocks now land in `memory/dreaming/{phase}/YYYY-MM-DD.md` instead of the daily memory file. Any code or test that reads dreaming output from `memory/YYYY-MM-DD.md` will miss it. Set `plugins.entries.memory-core.config.dreaming.storage.mode: "inline"` to restore the old behavior. The path `memory/dreaming/{phase}/` must be considered when testing or asserting dreaming output locations.
+
+142. **Unknown-tool stream guard is on by default** — the loop-detection guard (`tools.loopDetection.enabled`) that previously required explicit opt-in is now active by default. Agents referencing tools that are not registered at session time will trigger the guard and stop immediately rather than looping. If a custom plugin registers tools lazily or asynchronously after agent boot, ensure registration completes before the first turn.
+
+143. **`memory_get` is restricted to canonical memory paths** — `memory_get` now only reads `MEMORY.md`, files under `memory/**`, and active QMD workspace documents. It can no longer be used as a generic workspace file reader. If you use `memory_get` to read arbitrary workspace files, switch to the `read` tool with appropriate tool-policy configuration.
+
+144. **Default Anthropic model changed to `claude-opus-4-7`** — the default model for `anthropic/opus` alias, Claude CLI sessions, and bundled image-understanding surfaces changed from `claude-opus-4-6` to `claude-opus-4-7`. Config that hardcodes `claude-opus-4-6` as the default will still work but no longer matches the bundled default. Update config examples and test fixtures accordingly.
+
+**BEHAVIORAL SHIFTS (v2026.4.20):**
+
+145. **Cron runtime state is now in `jobs-state.json`** — mutable execution state (last run timestamp, retry counts, last status) is written to `~/.openclaw/cron/jobs-state.json`, not to `jobs.json`. Code that reads cron execution state from `jobs.json` will find it empty for these fields. `jobs.json` is now definitions-only and stays stable for git tracking.
+
+146. **Default Moonshot model changed to `kimi-k2.6`** — `kimi-k2.5` is no longer the default; `kimi-k2.6` is the new default. `thinking.keep = "all"` is allowed only on K2.6; it is stripped for all other Moonshot models. Config that relies on `kimi-k2.5` as the implicit default must be updated to use an explicit model ref.
+
+**BEHAVIORAL SHIFTS (v2026.4.21):**
+
+147. **Default OpenAI image model changed to `gpt-image-2`** — the bundled image-generation provider now uses `gpt-image-2` as the default. Requests that previously landed on `gpt-image-1` will now use `gpt-image-2` unless overridden. 2K/4K size hints are now advertised in tool metadata.
+
+148. **Skill Workshop captures corrections as workspace skills** — the new `skill-workshop` plugin intercepts workflow corrections during agent runs and proposes them as pending or auto-applied workspace skills. This can affect subsequent runs in the same workspace if auto-apply is enabled. Review `plugins.entries.skill-workshop.config` before enabling in production workspaces.
 
 ### v2026.4.1 Specific
 
