@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
 > Release note: the current released memory surface is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`. Historical `src/memory/` references below describe the older pre-split layout and should be read as historical context only.
 
 ---
@@ -1211,3 +1211,36 @@ Added in the v2026.4.7 window. A separate persistent wiki compiler plugin distin
 ### Media Generation
 
 - **Music and video generation join the cluster:** the released line adds dedicated music/video generation surfaces and async completion behavior, so media docs can no longer treat image/media understanding as the only major media runtime.
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### Memory / Dreaming (v2026.4.15, #66412)
+
+- **Dreaming default storage mode changed from `inline` to `separate`.** Phase blocks produced during dreaming runs are now written to `memory/dreaming/{phase}/YYYY-MM-DD.md` instead of being appended to the main daily memory file (`memory/YYYY-MM-DD.md`). The path pattern is resolved by `resolveSeparateReportPath()` in `extensions/memory-core/src/dreaming-markdown.ts` (line 47: `path.join(workspaceDir, "memory", "dreaming", phase, \`${isoDay}.md\``)`). The default config in `dreaming.ts` now sets `storage: { mode: "separate", separateReports: false }` (line 602). The `"inline"`, `"separate"`, and `"both"` modes remain supported.
+
+### Memory / LanceDB (v2026.4.15, #63502)
+
+- **LanceDB cloud storage support added.** The `memory-lancedb` extension's `uri` config field now accepts cloud storage URIs (`s3://`, `gs://`) in addition to local filesystem paths. Documented in `extensions/memory-lancedb/config.ts`: `"Local filesystem path or cloud storage URI (s3://, gs://) for LanceDB database"`.
+
+### Cron / State Split (v2026.4.20, #63105)
+
+- **Cron runtime execution state moved to a separate `jobs-state.json` file.** Fields `lastRunAtMs`, `lastStatus`, `consecutiveErrors`, and related runtime state are no longer stored inline in `jobs.json`. Instead, `store.ts` derives a companion state path via `resolveStatePath()` (e.g. `jobs.json` → `jobs-state.json`) and merges state on load. `jobs.json` now only contains stable scheduling configuration, making it clean for git tracking. Migration is automatic: stores with legacy inline state are read as-is; stores without any state file get fields backfilled.
+
+### Cron / Delivery (v2026.4.20, #69285)
+
+- **Explicit `delivery.mode: "none"` is now treated as not-requested.** In `delivery-plan.ts`, when a job's delivery config resolves to mode `"none"`, the `requested` field in the `CronDeliveryPlan` is set to `false` (line 67: `requested: resolvedMode === "announce"`). This prevents false delivery-failure records from being persisted for jobs that explicitly opt out of delivery.
+
+### Memory / LanceDB (v2026.4.20, #69219)
+
+- **LanceDB retries initialization after a failed load.** The runtime (`extensions/memory-lancedb/lancedb-runtime.ts`) now supports re-attempting initialization when a previous load failed, rather than staying permanently in a failed state.
+- **Intel macOS (darwin-x64) reported as unsupported clearly.** When the runtime detects `platform === "darwin"` and `arch === "x64"`, it reports an explicit `"memory-lancedb: LanceDB runtime is unavailable on darwin-x64."` message instead of a generic failure.
+
+### Memory / Active Memory (v2026.4.20, #69485)
+
+- **Active Memory degrades gracefully when memory recall fails during prompt building.** In `extensions/active-memory/index.ts`, the `before_prompt_build` handler now catches errors from the memory lookup and logs `"active-memory: before_prompt_build failed, skipping memory lookup: ..."` rather than propagating the error and aborting prompt construction.
+
+### Media Generation (v2026.4.21)
+
+- **OpenAI image generation default model changed to `gpt-image-2`.** `OPENAI_DEFAULT_IMAGE_MODEL` in `src/plugins/provider-model-defaults.ts` is now `"gpt-image-2"` (previously `"gpt-image-1"`).

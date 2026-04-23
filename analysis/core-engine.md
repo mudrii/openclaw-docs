@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
 > Modules: agents (1,172 files), gateway (472 files), tasks (44 files), sessions (17 files), routing (11 files), hooks (52 files), context-engine (7 files)
 
 ---
@@ -1523,3 +1523,37 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 ### Sessions / Channels
 
 - **Channel context filtering is now part of the core contract:** per-channel `contextVisibility` changes what thread/quote/history context reaches the agent, so core session/channel reasoning has to account for filtered context rather than assuming full pass-through.
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### Gateway
+
+- **Per-request bearer resolution (#66651) [v2026.4.15]:** `getResolvedAuth()` is now called on every HTTP server request and HTTP upgrade (WebSocket) handshake instead of being resolved once at startup. Rotated or revoked secrets stop authenticating immediately without requiring a gateway restart. Verified in `src/gateway/call.ts`, `src/gateway/server-runtime-config.ts`, `src/gateway/server.impl.ts`.
+
+- **Config recovery — last-known-good restore [v2026.4.20]:** The config subsystem now detects critical clobber signatures (missing `metadata`, missing `gateway.mode`, or a sharp size drop in the config file) and automatically restores the last-known-good config snapshot. Verified in `src/config/io.audit.ts` and `src/config/io.observe-recovery.test.ts`.
+
+- **Config reload — source-authored plan (#68732) [v2026.4.20]:** Gateway reloads are now planned from the source-authored config rather than derived provider/plugin config paths. This prevents false restarts triggered by internally generated config fragments that did not originate from the user's `openclaw.json`.
+
+- **Linux OOM shim [v2026.4.20]:** Gateway-managed child processes are now wrapped in a `/bin/sh` trampoline that raises `oom_score_adj` on Linux, making child processes preferred OOM-kill targets over the gateway itself. Opt out by setting `OPENCLAW_CHILD_OOM_SCORE_ADJ=0`. Verified in `src/process/linux-oom-score.ts`.
+
+- **Long-running RPC timeout fix [v2026.4.20]:** ACP `agent.wait` and similar long-poll RPC calls now manage their own timeout internally instead of relying on the WebSocket tick heartbeat. Previously, missed ticks closed the WebSocket connection on long-running waits.
+
+- **Gateway start hook enriched [v2026.4.21]:** The `gateway:startup` hook now receives the startup config object, the workspace directory, and a live cron getter, giving startup hooks access to cron state without requiring a separate RPC call.
+
+### Sessions
+
+- **Transcript write locks non-reentrant by default [v2026.4.20]:** Session transcript write locks are now non-reentrant. Code paths that previously relied on reentrant locking must be refactored to avoid nested lock acquisition.
+
+- **Session maintenance enforced by default (#69404) [v2026.4.20]:** Built-in session entry cap and age-based pruning are now active by default. Oversized session stores are pruned at load time. Previously this required explicit opt-in configuration.
+
+- **Compaction notices — opt-in settings (#67830) [v2026.4.20]:** Two new per-agent compaction config keys — `notifyOnStart` and `notifyOnCompletion` — allow opting into user-visible notices when compaction begins and finishes. Both default to off.
+
+### Hooks
+
+- **Agents/skills loop guard enabled by default (#67401) [v2026.4.15]:** The loop detection guard for agents and skills is now on by default. Previously it required `tools.loopDetection.enabled=true` to activate. Existing configs with that key set explicitly remain valid.
+
+- **`before_compaction` and `after_compaction` hooks [v2026.4.21]:** Plugin hooks `before_compaction` and `after_compaction` are now fired for native Codex compaction items, giving context-engine plugins visibility into compaction lifecycle events. Verified in `src/plugins/hook-types.ts` and `src/plugins/hooks.ts`.
+
+- **`llm_input`, `llm_output`, `agent_end` hooks for native Codex [v2026.4.21]:** The `llm_input`, `llm_output`, and `agent_end` plugin hooks are now fired for native Codex app-server turns, aligning Codex turns with the hook surface already available for pi-agent turns.

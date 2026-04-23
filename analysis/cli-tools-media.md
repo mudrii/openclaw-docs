@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
 
 ## Overview
 
@@ -1041,3 +1041,25 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 - **ClawHub search/install in the Skills panel:** CLI/TUI/UI skill workflows are now coupled more tightly to ClawHub discovery instead of manual package-name-only flows.
 - **Shared request-override policy reaches media paths:** model/media request overrides and the shared provider transport substrate now affect image, audio, music, and video generation, not just classic text calls.
+
+## Changes in v2026.4.15–v2026.4.21
+
+### TTS / Speech (v2026.4.15)
+
+- **Google/Gemini TTS provider added** — `extensions/google/speech-provider.ts` adds Gemini as a new first-class speech provider. Default model: `gemini-3.1-flash-tts-preview`. Default voice: `Kore`. Output format: WAV/PCM. Registered alongside the existing Edge TTS, OpenAI TTS, and ElevenLabs providers in the TTS fallback chain.
+
+### Terminal / Logging (v2026.4.20)
+
+- **`sanitizeForLog()` optimized with single-pass regex** (#67205) — `src/terminal/ansi.ts` `sanitizeForLog()` now strips C0 control characters, DEL, and ANSI escape sequences in a single compiled regex pass rather than multiple sequential replacements. Reduces overhead in high-volume logging paths where tool output is sanitized before writing.
+
+### Image Generation (v2026.4.21)
+
+- **OpenAI image generation default changed to `gpt-image-2`** — `src/plugins/provider-model-defaults.ts` sets `OPENAI_DEFAULT_IMAGE_MODEL = "gpt-image-2"`. The `src/image-generation/live-test-helpers.ts` default map also reflects `openai/gpt-image-2` as the canonical OpenAI image model.
+
+- **2K/4K size resolution hints advertised in tool metadata** — `src/image-generation/types.ts` defines `ImageGenerationResolution` as `"1K" | "2K" | "4K"`. `src/media-generation/runtime-shared.ts` uses `IMAGE_RESOLUTION_ORDER = ["1K", "2K", "4K"]` to order resolution preference, and these values are surfaced in tool schema metadata so agents can request specific output resolutions.
+
+- **Image generation logs failed provider/model candidates at warn level** — `src/image-generation/runtime.ts` emits `log.warn(...)` for each failed provider/model candidate before falling back to the next entry in the candidate list. Log message format: `image-generation candidate failed: <provider>/<model>: <error>`. Both pre-request validation failures and runtime errors during `generateImage()` are covered.
+
+### Ollama (v2026.4.21)
+
+- **Cloud model discovery from `ollama.com/api/tags`** — `extensions/ollama/src/setup.ts` fetches the cloud model list from `https://ollama.com/api/tags` during provider setup to suggest available models before the local `/api/tags` endpoint exposes them. Discovery is capped at `OLLAMA_CLOUD_MAX_DISCOVERED_MODELS = 500` models. A static fallback list is used when the cloud endpoint is unreachable.

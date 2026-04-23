@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-09 | **Version:** v2026.4.9
-**Codebase:** OpenClaw release tag `v2026.4.9`
+**Updated:** 2026-04-23 | **Version:** v2026.4.21
+**Codebase:** OpenClaw release tag `v2026.4.21`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -952,3 +952,47 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 ### Channel / Runtime Registry
 
 - **Initial channel registry is pinned more defensively:** the stable line explicitly guards against later plugin-registry churn emptying `channels.status` or losing configured channel visibility.
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### v2026.4.15
+
+#### Gateway / Startup — Spurious SIGUSR1 Restart Loop Fixed (#67436, #67557)
+- **Plugin auto-enable no longer triggers restart loop on Linux/systemd:** when plugin auto-enable was the only config write performed at startup, the gateway was emitting an authorized SIGUSR1 restart unnecessarily, producing a loop under systemd's KeepAlive. The fix gates the SIGUSR1 authorization so a config write that only reflects plugin auto-enable state does not qualify as a restart-triggering change. Source verified: `src/infra/restart.ts` (`sigusr1AuthorizedCount`, `scheduleGatewaySigusr1Restart`).
+
+#### Gateway / Auth — Per-Request Bearer Resolution (#66651)
+- **Active bearer token resolved per-request via `getResolvedAuth()`:** gateway auth credential resolution for bearer tokens is now performed fresh on each request rather than being captured at connection time. This ensures token rotation and revocation are reflected immediately without requiring a reconnect. Source verified: `src/gateway/call.ts`, `src/gateway/server-runtime-config.ts`, `src/gateway/server.impl.ts`.
+
+---
+
+### v2026.4.20
+
+#### Config / Write-Through Single-File Top-Level Includes (#41050, #66048)
+- **Config writes use write-through for single-file top-level `$include` targets:** when the active config is a top-level `$include` pointing to a single file, mutations (set/patch/apply) are written through to the included file rather than clobbering the outer config. This fixes plugins install overwriting modular `$include`-based config layouts. Source verified: `src/config/includes.ts`, `src/config/mutate.test.ts`.
+
+#### Config / Reload Plans from Source-Authored Config (#68732)
+- **Reload diff computed against source-authored config, not derived state:** config reload plans are now built by diffing the incoming config against the source-authored (user-written) config rather than the previously derived state that included provider and plugin config paths. This prevents false restart signals when provider or plugin config paths change at runtime without any user-authored config change. Source verified: `src/config/heartbeat-config-honor.inventory.test.ts`.
+
+#### Config / Gateway Config Recovery — Last-Known-Good Restore
+- **Critical clobber signatures trigger last-known-good restoration:** the config IO observer (`src/config/io.observe-recovery.ts`) detects three critical clobber signatures and restores the last-known-good config: missing metadata, missing `gateway.mode`, and sharp size drops (tracked as `size-drop-vs-last-good`). The clobbered file is saved with a timestamped `.clobbered.<timestamp>` suffix before restoration. Fields verified in source: `lastKnownGood`, `clobberedPath`, `size-drop-vs-last-good` reason prefix.
+
+#### Config / Non-JSON Prefix Recovery
+- **Config files accidentally prefixed with non-JSON output are recovered:** if the config file begins with non-JSON content (e.g., from a startup script or `openclaw doctor --fix` run that emitted text before JSON), the IO layer strips the prefix, recovers the JSON, and preserves the corrupted file as a `.clobbered.<timestamp>` backup.
+
+#### Gateway / Usage Cache Bounded with FIFO Eviction (#68842)
+- **Gateway usage cache is now size-bounded with FIFO eviction:** the in-memory usage cache grows to a configured maximum and evicts the oldest entries first, preventing unbounded memory growth in long-running gateway instances. Source verified: `src/gateway/session-utils.fs.ts` area.
+
+#### Gateway / Pairing — Loopback Shared-Secret Clients Treated as Local (#69431)
+- **Loopback shared-secret node-host, TUI, and gateway clients bypass pairing requirement:** clients connecting from loopback using a shared-secret credential (node-host, TUI, gateway-to-gateway) are now classified as local for pairing purposes, consistent with how other trusted local clients are treated. Source verified: `src/gateway/server.auth.modes.suite.ts`, `src/gateway/server/ws-connection/handshake-auth-helpers.test.ts`.
+
+#### Gateway / Session Keys — `allowRequestSessionKey` Gate on Template Mappings (#69381)
+- **`allowRequestSessionKey` enforced on template-rendered mapping `sessionKey`s:** the `allowRequestSessionKey` config gate (`src/config/zod-schema.ts` line 610) is now enforced when a session key is produced via a template-rendered mapping, closing a path where a caller-supplied session key could bypass the gate by going through a mapping that rendered to the caller's value. Source verified: `src/config/zod-schema.ts`.
+
+---
+
+### v2026.4.21
+
+#### Onboard / Wizard — Long-List Pickers Replaced with Searchable Autocompletes
+- **Wizard and onboarding long-list pickers switched to searchable autocomplete UI:** picker components in the setup wizard and onboarding flows that previously displayed flat scrollable lists now use a searchable autocomplete (`src/tui/components/searchable-select-list.ts`), improving usability for large option sets (model lists, channel lists, etc.). Source verified: `src/tui/components/searchable-select-list.test.ts`, `src/tui/components/selectors.ts`.

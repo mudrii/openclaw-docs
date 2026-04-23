@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
@@ -1614,3 +1614,73 @@ Changes in the current released line are recorded inline above under each channe
 
 - **Reply-delivery hardening carries across major channels:** the `v2026.4.9` release fixes leaked control tags, stale routing metadata, proxy handling, reaction ownership, and reconnect/watchdog behavior across Telegram, Discord, Slack, and WhatsApp.
 - **OpenAI commentary buffering matters at the channel layer:** planning/commentary text is now supposed to stay hidden until `final_answer`, so channel streaming/delivery code must no longer assume that all partial commentary is user-visible text.
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### v2026.4.20
+
+#### QQBot — self-contained engine architecture (#67960)
+
+`extensions/qqbot/` is restructured as a self-contained channel with distinct `engine/`, `bridge/`, and `gateway/` layers. Key properties confirmed in source:
+
+- **QR-code onboarding:** `bridge/setup/finalize.ts` invokes `qrConnect()` from `@tencent-connect/qqbot-connector` when the user selects `mode="qr"` during account setup.
+- **Native `/bot-approve` approval:** `bridge/gateway.ts` registers an `approval.native` runtime context keyed to QQ Bot's account scope, providing native approval callbacks without routing through the web UI. Per-account ownership is enforced by `exec-approvals.ts` to prevent cross-account approval leakage.
+- **Per-account resource isolation:** `engine/config/credential-backup.ts` maintains per-account backup files; `exec-approvals.ts` enforces per-account ownership on approval checks.
+- **Credential backup/restore:** `engine/config/credential-backup.ts` saves `appId`/`clientSecret` to per-account paths and migrates legacy single-file backups on load.
+- **Unified API/bridge/gateway modules:** `engine/api/` (REST client, media, messages), `engine/gateway/` (connection, inbound pipeline, outbound dispatch), and `bridge/` (bootstrap, setup, approval) are separate import boundaries, keeping the bundled plugin registration fast.
+
+#### Telegram — polling watchdog raised to 120 s; configurable `pollingStallThresholdMs` (#57737)
+
+`extensions/telegram/src/monitor.ts` passes `stallThresholdMs: account.config.pollingStallThresholdMs` to the polling runner. Config schema tests confirm `pollingStallThresholdMs` is accepted at both channel level and per-account level (e.g. `channels.telegram.accounts.ops.pollingStallThresholdMs: 180_000`). The default watchdog threshold changed from 90 s to 120 s.
+
+**New config keys:** `channels.telegram.pollingStallThresholdMs`, `channels.telegram.accounts.<id>.pollingStallThresholdMs`
+
+#### BlueBubbles — outbound send timeout raised to 30 s; configurable `sendTimeoutMs` (#69193)
+
+`extensions/bluebubbles/src/types.ts` exports `DEFAULT_SEND_TIMEOUT_MS = 30_000` (previously 10 s). `send.ts` resolves the effective timeout as: caller override → per-account `sendTimeoutMs` → `DEFAULT_SEND_TIMEOUT_MS`. The send path retains a separate 10 s timeout for non-send operations (chat lookups, probes).
+
+**New config key:** `channels.bluebubbles.sendTimeoutMs` (channel and per-account)
+
+#### BlueBubbles — per-group `systemPrompt` forwarded as `GroupSystemPrompt` (#69198)
+
+`extensions/bluebubbles/src/monitor-processing.ts` sets `GroupSystemPrompt` on the inbound context when the message is a group chat and a matching group config has a `systemPrompt`. Tests confirm the field is omitted for DMs even when a group config would otherwise match. This aligns BlueBubbles group prompt injection with the pattern used by other channels.
+
+#### Mattermost — streaming draft preview post (#47838)
+
+`extensions/mattermost/src/mattermost/draft-stream.ts` implements a single live-edited draft post that surfaces thinking state, tool activity (e.g. `` Running `bash`… ``), and partial reply text as the agent works. The draft post is created on first streaming content, updated in-place via `updateMattermostPost`, and replaced by the final reply on completion. Controlled by `streamPostId` state; failures are warned and suppressed rather than surfaced to the user.
+
+---
+
+### v2026.4.21
+
+#### Preview streaming for Discord, Slack, Telegram — tool-progress updates into live preview edits
+
+- **Discord:** `extensions/discord/src/monitor/message-handler.process.ts` imports `createDiscordDraftStream` and `resolveDiscordPreviewStreamMode` (from the new `preview-streaming.ts`). Tool-progress lines are accumulated in `previewToolProgressLines` and written into the draft edit when `previewToolProgressEnabled` is set. `DiscordPreviewStreamMode` accepts `"off" | "partial" | "block"`.
+- **Telegram:** `extensions/telegram/src/preview-streaming.ts` exports `resolveTelegramPreviewStreamMode`, delegating to the shared `resolveChannelPreviewStreamMode` from the plugin SDK with a `"partial"` default. `bot-message-dispatch.ts` uses `resolveChannelStreamingPreviewToolProgress` to gate tool-progress output into the draft stream.
+- **Slack:** `extensions/slack/src/monitor/message-handler/dispatch.streaming.test.ts` confirms preview streaming eligibility rules: enabled for room messages in partial mode, allowed for threaded DM replies. `resolveSlackStreamingThreadHint` threads the active `thread_ts` into the preview stream target.
+
+#### Matrix startup narrowed; deferred setup/doctor surfaces
+
+`extensions/matrix/src/channel.ts` lazy-imports `./setup-surface.js` via a dynamic `() => import(...)` call, so the setup and doctor surfaces are not loaded during cold registration. `setup-core.test.ts` verifies that constructing the channel proxy does not load the setup surface and that it is only loaded on demand. This defers heavy setup-module initialization, saving approximately 1.8 s on cold registration.
+
+#### Telegram startup — narrow sidecar for bundled runtime setter
+
+`extensions/telegram/runtime-setter-api.ts` is kept as a minimal registration-time sidecar: the file comment explicitly notes it must stay narrow so the bundled plugin registration remains fast. The full Telegram runtime is loaded lazily, cutting approximately 14 s from Telegram startup in bundled deployments.
+
+#### Discord startup — lazy-load Carbon UI runtime sidecar
+
+`extensions/discord/src/channel.runtime.ts` and related files follow a lazy-seam pattern (confirmed by `channel.lazy-seams.test.ts` in Slack as the established pattern across channels). Discord's Carbon UI runtime is not loaded during initial plugin registration, cutting approximately 98% of registration time for Discord in cold-start scenarios.
+
+#### Slack — thread aliases preserved in runtime outbound sends
+
+`extensions/slack/src/doctor-contract.ts` calls `normalizeLegacyChannelAliases` to canonicalize channel alias entries at doctor/fix time. `sent-thread-cache.ts` maintains per-account thread participation state so runtime outbound sends correctly resolve thread aliases to stable `thread_ts` values.
+
+#### Security — Synology Chat validates outbound `file_url` against SSRF policy
+
+`extensions/synology-chat/src/client.ts` imports from `openclaw/plugin-sdk/ssrf-runtime` and calls `assertSafeWebhookFileUrl(fileUrl)` before including `file_url` in the outbound webhook body. Unresolvable or private-network URLs are rejected before the payload is sent.
+
+#### Security — LINE validates outbound media URLs against SSRF guard
+
+`extensions/line/src/outbound-media.ts` imports `resolvePinnedHostnameWithPolicy` and defines `LINE_OUTBOUND_MEDIA_SSRF_POLICY`. All outbound media URLs are validated: must be a valid URL, must use HTTPS, and must be 2000 characters or fewer; the hostname is then pinned via the SSRF policy before the request is made.

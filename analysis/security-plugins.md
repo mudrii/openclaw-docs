@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1177,3 +1177,29 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 - **Plugin-only allowlists stay restrictive:** release-line security fixes explicitly preserve restrictive plugin-only tool allowlists and require owner access for `/allowlist add` and `/allowlist remove`.
 - **`before_tool_call` failure is fail-closed:** crashing tool hooks are now part of the release-line fail-closed security behavior rather than an edge case left to plugin authors.
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### v2026.4.15
+
+- **Exec trust — MEDIA: passthrough anchored to built-in raw names (#67303):** trusted local `MEDIA:` passthrough is now anchored to the exact raw names of registered built-in tools. Client tools whose names normalize-collide with a built-in are rejected with `400 invalid_request_error` instead of silently inheriting built-in trust.
+- **`memory_get` restricted to canonical memory files (#66026):** `memory_get` is now restricted to `MEMORY.md`, files under `memory/**`, and active QMD workspace documents. It can no longer be used as a generic workspace-file reader.
+- **Exec approval prompts redact secrets (#61077, #64790):** sensitive values are redacted from exec approval prompt text before display. Redaction runs via `redactSensitiveText()` in `src/infra/exec-approval-command-display.ts` with a position-bitmap approach that catches bypass attempts through invisible-character stripping.
+- **Skill Workshop plugin added (`extensions/skill-workshop/`):** new bundled extension that captures reusable workflow corrections, applies a threshold-based reviewer, and quarantines unsafe skill proposals. Source modules: `scanner.ts`, `reviewer.ts`, `store.ts`, `workshop.ts`, `signals.ts`.
+
+### v2026.4.20
+
+- **MCP stdio servers: interpreter-startup env keys blocked (#69540):** `NODE_OPTIONS` and similar interpreter-startup environment keys are now blocked for MCP stdio server processes, preventing load-path injection via workspace env into spawned MCP servers.
+- **`MINIMAX_API_HOST` workspace env injection blocked (#67300):** `MINIMAX_API_HOST` is explicitly blocked from workspace environment injection (confirmed in `src/agents/minimax-vlm.ts` env sanitization), preventing server-side request forgery via a crafted API host override.
+- **Gateway enforces `allowRequestSessionKey` on template-rendered `sessionKeys` (#69381):** the gateway now applies the `allowRequestSessionKey` gate when rendering template-mapped `sessionKeys`, ensuring session-key injection through template evaluation is gated consistently.
+- **QQBot SSRF guard on direct-upload URL paths (#69595):** QQBot direct-upload URL paths are now routed through `QQBOT_MEDIA_SSRF_POLICY` (confirmed in `extensions/qqbot/src/engine/utils/file-utils.ts`), closing an SSRF path on outbound media upload URLs.
+
+### v2026.4.21
+
+- **POSIX parameter expansion rejected in unquoted heredocs:** `$VAR`, `${var}`, `$?`, `$$`, `$1`, `$@`, and related POSIX parameter/special expansions are now rejected inside unquoted heredoc bodies during shell approval analysis. Enforced via `hasUnquotedHeredocExpansionToken()` in `src/infra/exec-approvals-analysis.ts`.
+- **Owner commands require owner identity — wildcard bypass closed:** `enforceOwnerForCommands` in `src/auto-reply/command-auth.ts` now strips wildcard `allowFrom` entries via `stripWildcardAllowFrom()` before building `ownerCandidatesForCommands`. A wildcard `allowFrom` or an empty owner-candidate list no longer causes `isOwnerForCommands` to pass as `true` when owner enforcement is required.
+- **CSP `img-src` tightened to `'self' data:` in Control UI:** `src/gateway/control-ui-csp.ts` sets `img-src 'self' data:`, removing remote `http(s):` sources. Avatar helpers are updated to drop remote HTTP(S) URLs, preventing remote image loading through the Control UI.
+- **Google Chat replaced `gaxios` shim with scoped SSRF-guarded transport:** `extensions/googlechat/src/google-auth.runtime.ts` now imports a scoped SSRF-guarded dispatcher (`openclaw/plugin-sdk/ssrf-dispatcher`, `ssrf-runtime`) and wraps `gaxios` calls through `resolveGoogleAuthDispatcherPolicy()`, replacing the previous unguarded shim.
+- **External content strips self-hosted LLM chat-template special-token literals:** `src/security/external-content.ts` now strips known special-token literal patterns — ChatML/Qwen (`<|im_start|>`, `<|im_end|>`), Llama 3.x/4.x, Mistral/Mixtral, Phi, GPT-OSS/harmony, Gemma, and generic `<|reserved_special_token_N|>` forms — from external content before it reaches the LLM, preventing tokenizer role-boundary spoofing via injected chat-template markers.

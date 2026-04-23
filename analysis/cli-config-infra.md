@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1518,6 +1518,42 @@ User types: openclaw <command> [args]
 ---
 
 *Analysis complete. 1,228 TypeScript files across 8 modules analyzed.*
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### v2026.4.15
+
+#### CLI
+- **`configure` stale-hash race fix** (#64188, #66528): `configure` command re-reads the persisted config hash after each write so subsequent operations within the same wizard session do not operate on a stale hash. Source: `src/config/io.ts` — `persistedHash` is returned from `writeConfigFile` and threaded back through the configure flow.
+- **`update` prunes stale packaged dist chunks** (#66959): `openclaw update` now removes stale packaged dist chunks from the installation after npm upgrades complete, preventing plugin-sdk alias fallback loops caused by mismatched chunk files. Source: `src/plugins/sdk-alias.ts` — stale dist chunk detection already present; update path now triggers cleanup.
+
+#### Gateway / Auth
+- **Per-request bearer resolution via `getResolvedAuth()`** (#66651): gateway auth no longer reads a single startup-time `resolvedAuth` snapshot for every request. A `getResolvedAuth` closure is now passed to request handlers and evaluated per-request, so rotated or revoked secrets stop authenticating immediately without a gateway restart. Source: `src/gateway/server.impl.ts` lines 403, 521, 793 — `getResolvedAuth` factory replaces direct `resolvedAuth` reference in request paths.
+- **SIGUSR1 spurious restart loop fix on Linux/systemd** (#67436, #67557): gateway startup no longer emits an unauthorized SIGUSR1 when plugin auto-enable is the only config write performed at startup. The restart authorization guard in `src/infra/restart.ts` (`sigusr1AuthorizedCount` / `sigusr1AuthorizedUntil`) prevents the startup write from triggering a hot-reload cycle under systemd.
+
+### v2026.4.20
+
+#### Config — Includes Write-Through
+- **Single-file top-level includes write-through** (#41050, #66048): mutations to config sections backed by a single-file top-level `$include` now write through to the include file rather than collapsing the modular layout into the root config. Fixes `openclaw plugins install` clobbering modular `$include` configs. Source: `src/config/mutate.test.ts` line 140 — "writes through a single-file top-level plugins include" test confirms the behavior.
+
+#### Config — Reload Planning
+- **Gateway reloads planned from source-authored config** (#68732): config reload decisions are now based on the source-authored config file rather than derived provider/plugin config paths. This prevents false gateway restarts triggered by ephemeral writes to provider or plugin config paths that are not part of the user-owned config. Source: `src/infra/restart.ts` and gateway reload subsystem.
+
+#### Config — Recovery
+- **Last-known-good config recovery** (#new): the gateway config observer now restores the last-known-good config when it detects critical clobber signatures — specifically: missing `meta` block, missing `gateway.mode`, or a sharp drop in config file size. Source: `src/config/io.observe-recovery.ts` (`recoverSuspiciousConfigRead`) and `src/config/io.observe-recovery.test.ts` — test coverage includes all three clobber signatures and the `lastKnownGoodIno` tracking field.
+
+#### Gateway — Linux OOM Shim
+- **Gateway-managed child processes wrapped in `/bin/sh` OOM shim on Linux**: child processes spawned by the gateway (including MCP stdio transports and supervisor adapter children) are wrapped in a `/bin/sh` shim that raises `oom_score_adj` to 1000. Under cgroup memory pressure the kernel preferentially OOMs the child rather than the gateway parent. Opt out per-process with `OPENCLAW_CHILD_OOM_SCORE_ADJ=0`. Source: `src/process/linux-oom-score.ts` — `prepareOomScoreAdjustedSpawn()` / `OOM_SCORE_WRAP_SHELL = "/bin/sh"`; used in `src/agents/mcp-stdio-transport.ts` and `src/process/supervisor/adapters/child.ts`.
+
+#### QA / CI
+- **`openclaw qa` and `openclaw qa telegram` fail by default on scenario failures; `--allow-failures` added** (#69122): QA suite commands now exit non-zero when any scenario fails, matching standard CI expectations. Pass `--allow-failures` to restore the previous permissive behavior.
+
+### v2026.4.21
+
+#### Onboarding / Wizard
+- **Long-list pickers switched to searchable autocompletes**: search provider selection, plugin configuration pickers, and model filtering pickers in the onboard/configure wizard now use searchable autocomplete prompts (`autocomplete` / `autocompleteMultiselect` from clack) instead of plain scroll-lists. Source: `src/wizard/clack-prompter.ts` lines 72–99 — `searchable` flag routes to `autocomplete`/`autocompleteMultiselect`; `src/wizard/setup.plugin-config.ts` line 400 sets `searchable: true` for plugin config prompts.
 
 ---
 

@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-09 | **Version:** v2026.4.9 | **Codebase:** OpenClaw release tag `v2026.4.9`
+**Updated:** 2026-04-23 | **Version:** v2026.4.21 | **Codebase:** OpenClaw release tag `v2026.4.21`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** stable release-line snapshot across 14 support modules plus `apps/macos`
 
@@ -1157,3 +1157,25 @@ Shared test utilities and mock factories.
 ### Plugin / Runtime Support
 
 - **Activation provenance and registry reuse remain core support behavior:** activation-source metadata and compatible-registry reuse are still important, but `v2026.4.9` extends the support surface with embedded ACPX runtime ownership and generic reply-dispatch interception.
+
+## Changes in v2026.4.15–v2026.4.21
+
+### Plugins / Packaging (v2026.4.15)
+
+- **Bundled plugin runtime deps localized to owning extensions** (#67099) — Plugin bundling now places runtime dependencies adjacent to the extension that declares them rather than hoisting them to a shared location. Install guardrails are tightened so plugins cannot accidentally consume peer dependencies from unrelated extensions.
+
+### Plugins / Tests (v2026.4.20)
+
+- **Plugin loader alias and Jiti config reused across repeated same-context loads** (#69316) — The plugin loader now reuses the alias map and Jiti resolution config when the same plugin context is loaded more than once within a session, rather than recreating them on every call. Reduces overhead for hot-reload and repeated plugin instantiation during tests.
+
+### Plugins / Tasks (v2026.4.20)
+
+- **Detached runtime registration contract for plugin executors** (#68915) — The plugin task runtime introduces a formal registration contract that allows plugin executors to own the full lifecycle and cancellation of detached tasks. Previously, detached task management was handled centrally; executors can now register, monitor, and cancel their own detached runs independently.
+
+### Auto-Reply (v2026.4.20)
+
+- **BlueBubbles per-group `systemPrompt` forwarding** — `extensions/bluebubbles/src/monitor.ts` threads per-group `systemPrompt` values from the BlueBubbles channel config into the inbound message context (`ctx`) for group messages. A wildcard `"*"` entry serves as the fallback when no exact group handle matches. Verified by `monitor.test.ts`: `"threads per-group systemPrompt into ctx for group messages"` and `"falls back to the '*' wildcard systemPrompt when no exact group match"`.
+
+### Plugins / Skill Workshop (v2026.4.21)
+
+- **Skill Workshop plugin added** (`extensions/skill-workshop/`) — New plugin providing threshold-based skill capture from agent sessions. Key files: `index.ts`, `api.ts`, `src/`. Features: configurable capture thresholds to decide which agent outputs qualify as skill candidates; reviewer passes to evaluate and refine proposals; quarantine of unsafe or low-quality proposals before they are promoted to the skill registry. Registered via `openclaw.plugin.json`.

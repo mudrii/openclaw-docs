@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9`
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1359,3 +1359,37 @@ When event fires:
 
 - **Forward-compat GPT surface:** the released tree adds forward-compat `openai-codex/gpt-5.4-mini` support, provider-owned GPT-5 prompt contributions, and shared request-override policy across model and media paths.
 - **Expanded bundled providers:** Qwen, Fireworks AI, and StepFun join the stable-line provider set, which materially expands the runtime/provider matrix agents can route across.
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### v2026.4.15
+
+- **Unknown-tool stream guard enabled by default** (#67401): The unknown-tool guard (`resolveUnknownToolGuardThreshold` in `src/agents/pi-embedded-runner/run/attempt.ts`) now runs unconditionally regardless of `tools.loopDetection.enabled`. Previously it was opt-in via that flag. The guard rewrites assistant message content after a configurable number of consecutive unknown-tool attempts, breaking otherwise-infinite tool-not-found loops. The threshold is configurable via `tools.loopDetection.unknownToolThreshold`.
+
+- **Skills snapshot version bumped on skills config writes** (#67401): When a config write touches `skills.*` keys, the skills snapshot version is incremented. This prevents disabled skills from remaining callable through stale snapshots that were captured before the config change took effect.
+
+- **Trimmed default startup and skills prompt budgets** (`src/agents/`): Default token budgets for the startup context and skills prompt sections are reduced. The `memory_get` tool now caps excerpts and appends continuation metadata so agents know more content is available without exceeding the context budget on the first call.
+
+- **`localModelLean` experimental flag** (#66495): Setting `agents.defaults.experimental.localModelLean = true` in config drops heavyweight tools (`browser`, `cron`, `message`) from the tool set assembled in `src/agents/pi-tools.ts`. Intended for weaker local-model setups where these tools are too expensive or unreliable to include by default.
+
+### v2026.4.20
+
+- **Compaction notices: opt-in `notifyOnStart` and `notifyOnCompletion`** (#67830): The `agents.defaults.compaction` config block gains a single opt-in flag. When enabled, the agent sends brief notices to the user when compaction starts and when it completes (e.g. "Compacting context..." / "Compaction complete"). Disabled by default to keep compaction silent and non-intrusive. Verified in `src/config/schema.base.generated.ts` help text.
+
+- **Pi runner retries silent `stopReason=error` turns with no output** (#68310): `src/agents/pi-embedded-runner/run.ts` now retries turns that end with `stopReason="error"` and zero output tokens for non-frontier providers. Previously this resubmission path was gated on the strict-agentic (GPT-5 only) contract, so models like ollama/glm-5.1 that occasionally produce empty error turns fell through to an "incomplete turn detected" dead end. The new retry is model-agnostic and bounded. Covered by `run.empty-error-retry.test.ts`.
+
+- **System prompt strengthened**: The agent system prompt gains completion-bias guidance, live-state check instructions, weak-result recovery strategies, and verification-before-final-answer directives to improve task completion reliability across providers.
+
+- **Sessions maintenance enforced by default** (#69404): The session store now enforces built-in entry cap (`maxEntries`) and age prune (`pruneAfter`) limits by default. Oversized stores are pruned at load time. Previously maintenance was advisory; now enforcement runs unless explicitly set to `"warn"` mode. Verified in `src/config/sessions/store.pruning.integration.test.ts`.
+
+- **`/new` and `/reset` clear auto-sourced model/provider/auth-profile overrides** (#69419): `src/auto-reply/reply/session-reset-model.ts` now clears model, provider, and auth-profile overrides that were applied automatically (e.g. from a channel binding or directive) when the user issues `/new` or `/reset`, while preserving overrides the user set explicitly. This prevents stale auto-resolved selections from carrying over into a new session.
+
+- **Shell: ignore non-interactive placeholder shells** (#69308): `src/agents/shell-utils.ts` defines `NON_INTERACTIVE_SHELLS = new Set(["false", "nologin"])` and falls back to `sh` on PATH when `$SHELL` resolves to `/usr/bin/false` or `/sbin/nologin`. These are service-account shells used by macOS LaunchDaemon users that reject `-c`-style invocations.
+
+### v2026.4.21
+
+- **ACP: skip `sessions_send` A2A ping-pong for parent→own background oneshot child** (`src/acp/session-interaction-mode.ts`): `isRequesterParentOfBackgroundAcpSession()` identifies the case where a parent session sends directly to its own background oneshot ACP child. In this case the A2A ping-pong flow in `sessions_send` is skipped, preventing echo loops. Unrelated sessions with broad visibility that send to the same target still go through the normal A2A path.
+
+- **Codex lifecycle hooks for native app-server turns**: `llm_input`, `llm_output`, and `agent_end` plugin hooks (defined in `src/plugins/hook-types.ts`) are now fired for native Codex app-server turns, giving plugins visibility into Codex-native LLM interactions that previously bypassed the hook pipeline.

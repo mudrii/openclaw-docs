@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web Search, WhatsApp & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-09 | Version: v2026.4.9 | Codebase: OpenClaw release tag `v2026.4.9` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1291,3 +1291,58 @@ The following entries are added to the Security Model section for `src/browser`:
 ### Security — Approvals
 
 - **Approval delivery is a broader surface now:** Matrix-native approvals and APNs modal approvals join the older approval channels, which expands the security-sensitive approval lifecycle beyond the Web UI and chat-platform integrations covered in prior snapshots.
+
+---
+
+## Changes in v2026.4.15–v2026.4.21
+
+### v2026.4.15
+
+#### Webchat — localRoots Containment on Audio Embedding Path (#67298)
+
+- **Webchat audio embedding enforces localRoots containment** — The webchat audio/media embedding path (`chat-webchat-media.ts`) now calls `assertLocalMediaAllowed()` before embedding local audio files as base64 gateway chat blocks. Files referenced by path or `file://` URL must resolve within a configured `localRoots` entry; requests referencing paths outside all configured roots are rejected. Verified in `chat-webchat-media.test.ts` which asserts that audio files outside `localRoots` are blocked.
+
+#### Matrix — DM Pairing-Store Entries Blocked from Room Control Commands (#67294)
+
+- **Matrix pairing blocks DM pairing-store entries from authorizing room control commands** — Pairing entries created via DM-based pairing flows are no longer accepted as authorization for room-scoped control commands. The `node-pairing-authz.ts` layer distinguishes DM-origin pairing entries from room-origin entries; DM entries are rejected when the command targets a room control context. This closes a privilege confusion path where a DM pairing could be replayed to issue room control actions.
+
+---
+
+### v2026.4.20
+
+#### Browser / Chrome MCP — DevToolsActivePort Attach Failures Surfaced as Browser-Connectivity Errors
+
+- **Chrome MCP surfaces DevToolsActivePort failures as browser-connectivity errors** — `server-context.availability.ts` now detects `DevToolsActivePort` and `Could not connect to Chrome` strings in attach failure messages and re-raises them as structured browser-connectivity errors rather than generic tab timeouts. Callers receive a clear diagnostic message indicating Chrome is not reachable, including the profile name and cause. Verified in `server-context.existing-session.test.ts` which asserts the translated error matches `/could not connect to Chrome.*managed "openclaw" profile.*DevToolsActivePort/`.
+
+---
+
+### v2026.4.21
+
+#### Browser — ax\<N\> Refs Rejected in Act Path Instead of Timing Out
+
+- **Browser act path rejects invalid ax\<N\> refs immediately** — The act routing layer now validates element refs before dispatching to Playwright. References using the deprecated `ax<N>` numbering scheme (e.g., `ax1`, `ax42`) are rejected with an explicit error response instead of timing out waiting for a locator match that will never resolve. This improves latency and eliminates silent hangs when stale or misformatted refs are passed to the act endpoint.
+
+#### Security — CSP img-src Tightened in Control UI; Avatar Helpers Drop Remote URLs
+
+- **CSP `img-src` restricted to `'self' data:` in Control UI** — `control-ui-csp.ts` now emits `img-src 'self' data:` in the Content-Security-Policy header, removing the previously permitted `https:` source. Verified in `control-ui-csp.test.ts` which asserts the CSP contains `img-src 'self' data:` and does not contain `img-src 'self' data: https:`.
+- **Avatar helpers drop remote http(s) URLs** — Avatar resolution helpers (`src/infra/outbound/identity.ts`) no longer accept arbitrary remote `http://` or `https://` URLs as avatar sources. Only `data:` URIs and local paths that resolve within configured roots are forwarded. This prevents arbitrary remote image fetches via the avatar surface.
+
+#### Security — Gateway Auth Required on Control UI Avatar Route
+
+- **Gateway auth enforced on Control UI avatar route when auth is configured** — The `/avatar/:agentId` gateway route now requires a valid gateway auth token when auth is configured, rather than serving avatar images unauthenticated. The auth token is propagated through the UI avatar fetch flow so authenticated Control UI sessions continue to resolve agent avatars correctly.
+
+#### Channel Security — Synology Chat SSRF Validation on file_url
+
+- **Synology Chat validates outbound `file_url` against SSRF policy** — Before forwarding a `file_url` value to the NAS API, the Synology Chat integration now validates the URL through the shared SSRF guard. URLs resolving to loopback, private, link-local, or other blocked ranges are rejected prior to dispatch, preventing server-side request forgery via the file-download forwarding path.
+
+#### Channel Security — LINE Outbound Media URL Validation
+
+- **LINE validates outbound media URLs against public-network guard** — The LINE integration now passes outbound media URLs through the shared public-network SSRF guard before handing them to the LINE API. URLs targeting private or internal network ranges are rejected, closing an SSRF path through LINE's media delivery flow.
+
+#### Channel Security — Google Chat SSRF-Guarded Transport and Auth Endpoint Validation
+
+- **Google Chat replaced gaxios shim with scoped SSRF-guarded transport** — The Google Chat integration replaces its `gaxios`-based HTTP shim with a scoped transport that routes all outbound requests through the SSRF guard. Service-account auth endpoints are additionally validated against a trusted Google URL allowlist before any credentials are presented, preventing credential forwarding to attacker-controlled endpoints.
+
+#### Security — External Content Strips Self-Hosted LLM Special-Token Literals
+
+- **External content stripping covers self-hosted LLM chat-template special tokens** — `external-content.ts` now strips tokenizer role-boundary literals from all chat-template families before wrapping untrusted content: ChatML/Qwen (`<|im_start|>`, `<|im_end|>`), Llama 3.x/4.x (`<|start_header_id|>`, `<|end_header_id|>`, `<|eot_id|>`), Gemma (`<start_of_turn>`, `<end_of_turn>`), Mistral/Mixtral (`[INST]`, `[/INST]`), Phi sentencepiece-style markers, GPT-OSS/harmony markers, and the generic `<|reserved_special_token_N|>` form. Stripping these literals before content reaches the LLM prevents tokenizer role-boundary spoofing in deployments running self-hosted models. Verified in `external-content.test.ts` with cases for ChatML/Qwen and Llama headers.
