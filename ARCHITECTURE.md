@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-14 (docs snapshot: v2026.4.14) | Released baseline: GitHub `v2026.4.14`
+> Updated: 2026-04-23 (docs snapshot: v2026.4.21) | Released baseline: GitHub `v2026.4.21`
 
 ---
 
@@ -28,9 +28,9 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.14`), the `agents` and `auto-reply` modules remain the top-sized core subtrees, while the `tasks` module (`src/tasks/`) continues to provide the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.21`), the `agents` and `auto-reply` modules remain the top-sized core subtrees, while the `tasks` module (`src/tasks/`) continues to provide the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (112 extension directories, 99 extension packages as of `v2026.4.14`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (119 extension directories, 104 extension packages as of `v2026.4.21`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -212,7 +212,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `compat/` | 1 | ~20 | Legacy project name constants | — |
 | `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
 | `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | 112 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs`, `comfy`, and the expanded provider/plugin set on `v2026.4.14`) | plugin-sdk |
+| `extensions/` | 119 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs`, `comfy`, `qqbot`, `skill-workshop`, and the expanded provider/plugin set on `v2026.4.21`) | plugin-sdk |
 | `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 | `packages/` | — | — | Workspace compatibility shims (clawdbot, moltbot) for legacy package name consumers | — |
@@ -349,6 +349,8 @@ Step 1: User creates job via /cron command or cron tool
 
 Step 2: cron/service/store.ts → Persist to ~/.openclaw/cron/jobs.json (atomic write)
         └─ computeNextRunAtMs() from schedule (cron expr, interval, or one-shot)
+        NOTE (v2026.4.20+): Runtime execution state (lastRunAtMs, lastStatus, consecutiveErrors)
+        is written to jobs-state.json separately, keeping jobs.json stable for git tracking.
 
 Step 3: cron/service/timer.ts → setTimeout fires when nextRunAtMs reached
         └─ locked() → Serialize concurrent access
@@ -606,7 +608,8 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 |------|----------|---------|--------|
 | **Config** | `~/.openclaw/openclaw.json` | Main configuration | JSON5 |
 | **Sessions** | `~/.openclaw/state/sessions.json` | Session entries (model, usage, state) | JSON, file-locked |
-| **Cron jobs** | `~/.openclaw/cron/jobs.json` | Scheduled job definitions | JSON, atomic write with .bak |
+| **Cron jobs** | `~/.openclaw/cron/jobs.json` | Scheduled job definitions (git-stable) | JSON, atomic write with .bak |
+| **Cron runtime state** | `~/.openclaw/cron/jobs-state.json` | Mutable execution state (last run, retry counts) — split from job definitions in v2026.4.20 | JSON, atomic write |
 | **Cron run logs** | `~/.openclaw/cron/runs/<jobId>.jsonl` | Per-job execution history | JSONL, auto-pruned at 2MB/2000 lines |
 | **Auth profiles** | `~/.openclaw/auth/profiles.json` | API keys, OAuth tokens | JSON, permission-hardened |
 | **Copilot token cache** | `~/.openclaw/state/credentials/github-copilot.token.json` | Cached Copilot API token | JSON |
@@ -640,6 +643,8 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 
 - **Location:** Configurable per agent, default `~/.openclaw/workspace-<agentId>/`
 - **Contains:** `AGENTS.md`, `TOOLS.md`, `SOUL.md`, `memory/`, `hooks/`, session data
+
+> **v2026.4.15+ dreaming storage:** Default dreaming storage mode changed from `inline` to `separate`. Dreaming phase blocks now land in `memory/dreaming/{phase}/YYYY-MM-DD.md` instead of polluting daily memory files. Set `plugins.entries.memory-core.config.dreaming.storage.mode: "inline"` to opt back in.
 
 ---
 
@@ -702,7 +707,11 @@ Parsed by `plugins/manifest.ts`.
 | **Channel plugins** | 22 | telegram, discord, slack, signal, whatsapp, line, irc, matrix, msteams (official Teams SDK), nostr, twitch, zalo, qqbot, feishu |
 | **Provider plugins** | 8 | copilot-proxy, google-gemini-cli-auth, minimax-portal-auth, amazon-bedrock (with Guardrails), ollama, vllm, sglang |
 | **Search plugins** | 1 | searxng (bundled SearXNG web search provider) |
-| **Tool/Feature plugins** | 11 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership, diffs |
+| **Tool/Feature plugins** | 12 | memory-core, memory-lancedb, llm-task, lobster, open-prose, diagnostics-otel, thread-ownership, diffs, skill-workshop |
+
+### Skill Workshop (extensions/skill-workshop)
+
+Added in v2026.4.21. Captures reusable workflow corrections as pending or auto-applied workspace skills. Runs threshold-based reviewer passes, quarantines unsafe proposals, and refreshes skill availability after safe writes. Wired through `before_prompt_build` and `agent_end` hooks. Config: `plugins.entries.skill-workshop.*`.
 
 ---
 
@@ -940,11 +949,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 104 |
-| Extension packages (`extensions/*/package.json`) | 98 |
+| Extension directories (`extensions/*`) | 119 |
+| Extension packages (`extensions/*/package.json`) | 104 |
 | Released skill entrypoints (`skills/`, `.agents/skills/`, extensions) | 75 |
 
-> Current analyzed source package: released `v2026.4.14`. Counts measured from the `v2026.4.14` released tree.
+> Current analyzed source package: released `v2026.4.21`. Counts measured from the `v2026.4.21` released tree.
 
 ### Key External Dependencies
 
