@@ -105,7 +105,8 @@ locale picker lives in the Gateway Access card, not under Appearance.
   available only when the snapshot has a safe raw round-trip
 - If a snapshot cannot safely round-trip raw text, Control UI forces Form mode and disables Raw mode for that snapshot
 - Structured SecretRef object values are rendered read-only in form text inputs to prevent accidental object-to-string corruption
-- Debug: status/health/models snapshots + event log + manual RPC calls (`status`, `health`, `models.list`)
+- Model Auth: OAuth token health and provider rate-limit pressure for each configured provider, backed by `models.authStatus` gateway method (added v2026.4.15)
+- Debug: status/health/models snapshots + event log + manual RPC calls (`status`, `health`, `models.list`, `models.authStatus`)
 - Logs: live tail of gateway file logs with filter/export (`logs.tail`)
 - Update: run a package/git update + restart (`update.run`) with a restart report
 

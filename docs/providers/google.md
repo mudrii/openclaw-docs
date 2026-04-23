@@ -284,6 +284,30 @@ See [Music Generation](/tools/music-generation) for shared tool parameters, prov
   </Accordion>
 </AccordionGroup>
 
+## Text-to-speech (TTS)
+
+The bundled `google` plugin registers Gemini TTS as a speech provider (added in v2026.4.15).
+
+| Capability     | Value                            |
+| -------------- | -------------------------------- |
+| Default model  | `gemini-3.1-flash-tts-preview`   |
+| Default voice  | `Kore`                           |
+| Output format  | WAV / PCM                        |
+| Auth key       | `GOOGLE_API_KEY`                 |
+
+```json5
+{
+  messages: {
+    tts: {
+      provider: "google",
+      // voiceName: "Kore",   // optional override
+    },
+  },
+}
+```
+
+See [Text-to-Speech](/tools/tts) for shared TTS config, provider fallback, and per-message directives.
+
 ## Related
 
 <CardGroup cols={2}>

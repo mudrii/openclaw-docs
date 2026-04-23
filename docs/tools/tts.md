@@ -9,12 +9,13 @@ title: "Text-to-Speech"
 
 # Text-to-speech (TTS)
 
-OpenClaw can convert outbound replies into audio using ElevenLabs, Microsoft, MiniMax, or OpenAI.
+OpenClaw can convert outbound replies into audio using ElevenLabs, Google, Microsoft, MiniMax, or OpenAI.
 It works anywhere OpenClaw can send audio.
 
 ## Supported services
 
 - **ElevenLabs** (primary or fallback provider)
+- **Google** (primary or fallback provider; uses Gemini TTS via `GOOGLE_API_KEY`; default model `gemini-3.1-flash-tts-preview`, default voice `Kore`; added in v2026.4.15)
 - **Microsoft** (primary or fallback provider; current bundled implementation uses `node-edge-tts`)
 - **MiniMax** (primary or fallback provider; uses the T2A v2 API)
 - **OpenAI** (primary or fallback provider; also used for summaries)
@@ -34,9 +35,10 @@ or ElevenLabs.
 
 ## Optional keys
 
-If you want OpenAI, ElevenLabs, or MiniMax:
+If you want OpenAI, ElevenLabs, MiniMax, or Google:
 
 - `ELEVENLABS_API_KEY` (or `XI_API_KEY`)
+- `GOOGLE_API_KEY` (for Google/Gemini TTS)
 - `MINIMAX_API_KEY`
 - `OPENAI_API_KEY`
 
