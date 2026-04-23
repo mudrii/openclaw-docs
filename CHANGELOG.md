@@ -6,6 +6,135 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.4.21 — Release Summary
+
+> **Released:** 2026-04-22 (docs release) | upstream GitHub release `v2026.4.21` published 2026-04-22 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.20..v2026.4.21` | 11 commits, focused backport release
+
+### Changes
+
+- **OpenAI/images (`v2026.4.21`):** default the bundled image-generation provider and live media smoke tests to `gpt-image-2`; advertise 2K/4K size hints in tool metadata.
+- **Plugins/skills (`v2026.4.21`):** add the Skill Workshop plugin — captures reusable workflow corrections as pending or auto-applied workspace skills, runs threshold-based reviewer passes, quarantines unsafe proposals, and refreshes skill availability after safe writes.
+- **Plugin SDK/channels (`v2026.4.21`):** add presentation and skills runtime contracts; decouple channel presentation rendering; document message presentation cards so plugins can own richer interactive surfaces.
+- **Channels/preview streaming (`v2026.4.21`):** stream tool-progress updates into live preview edits for Discord, Slack, and Telegram so in-flight replies show incremental tool state before finalization.
+- **Fireworks/Kimi K2.6 (`v2026.4.21`):** add Kimi K2.6 (`fireworks/…/kimi-k2p6`) to bundled catalog and live-model priority list.
+- **QQBot (`v2026.4.21`):** extract a self-contained engine architecture with QR-code onboarding, native approval handling, per-account resource stacks, credential backup/restore, and unified API/bridge/gateway modules.
+- **Ollama/onboard (`v2026.4.21`):** populate cloud model list from `ollama.com/api/tags`, cap at 500 models, fall back to static suggestions.
+- **Matrix/startup (`v2026.4.21`):** narrow Matrix runtime registration; defer setup/doctor surfaces — saves ~1.8s on cold registration.
+- **Telegram/startup (`v2026.4.21`):** load Telegram's bundled runtime setter through a narrow sidecar — cuts setup-runtime registration by ~14s.
+- **Discord/startup (`v2026.4.21`):** lazy-load Carbon UI runtime through a narrow sidecar — cuts registration time by ~98%.
+- **Onboard/wizard (`v2026.4.21`):** simplify security disclaimer copy; switch long-list pickers to searchable autocompletes for search providers, plugin configuration, and model filtering.
+
+### Fixes
+
+- **Security/exec (`v2026.4.21`):** reject POSIX parameter expansion (`$VAR`, `$?`, `$$`, `$1`, `$@`) in unquoted heredocs during shell approval analysis.
+- **Security/owner commands (`v2026.4.21`):** require owner identity (owner-candidate match or `operator.admin`) for owner-enforced commands; wildcard `allowFrom` or empty owner-candidate lists no longer bypass `enforceOwnerForCommands`.
+- **Security/CSP (`v2026.4.21`):** tighten Control UI `img-src` to `'self' data:`; avatar helpers drop remote `http(s)` URLs to prevent arbitrary remote image fetches.
+- **Security/Synology Chat (`v2026.4.21`):** validate outbound `file_url` values against shared SSRF policy before forwarding to NAS.
+- **Security/LINE (`v2026.4.21`):** validate outbound media URLs against shared public-network guard before handing to LINE.
+- **Security/gateway auth (`v2026.4.21`):** require gateway auth on Control UI avatar route when auth is configured; propagate token through UI avatar fetch.
+- **Security/Google Chat (`v2026.4.21`):** replace Google auth `gaxios` shim with scoped SSRF-guarded transport; validate service-account auth endpoints against trusted Google URLs.
+- **Security/external content (`v2026.4.21`):** strip common self-hosted LLM chat-template special-token literals (Qwen/ChatML, Llama, Gemma, Mistral, Phi, GPT-OSS markers) from wrapped external content, preventing tokenizer-layer role-boundary spoofing.
+- **Agents/ACP (`v2026.4.21`):** skip `sessions_send` A2A ping-pong when a parent sends to its own background oneshot ACP child, preventing echo loops.
+- **Image generation (`v2026.4.21`):** log failed provider/model candidates at warn level before automatic fallback.
+- **Slack/thread aliases (`v2026.4.21`):** preserve thread aliases in runtime outbound sends.
+- **Browser (`v2026.4.21`):** reject `ax<N>` refs in act path instead of timing out.
+
+---
+
+## OpenClaw v2026.4.20 — Release Summary
+
+> **Released:** 2026-04-21 (docs release) | upstream GitHub release `v2026.4.20` published 2026-04-21 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.15..v2026.4.20` | ~1,503 commits, 598+ files changed
+
+### Changes
+
+- **QQBot (`v2026.4.20`):** extract a self-contained QQBot engine architecture with QR-code onboarding, native `/bot-approve` approval handling, per-account resource stacks, credential backup/restore, shared media storage, and unified API/bridge/gateway modules. (#67960)
+- **Moonshot/Kimi (`v2026.4.20`):** default bundled Moonshot setup and media-understanding surfaces to `kimi-k2.6`; allow `thinking.keep = "all"` on K2.6 while stripping for other Moonshot models. (#69477, #68816)
+- **Cron (`v2026.4.20`):** split runtime execution state into `jobs-state.json` so `jobs.json` stays stable for git-tracked job definitions. (#63105)
+- **Agents/compaction (`v2026.4.20`):** send opt-in start and completion notices during context compaction. (#67830)
+- **Agents/prompts (`v2026.4.20`):** strengthen the default system prompt and OpenAI GPT-5 overlay with clearer completion bias, live-state checks, weak-result recovery, and verification-before-final guidance.
+- **Models/costs (`v2026.4.20`):** support tiered model pricing from cached catalogs and configured models; include bundled Moonshot Kimi K2.6/K2.5 cost estimates. (#67605)
+- **Sessions/Maintenance (`v2026.4.20`):** enforce built-in entry cap and age prune by default; prune oversized stores at load time to prevent OOM. (#69404)
+- **Mattermost (`v2026.4.20`):** stream thinking, tool activity, and partial reply text into a single draft preview post that finalizes in place. (#47838)
+- **Control UI/Overview (`v2026.4.20`):** add a settings/slash command UX overhaul and macOS screen snapshots for monitor preview. (#67819, #67954)
+- **Onboard/wizard (`v2026.4.20`):** restyle security disclaimer with yellow warning banner; add loading spinner during model catalog load; add API key placeholder to provider prompts. (#69553)
+- **Plugins/tasks (`v2026.4.20`):** add detached runtime registration contract so plugin executors can own detached task lifecycle and cancellation. (#68915)
+- **Plugins/tests (`v2026.4.20`):** reuse plugin loader alias and Jiti config resolution across repeated same-context loads, reducing import-heavy test overhead. (#69316)
+- **Terminal/logging (`v2026.4.20`):** optimize `sanitizeForLog()` with a single regex pass, replacing iterative control-character stripping loop. (#67205)
+- **QA/CI (`v2026.4.20`):** make `openclaw qa suite` and `openclaw qa telegram` fail by default when scenarios fail; add `--allow-failures`. (#69122)
+- **BlueBubbles/groups (`v2026.4.20`):** forward per-group `systemPrompt` config into inbound context `GroupSystemPrompt`. (#69198)
+
+### Fixes
+
+- **Exec/YOLO (`v2026.4.20`):** stop rejecting gateway-host exec in `security=full` + `ask=off` mode via Python/Node script preflight hardening.
+- **OpenAI Codex (`v2026.4.20`):** normalize legacy `openai-completions` transport overrides on default OpenAI/Codex and Copilot-compatible hosts to the native Responses transport. (#45304, #42194)
+- **Anthropic/plugins (`v2026.4.20`):** scope Anthropic `api: "anthropic-messages"` defaulting to Anthropic-owned providers; fixes #64534.
+- **Security/QQBot (`v2026.4.20`):** add SSRF guard to direct-upload URL paths in `uploadC2CMedia` and `uploadGroupMedia`. (#69595)
+- **Security/gateway (`v2026.4.20`):** enforce `allowRequestSessionKey` gate on template-rendered mapping sessionKeys. (#69381)
+- **Security/MCP (`v2026.4.20`):** block interpreter-startup env keys such as `NODE_OPTIONS` for stdio servers. (#69540)
+- **Security/MINIMAX (`v2026.4.20`):** block `MINIMAX_API_HOST` workspace env injection. (#67300)
+- **Gateway/usage (`v2026.4.20`):** bound the cost usage cache with FIFO eviction. (#68842)
+- **Gateway/pairing (`v2026.4.20`):** treat loopback shared-secret node-host, TUI, and gateway clients as local for pairing. (#69431)
+- **Cron/delivery (`v2026.4.20`):** treat explicit `delivery.mode: "none"` as not requested; avoid persisting false delivery failures. (#69285)
+- **Memory/LanceDB (`v2026.4.20`):** retry initialization after a failed LanceDB load; report unsupported Intel macOS runtime clearly. (#69219)
+- **Sessions/costs (`v2026.4.20`):** snapshot `estimatedCostUsd` like token counters; prevent multiply-compounded run costs. (#69403)
+- **Sessions/reset (`v2026.4.20`):** clear auto-sourced model/provider/auth-profile overrides on `/new` and `/reset` while preserving explicit selections. (#69419)
+- **Active Memory (`v2026.4.20`):** degrade gracefully when memory recall fails during prompt building. (#69485)
+- **Agents/shell (`v2026.4.20`):** ignore non-interactive placeholder shells like `/usr/bin/false` and `/sbin/nologin`. (#69308)
+- **Agents/Pi runner (`v2026.4.20`):** retry silent `stopReason=error` turns with no output for non-frontier providers. (#68310)
+- **Ollama (`v2026.4.20`):** add provider-policy defaults for `baseUrl` and `models` so implicit local discovery can run before config validation. (#69370)
+- **Telegram/polling (`v2026.4.20`):** raise default polling watchdog threshold from 90s to 120s; add configurable `pollingStallThresholdMs`. (#57737)
+- **BlueBubbles (`v2026.4.20`):** raise outbound send timeout from 10s to 30s; add configurable `sendTimeoutMs`. (#69193)
+- **Plugins/startup (`v2026.4.20`):** install bundled runtime dependencies into each plugin's own runtime directory. (#67099)
+- **Browser/Chrome MCP (`v2026.4.20`):** surface `DevToolsActivePort` attach failures as browser-connectivity errors.
+- **Config/includes (`v2026.4.20`):** write through single-file top-level includes for isolated mutations; fixes `plugins install` clobbering modular `$include` configs. (#41050, #66048)
+- **Config/reload (`v2026.4.20`):** plan gateway reloads from source-authored config; prevent false restarts from derived provider/plugin config paths. (#68732)
+
+---
+
+## OpenClaw v2026.4.15 — Release Summary
+
+> **Released:** 2026-04-16 (docs release) | upstream GitHub release `v2026.4.15` published 2026-04-16 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.14..v2026.4.15` | ~417 commits, 349 feat/fix entries
+
+### Changes
+
+- **Anthropic/models (`v2026.4.15`):** default Anthropic selections, `opus` aliases, Claude CLI defaults, and bundled image understanding to Claude Opus 4.7.
+- **Google/TTS (`v2026.4.15`):** add Gemini text-to-speech support to the bundled `google` plugin — provider registration, voice selection, WAV/PCM output, setup guidance. (#67515)
+- **Control UI/Overview (`v2026.4.15`):** add a Model Auth status card showing OAuth token health and provider rate-limit pressure; backed by new `models.authStatus` gateway method. (#66211)
+- **Memory/LanceDB (`v2026.4.15`):** add cloud storage support so durable memory indexes can run on remote object storage. (#63502)
+- **GitHub Copilot/memory search (`v2026.4.15`):** add a GitHub Copilot embedding provider for memory search with dedicated transport helper. (#61718)
+- **Agents/local models (`v2026.4.15`):** add experimental `agents.defaults.experimental.localModelLean: true` — drops heavyweight tools (browser, cron, message) to reduce prompt size for weaker local-model setups. (#66495)
+- **Packaging/plugins (`v2026.4.15`):** localize bundled plugin runtime deps to their owning extensions; trim published docs payload; tighten install guardrails. (#67099)
+- **QA/Matrix (`v2026.4.15`):** split Matrix live QA into source-linked `qa-matrix` runner; keep repo-private `qa-*` out of packaged builds. (#66723)
+
+### Fixes
+
+- **Security/exec trust (`v2026.4.15`):** anchor trusted local `MEDIA:` passthrough on exact raw names of registered built-in tools; reject client tools whose names normalize-collide with built-ins (`400 invalid_request_error`). (#67303)
+- **Security/memory_get (`v2026.4.15`):** restrict `memory_get` to canonical memory files (`MEMORY.md`, `memory/**`) and active QMD workspace documents; prevents use as generic workspace-file reader that bypasses `read` tool-policy denials. (#66026)
+- **Security/exec approvals (`v2026.4.15`):** redact secrets in exec approval prompts to prevent credential leakage in rendered prompt content. (#61077, #64790)
+- **Security/gateway auth (`v2026.4.15`):** resolve active gateway bearer per-request on HTTP server and HTTP upgrade handler via `getResolvedAuth()`, so rotated secrets stop authenticating on `/v1/*` immediately. (#66651)
+- **Security/Matrix pairing (`v2026.4.15`):** block DM pairing-store entries from authorizing room control commands. (#67294)
+- **Security/webchat (`v2026.4.15`):** enforce `localRoots` containment on webchat audio embedding path. (#67298)
+- **Memory-core/QMD (`v2026.4.15`):** change dreaming default storage mode from `inline` to `separate` — dreaming phase blocks land in `memory/dreaming/{phase}/YYYY-MM-DD.md` instead of polluting `memory/YYYY-MM-DD.md`. (#66412)
+- **Agents/context (`v2026.4.15`):** trim default startup/skills prompt budgets; cap `memory_get` excerpts with continuation metadata.
+- **Agents/skills loop guard (`v2026.4.15`):** enable the unknown-tool stream guard by default (previously required explicit `tools.loopDetection.enabled = true`). (#67401)
+- **Agents/skills snapshot (`v2026.4.15`):** bump cached skills-snapshot version when config writes touch `skills.*`, preventing disabled skills from remaining callable through stale session snapshots. (#67401)
+- **TUI/streaming (`v2026.4.15`):** add a 30s client-side streaming watchdog that resets the `streaming · Xm Ys` indicator to `idle` after delta silence. (#67401)
+- **Extensions/lmstudio (`v2026.4.15`):** add exponential backoff (5s → 5min) to inference-preload wrapper to prevent WARN flood on model-load failures. (#67401)
+- **Cron/announce delivery (`v2026.4.15`):** suppress mixed-content isolated cron announce replies ending with `NO_REPLY`. (#65004)
+- **Gateway/startup (`v2026.4.15`):** fix spurious SIGUSR1 restart loop on Linux/systemd when plugin auto-enable is the only startup config write. (#67436, #67557)
+- **Matrix/E2EE (`v2026.4.15`):** keep startup bootstrap conservative for passwordless token-auth bots. (#66228)
+- **Agents/replay recovery (`v2026.4.15`):** classify `401 input item ID does not belong to this connection` as replay-invalid, triggering `/new` guidance. (#66475)
+- **WhatsApp/web-session (`v2026.4.15`):** drain pending auth creds save queue before reopening sockets. (#67464)
+- **Ollama/chat (`v2026.4.15`):** strip `ollama/` provider prefix from Ollama chat request model ids. (#67457)
+- **BlueBubbles/catchup (`v2026.4.15`):** add per-message retry ceiling (`catchup.maxFailureRetries`, default 10) to prevent cursor wedge on malformed payloads. (#67426, #66870)
+- **CLI/configure (`v2026.4.15`):** re-read persisted config hash after writes to prevent stale-hash races. (#64188, #66528)
+- **CLI/update (`v2026.4.15`):** prune stale packaged `dist` chunks after npm upgrades. (#66959)
+
+---
+
 ## OpenClaw v2026.4.14 — Release Summary
 
 > **Released:** 2026-04-14 (docs release) | upstream GitHub release `v2026.4.14` published 2026-04-14 UTC | **Policy note:** latest *documented* released section stays at top.
