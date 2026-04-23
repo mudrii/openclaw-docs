@@ -434,7 +434,7 @@ The largest module (348 source files, 335 tests). This is the **AI agent runtime
 #### Model Management
 | File | Purpose |
 |------|---------|
-| `defaults.ts` | Default provider/model constants (anthropic, claude-opus-4-6) |
+| `defaults.ts` | Default provider/model constants (anthropic, claude-opus-4-7) |
 | `model-selection.ts` | Select model based on config, overrides, session state |
 | `model-catalog.ts` | Load and cache model catalog |
 | `model-compat.ts` | Model compatibility checking |

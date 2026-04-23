@@ -67,9 +67,14 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.14 additions (current release line):**
+**v2026.4.21 additions (current release line):**
 
-- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.4.14`; include updated `docs/reference/`, provider pages, and generated artifact baselines, plus additional coverage for codex/gpt-5.4 model routing and browser/security-related runtime surfaces.
+- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.4.21`; covers v2026.4.15, v2026.4.20, and v2026.4.21 windows. Include updated provider pages (Anthropic opus-4-7 default, Moonshot kimi-k2.6 default, OpenAI gpt-image-2 default, Google Gemini TTS), cron state split (`jobs-state.json`), dreaming `separate` storage mode, unknown-tool stream guard default, and Skill Workshop plugin coverage.
+- **Behavioral change surface (`v2026.4.14..v2026.4.21`):** verify default model references (`claude-opus-4-7`, `kimi-k2.6`, `gpt-image-2`), cron job state file split, dreaming storage paths under `memory/dreaming/{phase}/`, memory_get query restriction, SSRF hardening changes, and Skill Workshop/QQBot engine surfaces when modifying those code paths.
+
+**v2026.4.14 additions (historical):**
+
+- **Current release-line checks:** this docs snapshot was aligned to upstream `v2026.4.14`; included updated `docs/reference/`, provider pages, and generated artifact baselines, plus additional coverage for codex/gpt-5.4 model routing and browser/security-related runtime surfaces.
 - **Behavioral change surface (`v2026.4.12..v2026.4.14`):** verify codex provider and model alias compatibility, browser strict-policy/loopback/CDP readiness behavior, media-understanding proxy and attachment edge cases, and qmd/session-compaction paths when changing model/provider, session, gateway, or tool-routing logic.
 
 **v2026.4.12 additions (historical):**
