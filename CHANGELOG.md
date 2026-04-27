@@ -6,6 +6,152 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.4.25 — Release Summary
+
+> **Released:** 2026-04-27 (docs release) | upstream GitHub release `v2026.4.25` published 2026-04-27 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.24..v2026.4.25` | ~1065 commits
+
+### Changes
+
+- **TTS/channels (`v2026.4.25`):** add `/tts latest` read-aloud with duplicate suppression, `/tts chat on|off|default` session-scoped auto-TTS, per-channel and per-account TTS config deep-merge, and per-agent `agents.list[].tts` voice overrides.
+- **Providers/TTS (`v2026.4.25`):** add six new bundled TTS providers — Azure Speech (Speech-resource auth, SSML, Ogg/Opus, telephony), Xiaomi MiMo (MP3/WAV, Opus transcoding), Local CLI TTS (file/stdout, Opus, telephony PCM), Inworld (streaming synthesis, voice listing, Opus, PCM), Volcengine/BytePlus Seed Speech (API-key, Ogg/Opus, MP3), and ElevenLabs v3 model in bundled catalog.
+- **Plugins/registry (`v2026.4.25`):** migrate plugin install metadata to cold persisted registry at `plugins/installs.json`, replacing broad manifest scans; `openclaw plugins registry` CLI for explicit inspection and `--refresh` repair; `openclaw plugins list` reads cold registry by default.
+- **Plugins/startup (`v2026.4.25`):** move gateway startup plugin planning onto the versioned cold registry index; normalize enablement through registry aliases; resolve provider ownership and catalog hooks from cold registry instead of manifest rescans.
+- **Diagnostics/OTEL (`v2026.4.25`):** emit GenAI token usage histogram, model-call duration histogram, tool-loop counters/spans, harness lifecycle spans, exec-process spans, context-assembly spans, memory pressure spans, and bounded delivery lifecycle spans — all with low-cardinality attributes and no prompt/session content.
+- **Diagnostics/Prometheus (`v2026.4.25`):** add bundled `diagnostics-prometheus` plugin with a protected gateway scrape route for low-cardinality diagnostics metrics.
+- **Diagnostics/trace (`v2026.4.25`):** propagate W3C `traceparent` from trusted model-call context to provider transports; support signal-specific OTLP endpoint overrides; `OPENCLAW_OTEL_PRELOADED=1` for SDK reuse.
+- **Browser automation (`v2026.4.25`):** safe tab URLs in agent responses, CDP-native iframe-aware role snapshot fallback, `openclaw browser start --headless` one-shot launch, configurable CDP readiness timeouts, and `openclaw browser doctor --deep` live snapshot probing.
+- **Control UI (`v2026.4.25`):** PWA install support and Web Push notifications for Gateway chat; context mode selector; shorter startup greeting.
+- **CLI/Crestodian/TUI (`v2026.4.25`):** first-run setup helper, local planner fallback, full-TUI interactive Crestodian, and startup progress indicators.
+- **Plugins/hooks (`v2026.4.25`):** add before-agent-finalize hooks, cron `jobId` hook context, bounded native permission fingerprints, and Codex MCP hook relay support.
+- **Google Meet (`v2026.4.25`):** add calendar-backed attendance export workflows, export manifests, dry-run previews, and tool parity for meeting records.
+- **Android/Talk Mode (`v2026.4.25`):** expose Talk Mode in the Voice tab with runtime-owned capture modes and microphone foreground-service escalation.
+- **Providers/LiteLLM (`v2026.4.25`):** register `litellm` as an image-generation provider so `image_generate model=litellm/...` calls resolve through the LiteLLM proxy.
+
+### Fixes
+
+- **Packaged installs (`v2026.4.25`):** preserve package-root runtime dependency subpaths when bundled plugin runtime mirrors fall back to copying shared chunks, fixing Windows npm updates that could fail to load copied `dist` modules.
+- **Heartbeat (`v2026.4.25`):** clamp oversized scheduler delays through the shared safe timer helper, preventing `every` values over Node's timeout cap from becoming a 1 ms crash loop.
+- **Telegram (`v2026.4.25`):** remove startup persisted-offset `getUpdates` preflight so polling restarts do not self-conflict before the runner starts; prevent duplicate in-process long pollers for the same bot token.
+- **Browser/Playwright (`v2026.4.25`):** ignore benign already-handled route races during guarded navigation; bind `axN` refs to live DOM nodes through backend DOM ids for follow-up actions; detect Chromium installs under `/opt/google` and `/usr/lib/chromium` on Linux.
+- **MCP (`v2026.4.25`):** retire one-shot embedded bundled MCP runtimes at run end; add `mcp.sessionIdleTtlMs` idle eviction for leaked sessions; hot-apply `mcp.*` config changes by disposing cached session runtimes.
+- **Agents/tool-result pruning (`v2026.4.25`):** harden character estimator against malformed `{ type: "text" }` blocks from void or undefined tool handlers, serializing non-string text for size accounting so they cannot bypass trimming.
+- **Gateway/restart continuation (`v2026.4.25`):** durably hand restart continuations to a session-delivery queue before deleting the restart sentinel; recover queued work after crashy restarts; fall back to session-only wake when no channel route survives reboot.
+- **Feishu/TTS (`v2026.4.25`):** transcode voice-intent MP3 replies to Ogg/Opus before sending native Feishu audio bubbles.
+- **Telegram/webhook (`v2026.4.25`):** acknowledge validated webhook updates before running bot middleware, keeping slow agent turns from tripping Telegram delivery retries.
+- **Sessions/browser (`v2026.4.25`):** close tracked browser tabs on idle, daily, `/new`, or `/reset` session rollover to prevent tabs leaking past the old session.
+- **Control UI (`v2026.4.25`):** make `/usage` use the fresh context snapshot for context percentage; queue Stop-button aborts across Gateway reconnects so disconnected active runs are canceled on reconnect.
+- **Daemon/service-env (`v2026.4.25`):** add Nix Home Manager profile bin directories to generated gateway service PATHs on macOS and Linux, honoring `NIX_PROFILES` right-to-left precedence.
+
+---
+
+## OpenClaw v2026.4.24 — Release Summary
+
+> **Released:** 2026-04-25 (docs release) | upstream GitHub release `v2026.4.24` published 2026-04-25 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.23..v2026.4.24` | ~901 commits
+
+### Changes
+
+- **Google Meet (`v2026.4.24`):** add Google Meet as a bundled participant plugin with personal Google auth, Chrome/Twilio realtime sessions, paired-node Chrome support, artifact and attendance exports, and recovery tooling for already-open Meet tabs.
+- **Providers/DeepSeek (`v2026.4.24`):** add DeepSeek V4 Flash (onboarding default) and DeepSeek V4 Pro to the bundled model catalog; fix thinking/replay behavior for follow-up tool-call turns.
+- **Voice/realtime (`v2026.4.24`):** Talk, Voice Call, and Google Meet can use realtime voice loops that consult the full OpenClaw agent for deeper tool-backed answers.
+- **Browser automation (`v2026.4.24`):** add coordinate clicks, longer default action budgets, per-profile headless overrides, and steadier tab reuse and recovery.
+- **Plugins/startup (`v2026.4.24`):** static model catalogs and manifest-backed model rows reduce startup overhead; lazy provider dependencies and external runtime-dependency repair for packaged installs.
+- **OpenAI/Codex (`v2026.4.24`):** send Codex Responses system prompts through top-level `instructions` while preserving existing native Codex payload controls.
+- **Control UI (`v2026.4.24`):** make `/usage` include cache-write tokens in the Usage overview cache-hit denominator.
+
+### Fixes
+
+- **MCP/CLI (`v2026.4.24`):** retire bundled MCP runtimes at the end of one-shot `openclaw agent` and `openclaw infer model run` executions so repeated scripted runs do not accumulate stdio MCP child processes.
+- **MCP/config reload (`v2026.4.24`):** hot-apply `mcp.*` changes by disposing cached session MCP runtimes; dispose bundled MCP runtimes during gateway shutdown so removed `mcp.servers` entries reap child processes promptly.
+- **Agents/tool-result pruning (`v2026.4.24`):** harden character estimator against malformed `{ type: "text" }` blocks created by void or undefined tool handler results, preventing zero-sized bypass of trimming loops.
+- **Gateway/restart continuation (`v2026.4.24`):** durably hand restart continuations to a session-delivery queue before deleting the restart sentinel; recover queued work after crashy restarts.
+- **Sessions/forking (`v2026.4.24`):** fall back to transcript-estimated parent token counts when cached totals are stale or missing, so oversized thread forks start fresh instead of cloning the full parent transcript.
+- **Browser/Linux (`v2026.4.24`):** detect Chromium installs under `/opt/google`, `/opt/brave.com`, `/usr/lib/chromium`, and `/usr/lib/chromium-browser` before prompting `browser.executablePath`.
+- **Browser/Playwright (`v2026.4.24`):** ignore benign already-handled route races during guarded navigation; bind `axN` refs to live DOM nodes through backend DOM ids for follow-up browser actions.
+- **Telegram (`v2026.4.24`):** remove startup persisted-offset `getUpdates` preflight so polling restarts do not self-conflict; prevent duplicate in-process long pollers for the same bot token; acknowledge webhook updates before middleware to avoid Telegram delivery retries.
+- **OpenAI/Codex image generation (`v2026.4.24`):** canonicalize legacy `openai-codex.baseUrl` values to the Codex Responses backend before calling `gpt-image-2`.
+- **GitHub Copilot (`v2026.4.24`):** preserve encrypted Responses reasoning item IDs during replay so Copilot can validate encrypted reasoning payloads across requests.
+- **Agents/replies (`v2026.4.24`):** recover final-answer text when streamed assistant chunks contain only whitespace, preventing completed turns from surfacing as empty-payload errors.
+- **Feishu/TTS (`v2026.4.24`):** transcode voice-intent MP3 and other audio replies to Ogg/Opus before sending native Feishu audio bubbles.
+- **Daemon/service-env (`v2026.4.24`):** add Nix Home Manager profile bin directories to generated gateway service PATHs on macOS and Linux, honoring `NIX_PROFILES` precedence.
+
+---
+
+## OpenClaw v2026.4.23 — Release Summary
+
+> **Released:** 2026-04-24 (docs release) | upstream GitHub release `v2026.4.23` published 2026-04-24 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.22..v2026.4.23` | ~488 commits
+
+### Changes
+
+- **Providers/OpenAI (`v2026.4.23`):** add image generation and reference-image editing through Codex OAuth so `openai/gpt-image-2` works without an `OPENAI_API_KEY`; pass quality, output-format, background, moderation, and compression hints through `image_generate`.
+- **Providers/OpenRouter (`v2026.4.23`):** add image generation and reference-image editing through `image_generate`, enabling OpenRouter image models with `OPENROUTER_API_KEY`.
+- **Agents/subagents (`v2026.4.23`):** add optional forked context for native `sessions_spawn` runs so agents can let a child inherit the requester transcript when needed, while keeping clean isolated sessions as the default.
+- **Agents/tools (`v2026.4.23`):** add optional per-call `timeoutMs` support for image, video, music, and TTS generation tools so agents can extend provider request timeouts only when a specific generation needs it.
+- **Memory/local embeddings (`v2026.4.23`):** add configurable `memorySearch.local.contextSize` with a 4096 default so local embedding contexts can be tuned for constrained hosts.
+- **Dependencies/Pi (`v2026.4.23`):** update bundled Pi packages to `0.70.0` and use Pi's upstream `gpt-5.5` catalog metadata for OpenAI and OpenAI Codex.
+- **Memory/dreaming (`v2026.4.23`):** decouple managed dreaming from heartbeat by running it as an isolated lightweight agent turn, so dreaming runs even when heartbeat is disabled for the default agent and is no longer skipped by `heartbeat.activeHours`.
+- **Codex harness (`v2026.4.23`):** add structured debug logging for embedded harness selection decisions; pin embedded harness selection per session; show active non-Pi harness IDs in `/status`.
+
+### Fixes
+
+- **Security patches (`v2026.4.23`):** approximately 30 security fixes covering MCP tool privilege escalation, Android cleartext pairing, Teams cross-bot token replay, workspace `.env` endpoint overrides, Discord slash-command access bypass, Android `ASK_OPENCLAW` auto-send, Secrets Windows BOM/ACL, agent image-gen directive injection, QQBot unauthenticated `/bot-approve`, gateway config apply allowlist, webhook `SecretRef` live rotation, Android/mobile pairing cleartext validation, plugin setup-api directory traversal, Approvals auto-enable, QA channel attachment URL scheme validation, and WhatsApp/group-chat prompt injection via structured free text.
+- **Codex harness (`v2026.4.23`):** route native `request_user_input` prompts back to the originating chat; preserve queued follow-up answers; honor app-server command approval amendment decisions; resolve `codex.cmd` shims on Windows through PATHEXT.
+- **WhatsApp/onboarding (`v2026.4.23`):** keep first-run setup entry loading off the Baileys runtime dependency path so packaged QuickStart installs can show WhatsApp setup before runtime deps are staged.
+- **Block streaming (`v2026.4.23`):** suppress duplicate replies when already-sent text chunks exactly cover the final reply after partial block-delivery aborts.
+- **Providers/OpenAI (`v2026.4.23`):** guard image generation auth routing and Codex OAuth response parsing so fallback only applies to public OpenAI API routes; send reference-image edits as guarded multipart uploads restoring complex multi-reference `gpt-image-2` edits.
+- **Providers/OpenRouter (`v2026.4.23`):** send image-understanding prompts as user text before image parts, restoring non-empty vision responses for multimodal models.
+- **Providers/Google (`v2026.4.23`):** honor the private-network SSRF opt-in for Gemini image generation requests so trusted proxy setups work.
+- **Agents/transport (`v2026.4.23`):** stop embedded runs from lowering process-wide undici stream timeouts, so slow Gemini image generation no longer inherits short run-attempt header timeouts.
+- **Control UI/chat (`v2026.4.23`):** persist assistant-generated images as authenticated managed media and accept paired-device tokens for assistant media fetches so webchat history reloads keep showing generated images.
+- **Memory/dreaming (`v2026.4.23`):** `openclaw doctor --fix` migrates stale main-session dreaming jobs in persisted cron configs to the new isolated-turn shape.
+- **Plugins/Google Meet (`v2026.4.23`):** hang up delegated Twilio calls on leave; clean up Chrome realtime audio bridges when launch fails; use a flat provider-safe tool schema.
+- **Media understanding (`v2026.4.23`):** honor explicit image-model configuration before native-vision skips, including `agents.defaults.imageModel`, `tools.media.image.models`, and provider image defaults.
+- **Voice-call/realtime (`v2026.4.23`):** wait for OpenAI session configuration before greeting or forwarding buffered audio; reject non-allowlisted Twilio callers before stream setup.
+
+---
+
+## OpenClaw v2026.4.22 — Release Summary
+
+> **Released:** 2026-04-23 (docs release) | upstream GitHub release `v2026.4.22` published 2026-04-23 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.21..v2026.4.22` | ~822 commits
+
+### Changes
+
+- **Providers/xAI (`v2026.4.22`):** add image generation (`grok-imagine-image` / `grok-imagine-image-pro`), reference-image edits, text-to-speech (six voices, MP3/WAV/PCM/G.711), speech-to-text (`grok-stt`), and xAI realtime transcription for Voice Call streaming.
+- **Providers/STT (`v2026.4.22`):** add Voice Call streaming transcription for Deepgram, ElevenLabs, and Mistral alongside OpenAI and xAI realtime STT; ElevenLabs gains Scribe v2 batch audio transcription for inbound media.
+- **TUI (`v2026.4.22`):** add local embedded mode for terminal chats without a Gateway while keeping plugin approval gates enforced.
+- **Onboarding (`v2026.4.22`):** auto-install missing provider and channel plugins during setup so first-run configuration can complete without manual plugin recovery.
+- **OpenAI/Responses (`v2026.4.22`):** use OpenAI's native `web_search` tool automatically for Responses models when web search is enabled and no managed search provider is pinned.
+- **Models/commands (`v2026.4.22`):** add `/models add <provider> <modelId>` to register a model from chat and use it without restarting the gateway.
+- **WhatsApp (`v2026.4.22`):** add configurable native reply quoting via `replyToMode`; forward per-group and per-direct `systemPrompt` config into inbound context `GroupSystemPrompt` with `"*"` wildcard fallback and account-scoped overrides.
+- **Providers/Tencent Cloud (`v2026.4.22`):** add bundled Tencent Cloud provider plugin with TokenHub onboarding, `hy3-preview` model catalog entries, and tiered Hy3 pricing metadata.
+- **Providers/Amazon Bedrock Mantle (`v2026.4.22`):** add Claude Opus 4.7 through Mantle's Anthropic Messages route with provider-owned bearer-auth streaming.
+- **Providers/GPT-5 (`v2026.4.22`):** move GPT-5 prompt overlay into the shared provider runtime so compatible GPT-5 models receive the same behavior through OpenAI, OpenRouter, OpenCode, Codex, and other GPT providers.
+- **Tokenjuice (`v2026.4.22`):** add bundled native OpenClaw support for tokenjuice as an opt-in plugin that compacts noisy `exec` and `bash` tool results in Pi embedded runs.
+- **ACPX (`v2026.4.22`):** add explicit `openClawToolsMcpBridge` option that injects a core OpenClaw MCP server for selected built-in tools, starting with `cron`.
+- **Codex harness/hooks (`v2026.4.22`):** route native Codex app-server turns through `before_prompt_build`; emit `before_compaction` / `after_compaction` for native compaction; fire `llm_input`, `llm_output`, and `agent_end` lifecycle hooks; add async `tool_result` middleware and `before_message_write` routing so tool integrations stop diverging from Pi.
+- **Control UI (`v2026.4.22`):** add browser-local personal identity for the operator (name plus avatar), tighter Quick Settings and narrow-screen chat layouts, and a support-ready diagnostics export with sanitized logs, status, health, config, and stability snapshots.
+
+### Fixes
+
+- **Models/auth (`v2026.4.22`):** merge provider-owned default-model additions from `openclaw models auth login` instead of replacing `agents.defaults.models`, so re-authenticating OAuth providers no longer wipes other providers' aliases.
+- **Media understanding/audio (`v2026.4.22`):** prefer configured or key-backed STT providers before auto-detected local Whisper CLIs so installed local tools no longer shadow API providers such as Groq/OpenAI.
+- **WhatsApp/outbound (`v2026.4.22`):** hold an in-memory active-delivery claim while a live outbound send is in flight so concurrent reconnect drains no longer re-drive the same pending queue entry and duplicate cron sends 7-12x after the 30-minute inbound-silence watchdog fires mid-delivery.
+- **Memory search (`v2026.4.22`):** use sqlite-vec KNN for vector recall while preserving full post-filter result limits in multi-model indexes.
+- **Providers/Moonshot (`v2026.4.22`):** stop strict-sanitizing Kimi's native `functions.<name>:<index>` tool-call IDs on the OpenAI-compatible transport, fixing multi-turn agentic flows through Kimi K2.6 after 2-3 tool-calling rounds.
+- **ACPX (`v2026.4.22`):** route OpenClaw ACP bridge commands through the MCP-free runtime path even when wrapped with `env`, has bridge flags, or is resumed from persisted session state.
+- **Config/includes (`v2026.4.22`):** write through single-file top-level includes for isolated OpenClaw-owned mutations so `plugins install` and `plugins update` update an included `plugins.json5` file instead of flattening modular `$include` configs.
+- **Config/gateway (`v2026.4.22`):** restore last-known-good config on critical clobber signatures (missing metadata, missing `gateway.mode`, sharp size drops) preventing gateway crash loops when a valid backup exists.
+- **Plugins/update (`v2026.4.22`):** skip npm plugin reinstall when installed version already matches registry target; let bare npm package names resolve back to tracked install records.
+- **MCP/gateway (`v2026.4.22`):** tear down stdio MCP process trees on transport close; dispose bundled MCP runtimes during session delete/reset preventing orphaned processes.
+- **Security/update (`v2026.4.22`):** fail closed when exact pinned npm plugin or hook-pack updates detect integrity drift; expose aborted plugin drift details in `openclaw update --json`.
+- **Providers/SDK retry (`v2026.4.22`):** cap long `Retry-After` sleeps in Stainless-based Anthropic/OpenAI SDKs so 60s+ retry windows surface immediately for OpenClaw failover instead of blocking the run.
+- **Gateway/channel health (`v2026.4.22`):** base stale-socket recovery on provider-proven transport activity instead of inbound app-event freshness, preventing quiet channels from being restarted solely because no user traffic arrived.
+
+---
+
 ## OpenClaw v2026.4.21 — Release Summary
 
 > **Released:** 2026-04-22 (docs release) | upstream GitHub release `v2026.4.21` published 2026-04-22 UTC | **Policy note:** latest *documented* released section stays at top.
