@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
+> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1203,3 +1203,29 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 - **CSP `img-src` tightened to `'self' data:` in Control UI:** `src/gateway/control-ui-csp.ts` sets `img-src 'self' data:`, removing remote `http(s):` sources. Avatar helpers are updated to drop remote HTTP(S) URLs, preventing remote image loading through the Control UI.
 - **Google Chat replaced `gaxios` shim with scoped SSRF-guarded transport:** `extensions/googlechat/src/google-auth.runtime.ts` now imports a scoped SSRF-guarded dispatcher (`openclaw/plugin-sdk/ssrf-dispatcher`, `ssrf-runtime`) and wraps `gaxios` calls through `resolveGoogleAuthDispatcherPolicy()`, replacing the previous unguarded shim.
 - **External content strips self-hosted LLM chat-template special-token literals:** `src/security/external-content.ts` now strips known special-token literal patterns — ChatML/Qwen (`<|im_start|>`, `<|im_end|>`), Llama 3.x/4.x, Mistral/Mixtral, Phi, GPT-OSS/harmony, Gemma, and generic `<|reserved_special_token_N|>` forms — from external content before it reaches the LLM, preventing tokenizer role-boundary spoofing via injected chat-template markers.
+
+### v2026.4.22–v2026.4.25 Delta
+
+**v2026.4.25:**
+- New extension: `extensions/diagnostics-otel/` — OpenTelemetry plugin with bounded low-cardinality spans/metrics for model calls, token usage, tool loops, harness runs, exec, outbound delivery, context assembly, and memory pressure. No PII in telemetry.
+- New plugin: `diagnostics-prometheus` — protected gateway scrape route for low-cardinality Prometheus metrics.
+- Cold plugin registry: `plugins/installs.json` replaces broad manifest scans; `OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY` is deprecated (use registry repair instead).
+- Security: web-search credential presence checks moved to cold config/env/manifest metadata (no runtime import). Plugin command-alias validation on cold manifest metadata.
+- Plugin startup: bundled plugin deps staged before load — fixes Windows npm update failures where copied `dist` modules failed to load.
+
+**v2026.4.24:**
+- New extension: `extensions/google-meet/` — Google Meet participant plugin (not present in local working tree; ships with release).
+- Plugin infrastructure: static model catalogs, manifest-backed rows, external runtime-dependency repair for packaged installs.
+- Heartbeat: oversized scheduler delays clamped via safe timer helper (prevents 1ms crash loop on values over Node's timeout cap).
+
+**v2026.4.23:**
+- Tokenjuice plugin: bundled opt-in plugin for compacting exec/bash results in Pi embedded runs (bumped to 0.6.3 in v2026.4.25).
+- Security patches: exec approvals auto-enable hardening, cleartext pairing/LAN gateway vulnerabilities, SSRF, Teams JWT cross-bot token replay, owner-only cron bypass, cleartext mobile pairing hostnames, setup-api lookup fallback prevention.
+- ACPX/Codex: no longer materializes `auth.json` bridge files for Codex ACP/app-server/CLI; uses `CODEX_HOME` directly.
+- Dreaming: decoupled from heartbeat — runs as isolated lightweight agent turn.
+
+**v2026.4.22:**
+- New provider plugin: Tencent Cloud (`hy3-preview` catalog, TokenHub onboarding, tiered Hy3 pricing).
+- Amazon Bedrock Mantle: Claude Opus 4.7 via Mantle Anthropic Messages bearer-auth route (tokens refreshed at runtime, not baked at discovery).
+- Providers/OpenAI Codex: `~/.codex` OAuth material no longer imported from onboarding; use browser login or device pairing.
+- ACPX: `openClawToolsMcpBridge` option injects core MCP server for built-in tools (starting with `cron`).

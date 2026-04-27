@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
+> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
 > Modules: agents (1,172 files), gateway (472 files), tasks (44 files), sessions (17 files), routing (11 files), hooks (52 files), context-engine (7 files)
 
 ---
@@ -1557,3 +1557,27 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **`before_compaction` and `after_compaction` hooks [v2026.4.21]:** Plugin hooks `before_compaction` and `after_compaction` are now fired for native Codex compaction items, giving context-engine plugins visibility into compaction lifecycle events. Verified in `src/plugins/hook-types.ts` and `src/plugins/hooks.ts`.
 
 - **`llm_input`, `llm_output`, `agent_end` hooks for native Codex [v2026.4.21]:** The `llm_input`, `llm_output`, and `agent_end` plugin hooks are now fired for native Codex app-server turns, aligning Codex turns with the hook surface already available for pi-agent turns.
+
+### v2026.4.22–v2026.4.25 Delta
+
+**v2026.4.25:**
+- Cold plugin registry: gateway startup plugin planning moved to versioned cold persisted registry (`plugins/installs.json`). Broad manifest scans eliminated from startup/discovery. `openclaw plugins registry` CLI for inspection and `--refresh` repair.
+- Plugin hooks expanded: before-agent-finalize hooks, cron `jobId` hook context, bounded native permission fingerprints, Codex MCP hook relay support.
+- OpenTelemetry: model calls, token usage, tool loops, harness runs, exec processes, outbound delivery, context assembly, memory pressure spans/metrics; bounded low-cardinality attributes; no PII in telemetry.
+
+**v2026.4.24:**
+- Static model catalogs and manifest-backed model rows reduce startup cost; lazy provider dependencies.
+- Google Meet bundled as participant plugin. Realtime voice loops in Talk, Voice Call, and Google Meet.
+- External runtime-dependency repair for packaged installs.
+
+**v2026.4.23:**
+- `sessions_spawn` supports optional forked context (child inherits requester transcript when opted in; isolated default preserved).
+- Per-call `timeoutMs` for image/video/music/TTS generation tools.
+- Security: ~30 patches (exec approvals auto-enable hardening, cleartext pairing, SSRF, Teams JWT, owner-only cron bypass).
+
+**v2026.4.22:**
+- TUI local embedded mode: terminal chats without Gateway; plugin approval gates enforced.
+- ACPX: explicit `openClawToolsMcpBridge` option for core MCP server injection (starting with `cron`).
+- Gateway diagnostics export (stability recording by default): sanitized logs, status, health, config, stability snapshots.
+- Codex harness now fires `before_prompt_build`, `before_compaction`/`after_compaction`, `llm_input`/`llm_output`/`agent_end` for native app-server turns.
+- GPT-5 overlay moved to shared provider runtime; `agents.defaults.promptOverlays.gpt5.personality` toggle.

@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
+> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
 > Release note: the current released memory surface is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`. Historical `src/memory/` references below describe the older pre-split layout and should be read as historical context only.
 
 ---
@@ -1243,4 +1243,23 @@ Added in the v2026.4.7 window. A separate persistent wiki compiler plugin distin
 
 ### Media Generation (v2026.4.21)
 
-- **OpenAI image generation default model changed to `gpt-image-2`.** `OPENAI_DEFAULT_IMAGE_MODEL` in `src/plugins/provider-model-defaults.ts` is now `"gpt-image-2"` (previously `"gpt-image-1"`).
+- **OpenAI image generation default model changed to `gpt-image-2`.** `OPENAI_DEFAULT_IMAGE_MODEL` in `src/plugins/provider-model-defaults.ts` is now `"gpt-image-2"` (previously `"gpt-image-1"`)
+
+### v2026.4.22–v2026.4.25 Delta
+
+**v2026.4.25:**
+- Memory/QMD: recreate stale managed QMD collections on startup repair (root memory returns to `MEMORY.md`).
+- Cron/hooks: `jobId` now available in hook context for cron-triggered hook handlers.
+- Diagnostics/OTEL: bounded memory pressure samples exported as low-cardinality histograms/counters (no session or payload data).
+
+**v2026.4.23:**
+- **Dreaming decoupled from heartbeat (critical behavioral change):** dreaming runs as an isolated lightweight agent turn — no longer tied to `heartbeat.activeHours` or heartbeat being enabled for the default agent. `openclaw doctor --fix` migrates stale persisted cron jobs. `openclaw memory status` now shows `Dreaming status: blocked` when dreaming is enabled but blocked. Resolves #69811, #67397, #68972.
+- Memory/local embeddings: `memorySearch.local.contextSize` configurable (default 4096) for constrained hosts.
+- Memory/QMD: stale managed QMD collections recreated during startup repair to re-narrow root memory scope.
+
+**v2026.4.22:**
+- Memory search: sqlite-vec KNN for vector recall preserving full post-filter result limits in multi-model indexes. Fixes #69666.
+- Media delivery: strip persisted base64 audio from webchat history; resolve stored `media://inbound/*` attachments before local-root checks; suppress duplicate Telegram voice/audio sends when TTS emits same media twice.
+- Cron/MCP: single shared cleanup path for isolated cron run ends, persistent session rollover, and `deleteAfterRun` fallback cleanup. Fixes #69145, #68623, #68827.
+- MCP/gateway: tear down stdio MCP process trees on transport close; dispose bundled MCP runtimes on session delete/reset (prevents orphaned processes). Fixes #68809, #69465.
+- Active Memory: stop reviving removed live `active-memory` config from startup snapshots; turning off the plugin entry takes effect immediately without restart.

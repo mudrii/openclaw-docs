@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1980,3 +1980,29 @@ User types: openclaw <command> [args]
 ### Doctor / Migration
 
 - **Doctor owns more release-line migration work:** config alias cleanup, stale Claude CLI state repair/removal, and release-line fixups are now part of the expected `openclaw doctor` path after upgrade rather than optional cleanup.
+
+### v2026.4.22–v2026.4.25 Delta
+
+**v2026.4.25:**
+- Cold plugin registry: `openclaw plugins registry` — explicit persisted-registry inspection and `--refresh` repair. `openclaw plugins list` reads cold registry snapshot by default (module-aware diagnostics in `plugins doctor`/`plugins inspect`).
+- `openclaw browser doctor --deep` — live CDP snapshot probing for slow hosts (Raspberry Pi, etc.).
+- Install/update hardening: Windows, macOS, Linux, Docker, bundled plugin runtime dep repair, Node service restarts, LaunchAgent token rotation, mixed-version gateway verification.
+- Control UI: PWA install + Web Push notifications for Gateway chat; Crestodian first-run repair; TUI setup; context mode selector; shorter startup greeting.
+- Plugin startup: gateway startup planning on versioned cold registry index; postinstall repair for older registry files.
+
+**v2026.4.24:**
+- Plugin infrastructure: manifest-free cold startup path; external runtime-dependency repair for packaged installs (fixes Windows npm update `dist` module failures).
+- Browser: coordinate clicks, longer default action budgets, per-profile headless overrides; `openclaw browser start --headless` for one-shot launch without rewriting config.
+
+**v2026.4.23:**
+- `openclaw doctor --fix` migrates stale dreaming cron jobs to new isolated-agent shape.
+- Memory/doctor: `openclaw doctor --fix` merges split-brain root `memory.md` into canonical `MEMORY.md` with backup.
+
+**v2026.4.22:**
+- `/models add <provider> <modelId>`: register models from chat at runtime without restarting the Gateway. Not persisted across restarts without explicit config writes.
+- TUI local embedded mode: run `openclaw` without a Gateway; plugin approval gates enforced.
+- CLI/Claude: warm stdio sessions by default; resume stored Claude session after Gateway restarts or idle exits; hash only static extra system prompt parts for session reuse.
+- Onboarding: auto-install missing provider/channel plugins on first run.
+- Config: `config set --merge` for additive model/provider map updates; `--replace` for intentional clobbers. Fixes #65920, #68392, #68653.
+- Config gateway: restore last-known-good config on critical clobber signatures; recover configs accidentally prefixed with non-JSON output.
+- Docs/i18n: Thai translation support added.

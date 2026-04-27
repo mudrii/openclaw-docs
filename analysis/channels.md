@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
+> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
@@ -1684,3 +1684,26 @@ Changes in the current released line are recorded inline above under each channe
 #### Security — LINE validates outbound media URLs against SSRF guard
 
 `extensions/line/src/outbound-media.ts` imports `resolvePinnedHostnameWithPolicy` and defines `LINE_OUTBOUND_MEDIA_SSRF_POLICY`. All outbound media URLs are validated: must be a valid URL, must use HTTPS, and must be 2000 characters or fewer; the hostname is then pinned via the SSRF policy before the request is made.
+
+### v2026.4.22–v2026.4.25 Delta
+
+**v2026.4.25:**
+- TTS/channels: per-account TTS overrides for Feishu and QQBot via `channels.<channel>.accounts.<id>.tts` deep-merge.
+- Discord: `channels.discord.voice.model` override for LLM used in voice channel responses.
+- Android/Talk Mode: Voice tab with runtime-owned voice capture modes and microphone foreground-service escalation.
+
+**v2026.4.24:**
+- Google Meet: new bundled participant plugin. Personal Google auth, Chrome/Twilio realtime sessions, paired-node Chrome support, artifact/attendance exports, recovery tooling.
+- Realtime voice loops in Talk, Voice Call, and Google Meet — full OpenClaw agent consulted for tool-backed answers.
+- Telegram: startup persisted-offset `getUpdates` preflight removed (prevents self-conflict before runner starts). Fixes #69304.
+
+**v2026.4.23:**
+- Telegram/media replies: remote markdown image syntax (`![...](...)`) parsed into outbound media payloads on final reply path for group chats.
+- Block streaming: duplicate reply suppression when partial block-delivery aborts and already-sent chunks exactly cover the final reply.
+- Slack/groups: MPIM group DMs classified as group chat context; verbose tool/plan progress suppressed on non-DM Slack surfaces.
+
+**v2026.4.22:**
+- Providers/xAI: image gen (`grok-imagine-image`/`-pro`, reference edits), TTS (6 voices, MP3/WAV/PCM/G.711), STT (`grok-stt`), realtime Voice Call transcription.
+- Providers/STT: Voice Call streaming for Deepgram, ElevenLabs (+ Scribe v2 batch), Mistral — alongside existing OpenAI and xAI paths.
+- Plugin SDK/STT: shared realtime WebSocket transport + multipart batch transcription form helpers across STT providers.
+- WhatsApp: `replyToMode` native reply quoting; per-group/direct `systemPrompt` forwarded as `GroupSystemPrompt` with `"*"` wildcard and account-scoped overrides (`channels.whatsapp.accounts.<id>.{groups,direct}`).

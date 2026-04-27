@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
+> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1393,3 +1393,29 @@ When event fires:
 - **ACP: skip `sessions_send` A2A ping-pong for parent→own background oneshot child** (`src/acp/session-interaction-mode.ts`): `isRequesterParentOfBackgroundAcpSession()` identifies the case where a parent session sends directly to its own background oneshot ACP child. In this case the A2A ping-pong flow in `sessions_send` is skipped, preventing echo loops. Unrelated sessions with broad visibility that send to the same target still go through the normal A2A path.
 
 - **Codex lifecycle hooks for native app-server turns**: `llm_input`, `llm_output`, and `agent_end` plugin hooks (defined in `src/plugins/hook-types.ts`) are now fired for native Codex app-server turns, giving plugins visibility into Codex-native LLM interactions that previously bypassed the hook pipeline.
+
+### v2026.4.22–v2026.4.25 Delta
+
+**v2026.4.25:**
+- TTS upgrade: `/tts latest` read-aloud, chat-scoped `auto-TTS` with `/tts chat on|off|default`, per-agent `agents.list[].tts` override. New bundled providers: Azure Speech, Xiaomi MiMo, Local CLI, Inworld, Volcengine/BytePlus Seed, ElevenLabs v3.
+- Plugin hooks: before-agent-finalize hooks; cron `jobId` in hook context.
+- Tokenjuice: bumped to 0.6.3 for Pi embedded run exec/bash result compaction.
+
+**v2026.4.24:**
+- DeepSeek V4 Flash (onboarding default) and V4 Pro in bundled catalog; DeepSeek thinking/replay fixed for follow-up tool-call turns.
+- Realtime voice loops: Talk, Voice Call, and Google Meet can invoke the full OpenClaw agent for tool-backed answers.
+- Pi/models: static model catalogs and manifest-backed rows reduce startup cost.
+
+**v2026.4.23:**
+- **Dreaming decoupled from heartbeat (critical behavioral change):** dreaming now runs as an isolated lightweight agent turn, independent of `heartbeat.activeHours` or heartbeat being enabled. Run `openclaw doctor --fix` to migrate stale persisted dreaming cron jobs. Resolves #69811, #67397, #68972.
+- `sessions_spawn` optional forked context: child can inherit requester transcript (opt-in; isolated sessions remain the default).
+- Per-call `timeoutMs` for image/video/music/TTS generation tools.
+- Pi updated to `0.70.0` with upstream `gpt-5.5` catalog metadata.
+
+**v2026.4.22:**
+- Agents/sessions: `sessions_list` mailbox-style filters (label, agent, search) plus visibility-scoped derived title and last-message previews.
+- Control UI: browser-local operator identity (name + local-safe avatar); Quick Settings and narrow-screen chat layout tightened.
+- Pi/models: updated to `0.68.1`; OpenCode Go catalog sourced from Pi (not plugin-maintained model aliases).
+- Tokenjuice: initial bundled opt-in plugin for compacting `exec`/`bash` results in Pi embedded runs.
+- Codex harness hooks: fires `before_prompt_build`, `before_compaction`/`after_compaction`, `llm_input`/`llm_output`/`agent_end`, `after_tool_call` for native app-server turns; `before_message_write` for mirrored Codex transcript writes.
+- GPT-5 overlay moved to shared provider runtime; `agents.defaults.promptOverlays.gpt5.personality` as global toggle.
