@@ -155,6 +155,22 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
+## Behavioral Changes in v2026.4.22–v2026.4.25
+
+### v2026.4.25
+- **Cold plugin registry (breaking for break-glass users):** `OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY` is deprecated. The cold registry (`plugins/installs.json`) is now the default startup path. Use `openclaw plugins registry --refresh` if the registry is stale.
+- **`plugins.installs` no longer authored config:** managed install metadata is in the state-managed plugin index (`plugins/installs.json`), not in `openclaw.json`/`openclaw.yaml`.
+- **GenAI OTel semantics:** `gen_ai.system` is the default attribute; `gen_ai.provider.name` requires `OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental`.
+
+### v2026.4.23
+- **Dreaming decoupled from heartbeat:** dreaming runs as an isolated lightweight agent turn regardless of heartbeat config. Run `openclaw doctor --fix` to migrate stale dreaming cron jobs to the new shape.
+- **ACPX no longer writes `auth.json` bridge files** for Codex ACP, app-server, or CLI runs. Codex-owned runtimes use `CODEX_HOME`/`~/.codex` directly.
+
+### v2026.4.22
+- **OpenAI Codex onboarding:** `~/.codex` OAuth material is no longer imported from onboarding. Use browser login or device pairing instead.
+- **`config set` mode flags:** `config set --merge` for additive updates, `config set --replace` for intentional clobbers. Previously, the default could clobber model maps accidentally.
+- **Gateway config restore:** invalid/truncated config now triggers restore from last-known-good backup before crash-looping.
+
 ## v2026.4.21 Behavioral Changes
 
 - **Default models updated (`v2026.4.15–v2026.4.21`):** Anthropic default is now `claude-opus-4-7`; Moonshot default is `kimi-k2.6`; OpenAI image generation default is `gpt-image-2`. Config that hardcodes the old defaults will continue to work but diverges from bundled behavior.

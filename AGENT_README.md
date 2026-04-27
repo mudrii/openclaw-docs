@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.4.21 (2026-04-23).** Latest published upstream release: v2026.4.21 (published 2026-04-22 UTC).
+> **Current docs version: v2026.4.25 (2026-04-28).** Latest published upstream release: v2026.4.25 (published 2026-04-27 UTC).
 
 ---
 
@@ -67,10 +67,10 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.4.21 additions (current release line):**
+**v2026.4.25 additions (current release line):**
 
-- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.4.21`; covers v2026.4.15, v2026.4.20, and v2026.4.21 windows. Include updated provider pages (Anthropic opus-4-7 default, Moonshot kimi-k2.6 default, OpenAI gpt-image-2 default, Google Gemini TTS), cron state split (`jobs-state.json`), dreaming `separate` storage mode, unknown-tool stream guard default, and Skill Workshop plugin coverage.
-- **Behavioral change surface (`v2026.4.14..v2026.4.21`):** verify default model references (`claude-opus-4-7`, `kimi-k2.6`, `gpt-image-2`), cron job state file split, dreaming storage paths under `memory/dreaming/{phase}/`, memory_get query restriction, SSRF hardening changes, and Skill Workshop/QQBot engine surfaces when modifying those code paths.
+- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.4.25`; covers v2026.4.22, v2026.4.23, and v2026.4.25 windows. Include cold plugin registry as default startup path, dreaming decoupled from heartbeat, `/models add` live-only runtime registration, `sessions_spawn` forked context opt-in, `config set` mode flags, OpenAI Codex onboarding changes, and GenAI OTel semantics.
+- **Behavioral change surface (`v2026.4.21..v2026.4.25`):** verify plugin registry startup path (`plugins/installs.json`), dreaming cron job shape after heartbeat decoupling, runtime-added model persistence across gateway restarts, `sessions_spawn` fork context defaults, `config set --merge` vs `--replace` behavior, and ACPX auth bridge file removal when modifying those code paths.
 
 **v2026.4.14 additions (historical):**
 
@@ -1213,6 +1213,18 @@ src/<module>/
 147. **Default OpenAI image model changed to `gpt-image-2`** — the bundled image-generation provider now uses `gpt-image-2` as the default. Requests that previously landed on `gpt-image-1` will now use `gpt-image-2` unless overridden. 2K/4K size hints are now advertised in tool metadata.
 
 148. **Skill Workshop captures corrections as workspace skills** — the new `skill-workshop` plugin intercepts workflow corrections during agent runs and proposes them as pending or auto-applied workspace skills. This can affect subsequent runs in the same workspace if auto-apply is enabled. Review `plugins.entries.skill-workshop.config` before enabling in production workspaces.
+
+### v2026.4.22–v2026.4.25 Specific
+
+**BEHAVIORAL SHIFTS (v2026.4.22–v2026.4.25):**
+
+149. **Dreaming is decoupled from heartbeat** — As of v2026.4.23, dreaming runs as an isolated lightweight agent turn, independent of heartbeat. Disabling `heartbeat` for the default agent no longer stops dreaming. If you disabled heartbeat to also stop dreaming, run `openclaw doctor --fix` — it migrates stale persisted dreaming cron jobs to the new shape.
+
+150. **Cold plugin registry is the new default** — As of v2026.4.25, plugin startup planning uses the versioned cold persisted registry (`plugins/installs.json`). The break-glass env var `OPENCLAW_DISABLE_PERSISTED_PLUGIN_REGISTRY` is deprecated; use `openclaw plugins registry --refresh` for registry repair instead. `plugins.installs` is no longer an authored config surface.
+
+151. **`/models add` is live-only** — As of v2026.4.22, `/models add <provider> <modelId>` registers models at runtime without restart. These registrations are NOT persisted across gateway restarts unless you also write them to config explicitly. Agents that restart the gateway will lose runtime-added models.
+
+152. **`sessions_spawn` forked context is opt-in** — As of v2026.4.23, `sessions_spawn` supports an optional `forkContext: true` to let a child session inherit the requester's transcript. However, isolated sessions (the original behavior) remain the default. Do not assume forked context unless you explicitly set it.
 
 ### v2026.4.1 Specific
 
