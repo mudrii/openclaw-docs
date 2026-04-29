@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26`
 > Release note: the current released memory surface is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`. Historical `src/memory/` references below describe the older pre-split layout and should be read as historical context only.
 
 ---
@@ -1245,7 +1245,19 @@ Added in the v2026.4.7 window. A separate persistent wiki compiler plugin distin
 
 - **OpenAI image generation default model changed to `gpt-image-2`.** `OPENAI_DEFAULT_IMAGE_MODEL` in `src/plugins/provider-model-defaults.ts` is now `"gpt-image-2"` (previously `"gpt-image-1"`)
 
-### v2026.4.22–v2026.4.25 Delta
+### v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **Memory/OpenAI-compatible providers:** new `inputType` controls let custom embedding endpoints (Ollama, vLLM, LM Studio, etc.) declare query/document role hints when supported, without forcing them on providers that don't accept the field.
+- **Ollama embeddings:** retrieval-query/document prefixes plumbed through so Ollama-served embedding models get the correct role marker on indexing vs. recall.
+- **Memory-core lifetime change (#59101):** memory-core lifecycles now align with their owning agent/session rather than persisting indefinitely; cleanup is deterministic on session end.
+- **Memory/QMD:** `MEMORY.md` repair, managed QMD collection recreation, scoped recall, and `--repair` paths refined across #72484, #63652, #59234, #67113, #60244, #65480 — stale collections are rebuilt on startup and root-memory scope is preserved.
+- **Memory-core dreaming knob (#61098):** new `agents.<id>.memory.dreaming.model` config lets each agent override which model performs dream summarization, decoupled from the agent's primary model.
+- **Tasks/memory WAL (#72774):** task store and memory WAL writes share a single fsync path with bounded retry on EBUSY, so concurrent task and memory updates can't deadlock a session.
+- **Cron:** scheduling subsystem hardened across #72707, #27996, #71607, #41783 — covers persisted job rehydration after `openclaw migrate`, jitter on cold-start fan-out, isolated-run teardown, and hook-context propagation for cron-triggered hooks (`jobId` continues to flow through).
+- **Hooks/session-memory (#46703):** new `session.memory.*` hook surface exposes pre/post hooks for memory mutations so plugins can audit or veto memory writes from a session.
+- **Image tool/media (#67889):** image generation timeouts are now per-provider configurable; defaults raised for `gpt-image-2` and `imagen-4` so long renders don't get cancelled mid-stream.
+- **Media delivery:** webchat continues to strip persisted base64 audio; new path resolves `media://inbound/*` attachments through the plugin staging root (`OPENCLAW_PLUGIN_STAGE_DIR`) when set, before falling back to the agent root.
 
 **v2026.4.25:**
 - Memory/QMD: recreate stale managed QMD collections on startup repair (root memory returns to `MEMORY.md`).

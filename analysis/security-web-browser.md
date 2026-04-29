@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web Search, WhatsApp & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1346,3 +1346,31 @@ The following entries are added to the Security Model section for `src/browser`:
 #### Security — External Content Strips Self-Hosted LLM Special-Token Literals
 
 - **External content stripping covers self-hosted LLM chat-template special tokens** — `external-content.ts` now strips tokenizer role-boundary literals from all chat-template families before wrapping untrusted content: ChatML/Qwen (`<|im_start|>`, `<|im_end|>`), Llama 3.x/4.x (`<|start_header_id|>`, `<|end_header_id|>`, `<|eot_id|>`), Gemma (`<start_of_turn>`, `<end_of_turn>`), Mistral/Mixtral (`[INST]`, `[/INST]`), Phi sentencepiece-style markers, GPT-OSS/harmony markers, and the generic `<|reserved_special_token_N|>` form. Stripping these literals before content reaches the LLM prevents tokenizer role-boundary spoofing in deployments running self-hosted models. Verified in `external-content.test.ts` with cases for ChatML/Qwen and Llama headers.
+
+---
+
+## v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **Browser/plugins (#64271, #72168):** browser surfaces (Playwright/CDP, Chrome MCP) are now driven through the plugin manifest takeover path — what tools a browser plugin actually exposes is decided by the manifest, with allow/deny lists honored at dispatch.
+- **Browser/CDP:** Chrome MCP attach failures continue to surface as structured browser-connectivity errors (the v2026.4.20 fix carries forward); v2026.4.26 additionally enforces SSRF guards on Chrome's outbound fetches initiated by the browser tool.
+- **Web/UI Control UI/Talk:** Talk (browser voice) plumbing aligned with the new TTS SecretRef path so service credentials never appear in client-side payloads.
+- **ACP Claude adapter:** ships in-tree under `extensions/acp-claude/` and is registered through the standard plugin manifest. Claude Code-issued sessions arrive through ACP and pass the same approval/auth gates as native sessions.
+- **Web search (#68690):** outbound web-fetch tool calls go through the shared SSRF guard plus an allowlist for known search providers; the guard rejects loopback, private, and link-local targets the same way LINE/Synology/Google Chat already do.
+- **Voice Call (#68690):** voice-channel webhooks validate caller identity through the gateway-auth path (no per-channel token bypass) and apply the same approval-gating as text channels.
+- **TTS/SecretRef (#68690):** TTS providers accept `SecretRef`-shaped credentials so keys live in the gateway's secret store, not in plugin config or session payloads. The redacting logger continues to strip residual key-shaped strings before OTEL.
+- **Plugins/install hardening:** plugin install validates manifest signatures and refuses to load manifests whose declared tool surface conflicts with `allowAgents`/`denyAgents` policy — see security-plugins.md v2026.4.26 delta for the full list.
+- **`extensions/coven/` removed (BREAKING):** the coven multi-agent extension is gone; its security-relevant approval flows are now the gateway's responsibility (covered in gateway-config-infra.md).
+
+**v2026.4.25:**
+- Webchat localRoots containment (#67298) extended to inline image references, not just audio.
+- CSP `img-src 'self' data:` carries forward; Control UI avatar route auth (still enforced) now applies even when only the loopback origin is configured.
+
+**v2026.4.24:**
+- External-content special-token stripping extended to cover Granite/IBM-style markers in addition to the families enumerated for v2026.4.21.
+
+**v2026.4.23:**
+- Synology Chat SSRF guard tightened to also reject IPv6 ULA (`fc00::/7`) ranges.
+
+**v2026.4.22:**
+- Matrix DM-pairing-store entries continue to be blocked from room-control commands (#67294); v2026.4.22 adds an audit log entry whenever a DM entry is rejected for a room-control attempt.

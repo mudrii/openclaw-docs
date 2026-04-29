@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-04-28 (docs snapshot: v2026.4.25) | Released baseline: GitHub `v2026.4.25`
+> Updated: 2026-04-29 (docs snapshot: v2026.4.26) | Released baseline: GitHub `v2026.4.26` (signed tag, published 2026-04-28 UTC)
 
 ---
 
@@ -28,9 +28,9 @@
 
 **OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.25`), the `agents` and `auto-reply` modules remain the top-sized core subtrees, while the `tasks` module (`src/tasks/`) continues to provide the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.4.26`), the `agents` and `auto-reply` modules remain the top-sized core subtrees, while the `tasks` module (`src/tasks/`) continues to provide the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (113 extension directories, 104 extension packages as of `v2026.4.25`). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (131 extension directories, 117 extension packages as of `v2026.4.26`; `extensions/coven/` was removed in v2026.4.26 in favor of an opt-in default-off ACP runtime bridge, and a new bundled first-party `extensions/cerebras/` provider was added). Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -212,7 +212,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `compat/` | 1 | ~20 | Legacy project name constants | — |
 | `types/` | 8 | ~100+ | Ambient TypeScript declarations for untyped npm packages | — |
 | `wizard/` | 13 | ~2,500+ | Interactive setup wizard via @clack/prompts | cli, config, channels |
-| `extensions/` | 113 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs`, `comfy`, `qqbot`, `skill-workshop`, and the expanded provider/plugin set on `v2026.4.25`) | plugin-sdk |
+| `extensions/` | 131 dirs | — | Channel plugins, provider auth plugins, tool/feature plugins (including `diffs`, `comfy`, `qqbot`, `skill-workshop`, `acp-claude`, `cerebras`, `yuanbao`, and the expanded provider/plugin set on `v2026.4.26`; `coven/` removed in `v2026.4.26` — BREAKING) | plugin-sdk |
 | `extensions/diffs/` | — | — | Read-only diff viewer plugin: renders before/after text or unified patches as gateway viewer URLs and PNG images; configurable theme/layout/font defaults | plugin-sdk, playwright |
 | `extensions/synology-chat/` | — | — | Synology Chat channel plugin: webhook ingress, DM routing, outbound send/media, per-account config, DM policy controls | plugin-sdk, channels, config |
 | `packages/` | — | — | Workspace compatibility shims (clawdbot, moltbot) for legacy package name consumers | — |
@@ -949,11 +949,11 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 113 |
-| Extension packages (`extensions/*/package.json`) | 104 |
-| Released skill entrypoints (`skills/`, `.agents/skills/`, extensions) | 75 |
+| Extension directories (`extensions/*`) | 131 |
+| Extension packages (`extensions/*/package.json`) | 117 |
+| Released skill entrypoints (`SKILL.md` across `skills/`, `.agents/skills/`, `extensions/`) | 83 |
 
-> Current analyzed source package: released `v2026.4.25`. Counts measured from the `v2026.4.25` released tree.
+> Current analyzed source package: released `v2026.4.26`. Counts measured from the `v2026.4.26` released tree.
 
 ### Key External Dependencies
 

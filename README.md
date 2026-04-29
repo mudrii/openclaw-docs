@@ -2,8 +2,8 @@
 
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
-**Latest published upstream release: v2026.4.25 (published 2026-04-25 UTC).**
-**Current validated docs snapshot: v2026.4.25 (validated against `v2026.4.25`).**
+**Latest published upstream release: v2026.4.26 (published 2026-04-28 UTC, signed tag).**
+**Current validated docs snapshot: v2026.4.26 (validated against `v2026.4.26`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -17,7 +17,7 @@ This repo provides deep analysis of the OpenClaw codebase, designed for both hum
 |----------|-------------|
 | [AGENT_README.md](AGENT_README.md) | **Start here.** Practical reference for making code changes — dependency maps, critical paths, change impact matrix, testing guide, pre-PR checklist, gotchas. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture overview — module catalog, data flow diagrams, dependency graph, security model, design patterns. |
-| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.25); tracks released upstream tags and synthesis status. |
+| [CHANGELOG.md](CHANGELOG.md) | Consolidated changelog for documented release windows (v2026.2.14 -> v2026.4.26); tracks released upstream tags and synthesis status. |
 | [AGENTS.md](AGENTS.md) | AI agent guidelines for working with the OpenClaw codebase — repo structure, build commands, testing, PR workflow, security practices. |
 
 ### Detailed Analysis
@@ -56,6 +56,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each documented release tracks an OpenClaw stable release line. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream release; same-base npm correction builds are noted inside the matching docs snapshot rather than treated as separate published GitHub releases:
+- `v2026.4.26` (2026-04-29, docs release) - Synced snapshot to upstream `v2026.4.26` (signed tag, published 2026-04-28 UTC; window `v2026.4.25..v2026.4.26`, ~831 commits). Key additions: full QQBot group-chat support with Yuanbao external channel (community plugin), Cerebras as bundled first-party provider (`extensions/cerebras/`), Tencent Yuanbao external channel (`openclaw-plugin-yuanbao`), Google Live browser Talk realtime sessions and gateway relay for backend-only realtime voice plugins, `openclaw migrate` CLI subcommand with Claude Code/Desktop and Hermes importers, `openclaw matrix encryption setup` single-shot E2EE bootstrap, `agents.defaults.compaction.maxActiveTranscriptBytes` opt-in JSONL preflight trigger, plugin manifest takeover of provider routing tables (model-id normalization, endpoint host metadata, alias/suppression catalog rules) so adding a provider becomes manifest-only, transactional plugin config helpers replacing direct load/write, layered runtime-dependency roots for `OPENCLAW_PLUGIN_STAGE_DIR`, Memory/OpenAI-compatible asymmetric embedding `inputType` controls, Ollama model-specific retrieval-query prefixes, Control UI raw config diff panel, raw config redaction with reveal, Discord/Slack/Mattermost `user:`/`channel:` target syntax, `gateway.health` runtime-backed channel/account state, ACP Claude adapter ship-with-OpenClaw and `acp.dispatch.enabled=false` no longer blocks explicit `runtime="acp"` bootstrap, `openclaw nodes remove`, validated `--wrapper`/`OPENCLAW_WRAPPER` LaunchAgent/systemd install path, top-level logging `hostname`/`agent_id`/`session_id`/`channel` JSONL fields with W3C `traceparent` propagation, OTEL privacy-safe model-call payload byte/latency capture, durable Windows-startup gateway restart after `openclaw update`, Bonjour mDNS hostname-aware default, browser CDP launch circuit-break per profile, exec approval-set `source: "allow-always"`/`commandText` allowlist metadata, host-local-timezone session-memory hooks. **Breaking:** `extensions/coven/` deleted (replaced by opt-in default-off Coven runtime bridge through ACP); operators must remove all `extensions/coven/` references from configs.
 - `v2026.4.25` (2026-04-28, docs release) - Synced snapshot to upstream `v2026.4.25`. Covers v2026.4.22, v2026.4.23, v2026.4.24, and v2026.4.25 upstream releases. Key additions: full TTS upgrade (Azure Speech, Xiaomi MiMo, Local CLI, Inworld, Volcengine/BytePlus Seed, ElevenLabs v3) with `/tts latest` and chat-scoped auto-TTS; cold plugin registry migration eliminating broad manifest scans at startup; OpenTelemetry expansion (model calls, token usage, exec processes, delivery, context assembly, memory pressure) with new `diagnostics-prometheus` plugin; Google Meet bundled participant plugin with Chrome/Twilio realtime and attendance exports; DeepSeek V4 Flash/Pro catalog; PWA/Web Push in Control UI; xAI image/TTS/STT; TUI local embedded mode; dreaming decoupled from heartbeat (`openclaw doctor --fix` required for migration); and `/models add` for live model registration.
 - `v2026.4.21` (2026-04-23, docs release) - Synced snapshot to upstream `v2026.4.21`. Covers v2026.4.15, v2026.4.20, and v2026.4.21 upstream releases (1,931 total commits). Key additions: Google Gemini TTS speech provider; Model Auth OAuth health card in Control UI; unknown-tool stream guard enabled by default; dreaming default storage mode changed to `separate`; Anthropic default model updated to `claude-opus-4-7`; Moonshot default updated to `kimi-k2.6` with `thinking.keep="all"` support; OpenAI image generation default updated to `gpt-image-2`; cron runtime state split into `jobs-state.json` (definitions stay in `jobs.json`); Skill Workshop plugin for capturing workflow corrections; QQBot engine rewrite; and memory_get query restriction hardening.
 - `v2026.4.14` (2026-04-14, docs release) - Synced snapshot to upstream `v2026.4.14` with reliability and security hardening updates across gateway/session lifecycle, cron/agent workflow isolation, Telegram/WhatsApp, matrix/thread routing, provider/model execution boundaries, browser/SSRF strict-mode controls, and memory/dreaming session/diary safety paths. Added docs metadata for latest fixes and provider/session behavior in AGENTS.md/ARCHITECTURE.md and analysis docs.
@@ -94,8 +95,8 @@ When a new OpenClaw version is released, the documentation is re-analyzed and a 
 
 ## Stats
 
-- **12,027 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.25`)
-- **113 extension directories**, **104 extension packages**, and **107 released skill entrypoints** (`skills/`, `.agents/skills/`, and `extensions/` skill surfaces) reflected in the current released snapshot
+- **13,660 TypeScript files** analyzed (`src/`, `extensions/`, `ui/`, `test/`, `scripts/` — `.ts` + `.tsx`; validated against release tag `v2026.4.26`)
+- **131 extension directories**, **117 extension packages**, and **83 released skill entrypoints** (`SKILL.md` files across `skills/`, `.agents/skills/`, and `extensions/` skill surfaces) reflected in the current released snapshot
 - **103 Markdown documents** in this repo (5 core docs + 12 analysis/integrity docs + 86 docs-portal mirror pages)
 
 ## Contributing

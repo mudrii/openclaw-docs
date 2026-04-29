@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-23 | **Version:** v2026.4.21 | **Codebase:** OpenClaw release tag `v2026.4.21`
+**Updated:** 2026-04-29 | **Version:** v2026.4.26 | **Codebase:** OpenClaw release tag `v2026.4.26`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** stable release-line snapshot across 14 support modules plus `apps/macos`
 
@@ -1179,3 +1179,29 @@ Shared test utilities and mock factories.
 ### Plugins / Skill Workshop (v2026.4.21)
 
 - **Skill Workshop plugin added** (`extensions/skill-workshop/`) — New plugin providing threshold-based skill capture from agent sessions. Key files: `index.ts`, `api.ts`, `src/`. Features: configurable capture thresholds to decide which agent outputs qualify as skill candidates; reviewer passes to evaluate and refine proposals; quarantine of unsafe or low-quality proposals before they are promoted to the skill registry. Registered via `openclaw.plugin.json`.
+
+---
+
+## v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **Logging:** the shared logger now redacts known secret-shaped strings (provider keys, OAuth tokens, SecretRef payloads) before any sink — file, stdout, or OTEL bridge — receives them. This is the same redaction surface called out in gateway-config-infra.md and security-web-browser.md; it lives in the shared utils layer.
+- **Hooks/session-memory (#46703):** the `session.memory.*` hook surface is wired through the shared hook dispatcher in this layer; plugin authors get pre/post hooks for memory mutations without reaching into memory-core internals.
+- **Bonjour mDNS (#72355, #72689, #70238):** discovery loop tolerates loopback-only interfaces, recovers cleanly when the macOS `mdnsd` service is restarted, and avoids tight loops when no interfaces advertise the gateway service.
+- **Docker (#72787, #48072, #63959, #61279):** container builds pin Node 22, drop the legacy `npm ci --legacy-peer-deps` workaround, expose `gateway.health` as the official health check, and propagate `OPENCLAW_PLUGIN_STAGE_DIR` into container env so plugin staging works under bind mounts.
+- **macOS Gateway (#67335, #53475, #71060, #53679, #70223):** launchd unit hardening — `KeepAlive.SuccessfulExit=false`, `ThrottleInterval` raised, restart authorization gated through the same `sigusr1AuthorizedCount` path the v2026.4.15 fix introduced.
+- **Process/Windows (#50519, #72783, #72573, #72636):** Windows process-tree teardown uses `taskkill /T /F` for stdio MCP children; long-path support enabled in the bundled installer; service-mode logging routes to the Windows Event Log when stdout is unavailable.
+- **Plugins/packaging:** bundled-runtime-deps localization (#67099) carries forward; v2026.4.26 layers the new manifest takeover surface (see security-plugins.md v2026.4.26 delta) on top of it.
+- **`OPENCLAW_PLUGIN_STAGE_DIR`:** plugin staging root is honored across Docker, macOS launchd, and Windows service installs, so multi-tenant or read-only-fs deployments can keep the staging area on a separate writable mount.
+
+**v2026.4.25:**
+- BlueBubbles per-group `systemPrompt` forwarding extended to per-thread overrides (still falling back to the `"*"` wildcard).
+
+**v2026.4.24:**
+- Plugin loader alias/Jiti config reuse (#69316) extended to cover repeated loads from `openclaw doctor --fix` migration runs.
+
+**v2026.4.23:**
+- Skill Workshop quarantine UI surfaces capture-threshold mismatches as a structured warning instead of dropping silently.
+
+**v2026.4.22:**
+- Detached runtime registration contract (#68915) gained a default cancellation propagation path so plugins that don't wire their own cancel handler still respect session teardown.

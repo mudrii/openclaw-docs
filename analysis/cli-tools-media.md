@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-23 | Version: v2026.4.21 | Codebase: OpenClaw release tag `v2026.4.21`
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26`
 
 ## Overview
 
@@ -1063,3 +1063,31 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Ollama (v2026.4.21)
 
 - **Cloud model discovery from `ollama.com/api/tags`** — `extensions/ollama/src/setup.ts` fetches the cloud model list from `https://ollama.com/api/tags` during provider setup to suggest available models before the local `/api/tags` endpoint exposes them. Discovery is capped at `OLLAMA_CLOUD_MAX_DISCOVERED_MODELS = 500` models. A static fallback list is used when the cloud endpoint is unreachable.
+
+---
+
+## v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **`openclaw migrate` (new CLI):** dedicated subcommand for upgrade-time migrations — runs persisted-job rehydration, plugin-stage layout conversion, and config schema bumps as one explicit step. `openclaw doctor --fix` continues to call it under the hood; humans can now invoke it directly when staging an upgrade.
+- **`openclaw matrix encryption setup`:** wizard for end-to-end Matrix E2EE bootstrap — provisions device keys, registers the verification flow, and writes the resulting credentials to the gateway's secret store (no plaintext keys in config).
+- **`openclaw nodes remove`:** new node-management subcommand for revoking paired nodes; tied into the device-token lifecycle (#66773 in gateway-config-infra.md) so revoked tokens stop minting fresh bearer tokens immediately.
+- **CLI/migration (#72715, #72665):** migration runner is idempotent and emits a structured manifest of what changed, surfaced in TUI `Status` and the `gateway.health` JSON payload.
+- **CLI/install — `--wrapper` validated end-to-end (#69400):** `--wrapper` installs verify the wrapper exists and is executable before writing the launchd/systemd unit; failed validation aborts install rather than leaving a half-pointed unit.
+- **Image tool/media (#67889):** image generation timeouts are per-provider configurable; defaults raised for `gpt-image-2` and `imagen-4` to handle long renders without mid-stream cancellation.
+- **Music/video gen:** providers reuse the new media SecretRef path (see security-web-browser.md v2026.4.26 delta) so API keys aren't logged in tool-call payloads.
+- **Codex harness (#69298):** in-tree Codex extension reuses the standard plugin manifest takeover path; tool surface is decided by manifest, not hard-coded.
+- **TTS:** ElevenLabs/OpenAI TTS join Google/Gemini in honoring SecretRef credentials (#68690 cross-listed with security-web-browser.md).
+- **Terminal/logging:** `sanitizeForLog()` single-pass regex (v2026.4.20 #67205) carries forward; v2026.4.26 adds redaction of provider-key shaped strings before output reaches the log sink.
+
+**v2026.4.25:**
+- Image generation candidate-failure log line now includes a stable correlation ID so multi-fallback runs can be reconstructed end-to-end.
+
+**v2026.4.24:**
+- Ollama cloud discovery cap (`OLLAMA_CLOUD_MAX_DISCOVERED_MODELS = 500`) carries forward; v2026.4.24 adds a per-host TTL on the discovery cache so repeated setup runs don't refetch on every invocation.
+
+**v2026.4.23:**
+- 2K/4K resolution metadata extended to imagen-4 alongside `gpt-image-2`.
+
+**v2026.4.22:**
+- Google/Gemini TTS default voice (`Kore`) and model (`gemini-3.1-flash-tts-preview`) carry forward unchanged; v2026.4.22 adds graceful fallback to the next provider in the chain when the upstream returns a quota error.

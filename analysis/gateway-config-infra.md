@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-23 | **Version:** v2026.4.21
-**Codebase:** OpenClaw release tag `v2026.4.21`
+**Updated:** 2026-04-29 | **Version:** v2026.4.26
+**Codebase:** OpenClaw release tag `v2026.4.26`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -996,3 +996,32 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 
 #### Onboard / Wizard — Long-List Pickers Replaced with Searchable Autocompletes
 - **Wizard and onboarding long-list pickers switched to searchable autocomplete UI:** picker components in the setup wizard and onboarding flows that previously displayed flat scrollable lists now use a searchable autocomplete (`src/tui/components/searchable-select-list.ts`), improving usability for large option sets (model lists, channel lists, etc.). Source verified: `src/tui/components/searchable-select-list.test.ts`, `src/tui/components/selectors.ts`.
+
+---
+
+## v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **Gateway/effective tool inventory (#72365):** the gateway now exposes the *effective* tool inventory for a session (after plugin manifest takeover, allow/deny lists, and node-trust filtering), so clients no longer have to re-derive which tools are actually callable.
+- **Gateway/device tokens (#66773):** device-token issuance and rotation are first-class on the stable line — pairing flows mint per-device bearer tokens and the gateway scopes them to the originating node.
+- **Gateway-to-gateway hop hardening (#72720):** federated/multi-node gateway calls reject loops, enforce the same approval gate as direct calls, and propagate node-trust context across the hop.
+- **Gateway/proxy support (#43821):** outbound HTTP from the gateway honors `HTTPS_PROXY`/`NO_PROXY` for provider, MCP-over-HTTP, and Bonjour discovery traffic; previously some paths bypassed system proxy settings.
+- **Gateway/install path (#69400):** `--wrapper`-style installs are validated end-to-end so launchd/systemd units point at the wrapper rather than a now-removed binary after upgrades.
+- **`gateway.health` endpoint:** lightweight liveness/readiness JSON used by macOS launchd, systemd, and Docker compose health-checks; reports plugin-registry, channel-registry, and config-IO observer state without exposing session contents.
+- **Gateway/models:** model registry rebuilds are debounced and snapshot-shared across plugin-manifest reloads, so a plugin reload no longer briefly empties `/v1/models`.
+- **Gateway/startup:** plugin-startup degraded mode (see security-plugins.md v2026.4.26 delta) is reported through `gateway.health` and surfaced in the TUI status line — broken plugins no longer silently disappear from the session.
+- **Logging:** verbosity controls (#51075), structured-log envelope (#40353), and per-channel filters (#42982) are stable. The shared logger redacts known secret-shaped strings (provider keys, OAuth tokens) before the OTEL bridge receives them.
+- **Diagnostics/OTEL (#33832):** the OTEL bridge from v2026.4.25 picks up bounded counters for restart authorization (`sigusr1AuthorizedCount`), config recovery events, and plugin-startup degraded entries; cardinality is capped to keep cost predictable.
+
+**v2026.4.25:**
+- Gateway/usage cache continues to be size-bounded; eviction now logs once per N evictions instead of per event.
+- Config IO recovery: clobber detection extended to `gateway.health`-shaped writes from older daemons.
+
+**v2026.4.24:**
+- Gateway/auth: per-request bearer resolution (#66651) extended to MCP-over-HTTP transports.
+
+**v2026.4.23:**
+- Restart loop guard (#67436, #67557) gained an additional gate for plugin-stage hydration writes — same shape as the original auto-enable fix.
+
+**v2026.4.22:**
+- Config write-through for single-file `$include` targets (#41050, #66048) extended to nested top-level `$include` arrays where exactly one entry resolves to a writable file.

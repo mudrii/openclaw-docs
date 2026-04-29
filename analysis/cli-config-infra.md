@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -1981,7 +1981,21 @@ User types: openclaw <command> [args]
 
 - **Doctor owns more release-line migration work:** config alias cleanup, stale Claude CLI state repair/removal, and release-line fixups are now part of the expected `openclaw doctor` path after upgrade rather than optional cleanup.
 
-### v2026.4.22–v2026.4.25 Delta
+### v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **`openclaw migrate` (new CLI subcommand):** plan, dry-run, JSON output, pre-migration backup, onboarding detection, archive-only reports, a Claude Code/Desktop importer, and a Hermes importer covering configuration, memory/plugin hints, model providers, MCP servers, skills, commands, and supported credentials.
+- **`openclaw matrix encryption setup`:** new single-shot E2EE command that enables Matrix encryption, bootstraps recovery, and prints verification status.
+- **`openclaw nodes remove --node <id|name|ip>` and `node.pair.remove`:** stale gateway-owned node pairing records can now be cleaned without hand-editing state files.
+- **CLI/migration & install path (#72715, #72665):** `openclaw update` now installs npm globals into a verified temporary prefix and atomically swaps the package tree, preventing mixed old/new installs and stale packaged files. `OPENCLAW_NO_AUTO_UPDATE=1` is now an explicit gateway startup kill-switch. The automatic post-update completion refresh is kept on the core-command tree so it no longer stages bundled plugin runtime deps before the Gateway restart path. Windows-startup-launched gateway restarts after `openclaw update`.
+- **CLI/plugins:** preserve unversioned ClawHub install specs so `plugins update` can follow newer ClawHub releases (#63010); accept ClawHub plugin API wildcard ranges such as `*` while still requiring a valid runtime API version (#56446); add an explicit `npm:<package>` install prefix that skips ClawHub lookup (#55805); reject malformed ClawHub plugin specs with trailing `@` before registry lookup (#56579); stop security-blocked plugin installs from retrying as hook packs (#61175); let config-gated bundled plugins install without persisting invalid placeholder config entries.
+- **CLI/doctor (#65293, #72775):** remove dangling channel config, heartbeat targets, and channel model overrides when stale plugin repair removes a missing channel plugin, preventing Gateway boot loops after failed plugin reinstalls; run bundled plugin runtime-dependency repairs through the async npm installer with spinner/line progress and heartbeat updates.
+- **`OPENCLAW_PLUGIN_STAGE_DIR` layered roots (#72396):** can now contain layered runtime-dependency roots so read-only preinstalled deps resolve before installing missing deps into the final writable root.
+- **Validated `--wrapper`/`OPENCLAW_WRAPPER` install path (#69400):** `openclaw gateway install` accepts a wrapper that persists executable LaunchAgent/systemd wrappers across forced reinstalls, updates, and doctor repairs.
+- **macOS Gateway (#67335, #53475, #71060, #53679, #70223):** detect installed-but-unloaded LaunchAgent split-brain states during status, doctor, and restart, and re-bootstrap launchd supervision before falling back to unmanaged listener restarts; write launchd services with a state-dir `WorkingDirectory`; use a durable state-dir temp path instead of freezing macOS session `TMPDIR`.
+- **Process/Windows (#50519, #72783, #72573, #72636):** decode command stdout/stderr from raw bytes with console-codepage awareness while preserving valid UTF-8 output and multibyte characters split across chunks; normalize Windows absolute paths before handing bundled plugin modules to Jiti so Feishu/Lark message sending no longer fails with unsupported `c:` ESM loader URLs; normalize lazy plugin/agent service override imports before Node ESM loading so drive-letter paths no longer fail with `ERR_UNSUPPORTED_ESM_URL_SCHEME`.
+- **Bonjour (#72355, #72689, #70238):** default mDNS advertisements to the system hostname when it is DNS-safe to avoid `openclaw.local` probing conflicts and Gateway restart loops; hide the bundled mDNS advertiser's Windows ARP shell probe.
+- **Docker (#72787, #48072, #63959, #61279):** install the CA-certificate bundle in the slim runtime image so HTTPS calls from containerized gateways no longer fail TLS setup after the `bookworm-slim` base switch; pre-create `/home/node/.openclaw` with node ownership and private permissions so first-run Docker Compose named volumes no longer fail with EACCES; route Docker onboarding defaults for host-side LM Studio and Ollama through `host.docker.internal`.
 
 **v2026.4.25:**
 - Cold plugin registry: `openclaw plugins registry` — explicit persisted-registry inspection and `--refresh` repair. `openclaw plugins list` reads cold registry snapshot by default (module-aware diagnostics in `plugins doctor`/`plugins inspect`).

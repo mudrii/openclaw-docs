@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1204,7 +1204,21 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 - **Google Chat replaced `gaxios` shim with scoped SSRF-guarded transport:** `extensions/googlechat/src/google-auth.runtime.ts` now imports a scoped SSRF-guarded dispatcher (`openclaw/plugin-sdk/ssrf-dispatcher`, `ssrf-runtime`) and wraps `gaxios` calls through `resolveGoogleAuthDispatcherPolicy()`, replacing the previous unguarded shim.
 - **External content strips self-hosted LLM chat-template special-token literals:** `src/security/external-content.ts` now strips known special-token literal patterns — ChatML/Qwen (`<|im_start|>`, `<|im_end|>`), Llama 3.x/4.x, Mistral/Mixtral, Phi, GPT-OSS/harmony, Gemma, and generic `<|reserved_special_token_N|>` forms — from external content before it reaches the LLM, preventing tokenizer role-boundary spoofing via injected chat-template markers.
 
-### v2026.4.22–v2026.4.25 Delta
+### v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **`extensions/coven/` removed (BREAKING):** the bundled Coven extension is deleted. Coven now lives behind an opt-in default-off ACP runtime bridge — operators must remove all `extensions/coven/` references from their configs and explicitly opt in via the new ACP runtime bridge. Release config baseline refreshed.
+- **New first-party provider extension:** `extensions/cerebras/` — Cerebras as a bundled provider plugin with onboarding, static model catalog, manifest-owned `cerebras-native` endpoint class (host `api.cerebras.ai`, base URL `https://api.cerebras.ai/v1`, `enabledByDefault: true`). API key env: `CEREBRAS_API_KEY`. First concrete consumer of the manifest provider-catalog architecture.
+- **Plugin manifest takeover of provider routing:** model-id normalization, endpoint host metadata, OpenAI-compatible request-family hints, model-catalog aliases/suppressions, OpenAI stale Spark suppression, and reusable startup metadata snapshots moved into plugin manifests so core no longer carries bundled-provider routing tables or repeated manifest rebuilds. Adding a new provider becomes a manifest-only change.
+- **Plugin config write API deprecated:** direct plugin config load/write helpers deprecated in favor of passed runtime snapshots plus transactional mutation helpers with explicit restart-follow-up policy, scanner guardrails, runtime warnings, and revision-based cache invalidation.
+- **`OPENCLAW_PLUGIN_STAGE_DIR` layered runtime-dependency roots (#72396):** can now contain layered runtime-dependency roots so read-only preinstalled deps resolve before installing missing deps into the final writable root.
+- **Plugins/install hardening:** test files and directories skipped during install security scans while still force-scanning declared runtime entrypoints (#66840); allow exact package-manager peer links back to the trusted OpenClaw host package; resolve plugin install destinations from the active profile state dir so `openclaw --profile <name> plugins install ...` no longer writes into the default profile (#69960).
+- **Plugins/registry:** suppress duplicate-plugin startup warnings when a tracked npm-installed plugin intentionally overrides a bundled plugin with the same id.
+- **Plugins/startup:** reuse canonical realpath lookups throughout each plugin discovery pass, including package and manifest boundary checks (#65733). Reuse a Gateway `PluginLookUpTable` and one manifest registry pass across startup, plugin loading, deferred channel reloads, model pricing, capability/provider/media resolution, manifest contracts, extractors, web fallback discovery, owner maps, and cold provider-discovery caches.
+- **Plugins/discovery:** follow symlinked plugin directories in global and workspace plugin roots while keeping broken links ignored and existing package safety checks in place (#36754).
+- **Gateway/plugins (#62976, #70371):** start the Gateway in degraded mode when a single plugin entry has invalid schema config; `openclaw doctor --fix` quarantines that plugin config instead of crash-looping every channel.
+- **CLI/plugins:** preserve unversioned ClawHub install specs so `plugins update` can follow newer ClawHub releases (#63010); accept ClawHub plugin API wildcard ranges such as `*` while still requiring a valid runtime API version (#56446); add an explicit `npm:<package>` install prefix that skips ClawHub lookup (#55805); reject malformed ClawHub plugin specs with trailing `@` before registry lookup (#56579); stop security-blocked plugin installs from retrying as hook packs (#61175); let config-gated bundled plugins install without persisting invalid placeholder config entries.
+- **Yuanbao external channel plugin:** `openclaw-plugin-yuanbao` registered in the official channel catalog, contract suites, and community plugin docs (community plugin — *not* bundled under `extensions/`) (#72756).
 
 **v2026.4.25:**
 - New extension: `extensions/diagnostics-otel/` — OpenTelemetry plugin with bounded low-cardinality spans/metrics for model calls, token usage, tool loops, harness runs, exec, outbound delivery, context assembly, and memory pressure. No PII in telemetry.

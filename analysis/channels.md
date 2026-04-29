@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
@@ -1685,7 +1685,24 @@ Changes in the current released line are recorded inline above under each channe
 
 `extensions/line/src/outbound-media.ts` imports `resolvePinnedHostnameWithPolicy` and defines `LINE_OUTBOUND_MEDIA_SSRF_POLICY`. All outbound media URLs are validated: must be a valid URL, must use HTTPS, and must be 2000 characters or fewer; the hostname is then pinned via the SSRF policy before the request is made.
 
-### v2026.4.22–v2026.4.25 Delta
+### v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **QQBot full group-chat support (#70624):** history tracking, @-mention gating, per-group activation modes, per-group config, FIFO message queue with deliver debounce, C2C `stream_messages` streaming with a `StreamingController` lifecycle manager, unified `sendMedia` with chunked upload for large files, and engine refactor into pipeline stages, focused outbound submodules, builtin slash-command modules, and explicit DI ports via `createEngineAdapters()`.
+- **Tencent Yuanbao external channel (#72756):** new `openclaw-plugin-yuanbao` external channel plugin registered in the official channel catalog, contract suites, and community plugin docs, with new `docs/channels/yuanbao.md` quick-start for WebSocket bot DMs and group chats. Distributed as a community plugin — *not* bundled under `extensions/`.
+- **Discord/Slack/Mattermost target syntax (#72401):** `user:`/`channel:` target syntax surfaced in the shared message target schema and Discord ambiguity errors.
+- **Discord routed model picker (#72755):** persist routed model-picker overrides when the hidden `/model` dispatch succeeds but the bound thread session store is still stale (covers LM Studio suffixed model ids); thread sessions now inherit the parent channel's session-level `/model` override as a model-only fallback without enabling parent transcript inheritance.
+- **Discord/media (#72642):** keep incidental Markdown image badges in final replies as text unless a channel opts into Markdown-image media extraction.
+- **Reply/link understanding (#68466):** keep media and link preprocessing on stable runtime entrypoints and continue with raw message content if optional enrichment fails, so URL-bearing messages are no longer dropped after stale runtime chunk upgrades.
+- **Mattermost (#72659):** keep direct-message replies top-level by suppressing reply roots for DM delivery while preserving channel and group thread roots; derive inbound chat kind from the trusted channel lookup rather than the websocket event channel type.
+- **Feishu (#13175, #58298, #37706):** send outgoing interactive reply payloads as native cards with clickable buttons while preserving text, media, and document-comment fallbacks; stop treating broadcast-only `@all`/`@_all` messages as bot mentions; extract quoted/replied interactive-card text across schema 1.0, 2.0, i18n, template-variable, and post-format fallback shapes.
+- **Telegram/agents (#51065):** hide raw failed write/edit warning messages in Telegram when the assistant already explicitly acknowledges the failed action while keeping warnings when the reply claims success or omits the failure.
+- **Matrix/E2EE:** new `openclaw matrix encryption setup` single-shot command. Recovery and broken-device QA flows stabilized; Matrix device-cleanup sync races no longer leave shutdown-time crypto work running.
+- **Channels/setup (#72740):** treat bundled channel plugins as already bundled during `channels add` and onboarding, enabling them without writing redundant `plugins.load.paths` entries.
+- **WhatsApp (#72547):** honor gateway `HTTPS_PROXY` / `HTTP_PROXY` env vars for QR-login WebSocket connections while respecting `NO_PROXY`.
+- **Google Meet:** route local Chrome joins through OpenClaw browser control, grant Meet media permissions, pin local Chrome audio defaults to `BlackHole 2ch`, default Chrome command-pair audio to 24 kHz PCM16 while preserving legacy 8 kHz G.711 mu-law pairs, handle Gemini Live interruptions/VAD and function-response names correctly, route stateful `google_meet` tools through the gateway runtime, and support `realtime.agentId`.
+- **Browser (`extensions/browser/`) (#64271, #72168):** auto-start the bundled browser plugin when root `browser` config is present (including restrictive plugin allowlists); ignore stale persisted plugin registries whose package paths no longer exist; circuit-break repeated managed Chrome launch failures per profile so browser requests stop spawning Chromium indefinitely when CDP cannot start; load `playwright-core` through the browser runtime shim so packaged installs can run Playwright actions from staged plugin runtime deps.
+- **Control UI/Talk:** generic browser realtime transport contract, Google Live browser Talk sessions with constrained ephemeral tokens, and a Gateway relay for backend-only realtime voice plugins.
 
 **v2026.4.25:**
 - TTS/channels: per-account TTS overrides for Feishu and QQBot via `channels.<channel>.accounts.<id>.tts` deep-merge.

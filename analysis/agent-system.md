@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1394,7 +1394,31 @@ When event fires:
 
 - **Codex lifecycle hooks for native app-server turns**: `llm_input`, `llm_output`, and `agent_end` plugin hooks (defined in `src/plugins/hook-types.ts`) are now fired for native Codex app-server turns, giving plugins visibility into Codex-native LLM interactions that previously bypassed the hook pipeline.
 
-### v2026.4.22–v2026.4.25 Delta
+### v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **Subagents/`allowAgents` enforced at dispatch (#72827):** subagent invocation is rejected at dispatch when the calling agent's `allowAgents` policy doesn't include the target — the gate previously fired at config-load only, leaving a small race during hot reloads.
+- **`agents.defaults.compaction.maxActiveTranscriptBytes`:** new config knob caps the live transcript size that compaction can reuse without re-summarizing; protects long-running sessions from unbounded growth without forcing a full recompaction.
+- **ACP/`sessions_spawn` (#63591):** spawned ACP children inherit the parent's approval/auth posture and node-trust context; previously, fresh ACP children landed with default trust until first user interaction.
+- **ACP Claude adapter (#72080, #49060):** ships in-tree under `extensions/acp-claude/` and registers through the standard plugin manifest. Claude Code-issued sessions arrive through ACP and pass the same approval/auth gates as native sessions.
+- **Subagents (#72019):** subagent transcripts are now stored as a separate session under the parent so they show up in `sessions_list` filters and can be replayed independently — but they still inherit `allowAgents`/`denyAgents` from the parent.
+- **Agents/sessions (#43556, #63120):** `sessions_list` mailbox-style filters (v2026.4.22) extended with composable label predicates and a `visibility` filter that respects node-trust.
+- **Compaction (#72780):** compaction passes now respect `maxActiveTranscriptBytes` and emit a structured `before_compaction`/`after_compaction` hook envelope so plugins can audit what was dropped.
+- **Anthropic (#72739, #72556):** prefill behavior aligned across `claude-opus-4-7`, `claude-sonnet-4-6`, and `claude-haiku-4-5-20251001`; assistant prefill no longer collides with thinking-block prefixes on Opus 4.7.
+- **Google:** Gemini 3.x thinking budget tracked through compaction so subsequent turns honor the configured budget instead of resetting.
+- **Bedrock (#72640, #72622):** Bedrock-hosted Claude variants register through the same model-defaults path as direct Anthropic so the prefill fix above applies; tool-call schema validation tightened for Bedrock-Claude responses.
+- **LM Studio (#66178, #68704, #66937):** robust handling of LM Studio's tool-call streaming framing; offline detection no longer triggers a false fallback when the LM Studio app is paused.
+- **Qwen (#64483, #72329):** Qwen3 reasoning blocks are streamed through the structured plan/progress surface (gateway `/v1/responses`) instead of being collapsed into commentary.
+- **Claude CLI (#72206):** `claude` CLI wrapper interop respects the new ACP Claude adapter; previously, the wrapper short-circuited ACP and went direct to Anthropic.
+- **MCP/`bundle-mcp` (#72757):** bundled MCP runtimes are restarted in-place when their host plugin reloads, instead of being torn down and re-spawned, so long-lived MCP sessions survive plugin hot-reloads.
+- **Gateway/plugins (#62976, #70371):** plugin-startup degraded mode (broken plugins reported via `gateway.health` rather than failing gateway startup) — see security-plugins.md and gateway-config-infra.md v2026.4.26 deltas.
+- **Effective tool inventory (#72365):** the gateway's effective-tool-inventory endpoint reports per-agent tool surfaces after manifest takeover and `allowAgents`/`denyAgents` filtering.
+- **Agents/LSP (#72357):** language-server tool surfaces are registered through the manifest takeover path so per-language-server allow/deny rules work consistently.
+- **Tool-loop (#40144):** the tool-call loop now bounds repeated identical tool calls within a single turn and surfaces a structured "tool-loop detected" event instead of silently truncating.
+- **Status (#67667):** TUI/Status reflects plugin-startup degraded mode and active compaction state in the status line.
+- **Reasoning (#67092, #37696):** provider-native reasoning blocks (Anthropic thinking, Gemini thoughts, Qwen3 reasoning) are persisted alongside the assistant message instead of being dropped at session-write time.
+- **Plugins (#69423):** plugin manifest reloads no longer briefly empty `/v1/models` (gateway-config-infra.md cross-listed).
+- **Fallback (#71922):** model fallback chain logs each rejected candidate at `warn` level with a stable correlation ID (cross-listed with cli-tools-media.md image-generation candidate logging).
 
 **v2026.4.25:**
 - TTS upgrade: `/tts latest` read-aloud, chat-scoped `auto-TTS` with `/tts chat on|off|default`, per-agent `agents.list[].tts` override. New bundled providers: Azure Speech, Xiaomi MiMo, Local CLI, Inworld, Volcengine/BytePlus Seed, ElevenLabs v3.

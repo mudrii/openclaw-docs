@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-28 | Version: v2026.4.25 | Codebase: OpenClaw release tag `v2026.4.25`
+> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26`
 > Modules: agents (1,172 files), gateway (472 files), tasks (44 files), sessions (17 files), routing (11 files), hooks (52 files), context-engine (7 files)
 
 ---
@@ -1558,7 +1558,31 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 - **`llm_input`, `llm_output`, `agent_end` hooks for native Codex [v2026.4.21]:** The `llm_input`, `llm_output`, and `agent_end` plugin hooks are now fired for native Codex app-server turns, aligning Codex turns with the hook surface already available for pi-agent turns.
 
-### v2026.4.22–v2026.4.25 Delta
+### v2026.4.22–v2026.4.26 Delta
+
+**v2026.4.26:**
+- **`agents.defaults.compaction.maxActiveTranscriptBytes`:** opt-in preflight trigger that runs normal local compaction when the active JSONL grows too large, requiring transcript rotation so successful compaction moves future turns onto a smaller successor file instead of raw byte-splitting history. There is no default value — operators opt in explicitly.
+- **Subagents `allowAgents` enforcement (#72827):** `subagents.allowAgents` now enforced for explicit same-agent `sessions_spawn(agentId=...)` calls instead of auto-allowing requester self-targets; preserve requester delivery for completion announces across different channel accounts; fail closed instead of guessing a child binding when requester conversation signal is missing.
+- **ACP/sessions_spawn (#63591):** explicit `sessions_spawn(runtime="acp")` bootstrap turns now run while `acp.dispatch.enabled=false` still blocks automatic ACP thread dispatch.
+- **ACP Claude adapter:** the Claude ACP adapter now ships with OpenClaw and requires Claude result messages before idle can complete a prompt, preventing parent agents from waking early on long-running `sessions_spawn(runtime: "acp", agentId: "claude")` children (#72080); server logs route to stderr before Gateway config/bootstrap work so ACP stdout remains JSON-RPC only for IDE integrations (#49060). New opt-in Coven runtime bridge (default-off) replacing the now-removed `extensions/coven/` extension.
+- **Subagents (#72019):** keep the delegated task only in the subagent system prompt and send a short initial kickoff message, avoiding duplicate task tokens.
+- **Agents/sessions:** let `sessions_spawn runtime="subagent"` ignore ACP-only `streamTo` and `resumeSessionId` fields while keeping ACP passthrough and documenting `streamTo` as ACP-only (#43556, #63120); acquire the session write lock only after cold bootstrap, plugin, and tool setup so fallback runs are not blocked by stalled pre-model startup work.
+- **Compaction (#72780):** skip oversized pre-compaction checkpoint snapshots and prune duplicate long user turns from compaction input and rotated successor transcripts.
+- **Agents/Anthropic (#72739, #72556):** remove trailing assistant prefill payloads when extended thinking is enabled so Opus 4.7/Sonnet 4.6 requests do not fail user-final-turn validation; strip stale trailing assistant prefill turns from outbound replay.
+- **Agents/Google (follow-up to #72556):** strip stale trailing assistant/model prefill turns from Gemini outbound replay so requests end with a user turn or function response.
+- **Agents/Bedrock (#72640, #72622):** stop heartbeat runs from persisting blank user transcript turns and repair existing blank user text messages before replay.
+- **Agents/LM Studio (#66178, #68704, #66937):** promote standalone bracketed local-model tool requests into registered tool calls and hide unsupported bracket blocks from visible replies; strip prior-turn Gemma 4 reasoning from OpenAI-compatible replay while preserving active tool-call continuation reasoning; allow blank API key for unauthenticated local servers.
+- **Agents/Qwen (#64483, #72329):** preserve exact custom `modelstudio` provider configs with foreign `api` owners; plugin-owned Qwen thinking controls for vLLM chat-template kwargs and DashScope-style top-level `enable_thinking` flags.
+- **Agents/Claude CLI (#72206):** force live-session launches to include `--output-format stream-json` whenever `--input-format stream-json` is added.
+- **MCP/bundle-mcp (#72757):** normalize CLI-native `type: "http"` MCP server entries to OpenClaw `transport: "streamable-http"` on save; repair existing configs with doctor.
+- **Gateway/plugins (#62976, #70371):** start the Gateway in degraded mode when a single plugin entry has invalid schema config; `openclaw doctor --fix` quarantines that plugin config instead of crash-looping every channel.
+- **Gateway/effective tool inventory (#72365):** cache, coalesce, stale-refresh, and invalidate effective tool inventory on channel registry changes while reusing the gateway-bound plugin registry, so chat runs no longer stall Control UI requests on repeated plugin/model setup.
+- **Agents/LSP (#72357):** terminate bundled stdio LSP process trees during runtime disposal and Gateway shutdown so nested children such as `tsserver` do not survive stop or restart.
+- **Agents/tools (#40144):** scope tool-loop detection history to the active run when available, so scheduled heartbeat cycles no longer inherit stale repeated-call counts. Ignore volatile `exec` runtime metadata when comparing tool-loop outcomes.
+- **Agents/status (#67667):** persist the post-compaction token estimate from auto-compaction when providers omit usage metadata so `/status` and session lists keep showing fresh context usage.
+- **Agents/reasoning (#67092, #37696):** treat orphan closing reasoning tags with following answer text as a privacy boundary across delivery, history, streaming, and Control UI sanitizers so malformed local-model output cannot leak chain-of-thought text. Recover fully wrapped unclosed `<think>` replies that would otherwise sanitize to empty.
+- **Agents/plugins (#69423):** skip malformed plugin tools with missing schema objects and report plugin diagnostics so one broken tool no longer crashes Anthropic agent runs.
+- **Agents/fallback (#71922):** split ambiguous provider failures into `empty_response`, `no_error_details`, and `unclassified`; add flat fallback-step fields to structured fallback logs so primary-model failures stay visible when later fallbacks also fail.
 
 **v2026.4.25:**
 - Cold plugin registry: gateway startup plugin planning moved to versioned cold persisted registry (`plugins/installs.json`). Broad manifest scans eliminated from startup/discovery. `openclaw plugins registry` CLI for inspection and `--refresh` repair.
