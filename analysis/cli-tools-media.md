@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-04-29 | Version: v2026.4.26 | Codebase: OpenClaw release tag `v2026.4.26`
+> Updated: 2026-05-04 | Version: v2026.5.2 | Codebase: OpenClaw release tag `v2026.5.2`
 
 ## Overview
 

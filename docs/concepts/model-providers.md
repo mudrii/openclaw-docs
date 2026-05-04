@@ -50,10 +50,13 @@ For model selection rules, see [/concepts/models](/concepts/models).
   family, transcript/tooling quirks, transport/cache hints). It is not the
   same as the [public capability model](/plugins/architecture#public-capability-model)
   which describes what a plugin registers (text inference, speech, etc.).
-- The bundled `codex` provider is paired with the bundled Codex agent harness.
-  Use `codex/gpt-*` when you want Codex-owned login, model discovery, native
-  thread resume, and app-server execution. Plain `openai/gpt-*` refs continue
-  to use the OpenAI provider and the normal OpenClaw provider transport.
+- The bundled Codex agent harness is paired with OpenAI model refs through
+  `agentRuntime.id: "codex"`. Use `openai/gpt-*` plus that runtime when you
+  want Codex-owned login, model discovery, native thread resume, and app-server
+  execution. The older `codex/gpt-*` and `openai-codex/*` routes are retained
+  for compatibility and PI OAuth flows; plain `openai/gpt-*` without the Codex
+  runtime continues to use the OpenAI provider and normal OpenClaw provider
+  transport.
   Codex-only deployments can disable automatic PI fallback with
   `agents.defaults.embeddedHarness.fallback: "none"`; see
   [Codex Harness](/plugins/codex-harness).
@@ -292,9 +295,10 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
 
 ### OpenAI Code (Codex)
 
-- Provider: `openai-codex`
+- Preferred model/runtime: `openai/gpt-*` with `agents.defaults.agentRuntime.id: "codex"`
+- Compatibility provider: `openai-codex`
 - Auth: OAuth (ChatGPT)
-- Example model: `openai-codex/gpt-5.4`
+- Example model: `openai/gpt-5.4`
 - CLI: `openclaw onboard --auth-choice openai-codex` or `openclaw models auth login --provider openai-codex`
 - Default transport is `auto` (WebSocket-first, SSE fallback)
 - Override per model via `agents.defaults.models["openai-codex/<model>"].params.transport` (`"sse"`, `"websocket"`, or `"auto"`)
@@ -303,13 +307,18 @@ OpenClaw ships with the pi‑ai catalog. These providers require **no**
   `User-Agent`) are only attached on native Codex traffic to
   `chatgpt.com/backend-api`, not generic OpenAI-compatible proxies
 - Shares the same `/fast` toggle and `params.fastMode` config as direct `openai/*`; OpenClaw maps that to `service_tier=priority`
-- `openai-codex/gpt-5.3-codex-spark` remains available when the Codex OAuth catalog exposes it; entitlement-dependent
-- `openai-codex/gpt-5.4` keeps native `contextWindow = 1050000` and a default runtime `contextTokens = 272000`; override the runtime cap with `models.providers.openai-codex.models[].contextTokens`
+- `openai-codex/gpt-5.3-codex-spark` remains available on the PI OAuth route when the Codex OAuth catalog exposes it; entitlement-dependent
+- Codex-backed `gpt-5.4` keeps native `contextWindow = 1050000` and a default runtime `contextTokens = 272000`; override the runtime cap with the matching provider/model config for the route you use
 - Policy note: OpenAI Codex OAuth is explicitly supported for external tools/workflows like OpenClaw.
 
 ```json5
 {
-  agents: { defaults: { model: { primary: "openai-codex/gpt-5.4" } } },
+  agents: {
+    defaults: {
+      model: { primary: "openai/gpt-5.4" },
+      agentRuntime: { id: "codex" },
+    },
+  },
 }
 ```
 

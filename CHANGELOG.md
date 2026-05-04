@@ -6,6 +6,40 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.2 — Release Summary
+
+> **Released:** 2026-05-04 (docs release) | upstream GitHub release `v2026.5.2` published 2026-05-02 23:37:55 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.4.26..v2026.5.2` | 3,289 commits
+
+### Changes
+
+- **Plugins/install and update (`v2026.5.2`):** external plugin install, update, doctor repair, dependency reporting, and artifact metadata now cover the npm-first official plugin cutover, stale configured installs, missing package payloads, ClawHub ClawPack metadata, and beta-channel plugin fallback. Bare package specs stay npm-first for the launch cutover; explicit `clawhub:` specs use ClawHub resolution.
+- **Plugins/CLI (`v2026.5.2`):** `openclaw plugins list --json` includes dependency install state, `git:` plugin installs record refs and commit metadata, and install/update records persist artifact kind, npm integrity, shasum, tarball, digest, and ClawPack metadata where available.
+- **Plugins/runtime and tools (`v2026.5.2`):** broad runtime preloads are scoped to effective plugin ids, request-time provider/tool/channel/web/capability/memory helpers reuse the startup-loaded plugin registry, and descriptor-first plugin tool planning can expose generic availability and executor references without prompt-time runtime loading.
+- **Gateway/restart and config (`v2026.5.2`):** startup skips plugin-backed auth-profile overlays during secrets preflight, `openclaw gateway restart` adds `--force` and `--wait <duration>`, and `$include` can read from operator-approved `OPENCLAW_INCLUDE_ROOTS` while preserving default config-directory confinement.
+- **CLI/proxy (`v2026.5.2`):** `openclaw proxy validate` verifies effective proxy configuration, reachability, and allow/deny behavior before deployment.
+- **Channels/thread bindings (`v2026.5.2`):** split subagent/ACP thread-spawn toggles are replaced with `threadBindings.spawnSessions`; `openclaw doctor --fix` migrates legacy keys.
+- **Channels/WhatsApp (`v2026.5.2`):** outbound message targets can explicitly address WhatsApp Channels/Newsletters with `@newsletter`, using channel session metadata instead of DM routing.
+- **Discord (`v2026.5.2`):** reusable message-channel access groups and Discord channel-audience DM authorization allow allowlists to reference `accessGroup:<name>` across channel auth paths.
+- **Slack (`v2026.5.2`):** App Home receives a safe default view on `app_home_opened`, setup manifests include the Home tab event, and bot-participated threads are tracked across restarts so threaded conversations can continue auto-replying after Gateway restart.
+- **Google Meet (`v2026.5.2`):** API-created rooms can set `accessType` and `entryPointAccess`; `googlemeet end-active-conference`, `googlemeet test-listen`, and the `google_meet` `test_listen` action improve managed-space cleanup and transcribe-mode health checks.
+- **Providers/xAI (`v2026.5.2`):** Grok 4.3 is added to the bundled catalog and becomes the default xAI chat model.
+- **Providers/OpenAI (`v2026.5.2`):** ChatGPT/Codex subscription setups should use `openai/gpt-*` with `agentRuntime.id: "codex"` for native Codex runtime; `openai-codex/*` remains the PI OAuth route. OpenAI-compatible TTS endpoints can receive `extraBody`/`extra_body` passthrough fields.
+- **Agents/workspace and heartbeat (`v2026.5.2`):** `agents.defaults.skipOptionalBootstrapFiles` can skip selected optional workspace files during bootstrap, and the structured `heartbeat_respond` tool lets tool-capable heartbeat runs record quiet outcomes or explicit notification text.
+- **Gateway/SDK (`v2026.5.2`):** SDK-facing `tools.invoke` RPC adds shared HTTP policy, typed approval/refusal results, and helper support.
+
+### Fixes
+
+- **Gateway and sessions (`v2026.5.2`):** gateway start repairs stale managed service definitions, session listing uses lighter caches/indexes on large stores, session transcript locks share one `session.writeLock.acquireTimeoutMs` policy with a 60-second default, and terminal lifecycle state is preserved when stale in-memory snapshots persist final metadata.
+- **Plugins/update/config (`v2026.5.2`):** missing official external plugin payloads are reinstalled before normal updates, configured web-search providers and suppressed model/provider pairs validate against the active plugin set, and a one-time configured-plugin install repair updates stale manifests while preserving unmanaged third-party `node_modules`.
+- **Control UI/WebChat (`v2026.5.2`):** long-running dashboard WebSockets stay alive with protocol pings, Stop recovers after reconnect/reload, iOS PWA viewports respect safe areas, selection colors are high-contrast, slash-command failures show inline feedback, and `gateway.controlUi.chatMessageMaxWidth` replaces patched bundled CSS.
+- **Telegram (`v2026.5.2`):** native slash commands route through runtime conversation bindings in bound groups, topic-bound plugin commands receive persisted session files, Bot API guards are raised for slow outbound text/typing paths, and command menus are registered/cleared for default and group-chat scopes.
+- **Discord (`v2026.5.2`):** setup persists selected guild/channel allowlists, slash-command deploy hashes survive restarts, typing indicators stay alive during long work, attachment/sticker filenames are preserved, and component payloads forward through message actions.
+- **Providers and media (`v2026.5.2`):** GPT-5 API-key sessions default to SSE Responses unless WebSocket is explicit, OpenRouter DeepSeek V4 reasoning placeholders and LM Studio reasoning metadata are normalized, Anthropic-compatible streams recover early text deltas, proxy-backed multipart audio/form uploads are repaired, and media-only async completions no longer duplicate raw `MEDIA:` fallback posts.
+- **Memory and cron (`v2026.5.2`):** Memory Wiki managed blocks self-heal without rewriting unmanaged markdown, Windows SQLite index swaps retry transient locks, dreaming sweeps include the primary runtime workspace without mixing main-agent transcripts into subagent workspaces, and isolated cron announce deliveries stay out of main session awareness.
+
+---
+
 ## OpenClaw v2026.4.26 — Release Summary
 
 > **Released:** 2026-04-29 (docs release) | upstream GitHub release `v2026.4.26` published 2026-04-28 UTC (signed tag by Peter Steinberger) | **Policy note:** latest *documented* released section stays at top.

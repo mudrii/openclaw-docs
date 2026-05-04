@@ -12,7 +12,7 @@ title: "OpenAI"
 OpenAI provides developer APIs for GPT models. OpenClaw supports two auth routes:
 
 - **API key** — direct OpenAI Platform access with usage-based billing (`openai/*` models)
-- **Codex subscription** — ChatGPT/Codex sign-in with subscription access (`openai-codex/*` models)
+- **Codex subscription** — ChatGPT/Codex sign-in with subscription access. Use `openai/gpt-*` plus `agentRuntime.id: "codex"` for the native Codex runtime; `openai-codex/*` remains the PI OAuth route.
 
 OpenAI explicitly supports subscription OAuth usage in external tools and workflows like OpenClaw.
 
@@ -54,7 +54,7 @@ Choose your preferred auth method and follow the setup steps.
     | `openai/gpt-5.4-pro` | Direct OpenAI Platform API | `OPENAI_API_KEY` |
 
     <Note>
-    ChatGPT/Codex sign-in is routed through `openai-codex/*`, not `openai/*`.
+    Direct Platform API access uses `OPENAI_API_KEY`. For ChatGPT/Codex subscription access, configure the native Codex runtime as shown in the Codex tab.
     </Note>
 
     ### Config example
@@ -89,7 +89,8 @@ Choose your preferred auth method and follow the setup steps.
       </Step>
       <Step title="Set the default model">
         ```bash
-        openclaw config set agents.defaults.model.primary openai-codex/gpt-5.4
+        openclaw config set agents.defaults.model.primary openai/gpt-5.4
+        openclaw config set agents.defaults.agentRuntime.id codex
         ```
       </Step>
       <Step title="Verify the model is available">
@@ -103,18 +104,24 @@ Choose your preferred auth method and follow the setup steps.
 
     | Model ref | Route | Auth |
     |-----------|-------|------|
-    | `openai-codex/gpt-5.4` | ChatGPT/Codex OAuth | Codex sign-in |
-    | `openai-codex/gpt-5.3-codex-spark` | ChatGPT/Codex OAuth | Codex sign-in (entitlement-dependent) |
+    | `openai/gpt-5.4` + `agentRuntime.id: "codex"` | Native Codex app-server runtime | Codex sign-in |
+    | `openai-codex/gpt-5.4` | PI OAuth compatibility route | Codex sign-in |
+    | `openai-codex/gpt-5.3-codex-spark` | PI OAuth compatibility route | Codex sign-in (entitlement-dependent) |
 
     <Note>
-    This route is intentionally separate from `openai/gpt-5.4`. Use `openai/*` with an API key for direct Platform access, and `openai-codex/*` for Codex subscription access.
+    `v2026.5.2` clarified the split: ChatGPT/Codex subscription setups should prefer `openai/gpt-*` with `agentRuntime.id: "codex"` for native Codex execution. Keep `openai-codex/*` when you intentionally need the PI OAuth provider route.
     </Note>
 
     ### Config example
 
     ```json5
     {
-      agents: { defaults: { model: { primary: "openai-codex/gpt-5.4" } } },
+      agents: {
+        defaults: {
+          model: { primary: "openai/gpt-5.4" },
+          agentRuntime: { id: "codex" },
+        },
+      },
     }
     ```
 

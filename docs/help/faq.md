@@ -654,19 +654,19 @@ for usage/billing and raise limits as needed.
   </Accordion>
 
   <Accordion title="How does Codex auth work?">
-    OpenClaw supports **OpenAI Code (Codex)** via OAuth (ChatGPT sign-in). Onboarding can run the OAuth flow and will set the default model to `openai-codex/gpt-5.4` when appropriate. See [Model providers](/concepts/model-providers) and [Onboarding (CLI)](/start/wizard).
+    OpenClaw supports **OpenAI Code (Codex)** via OAuth (ChatGPT sign-in). On `v2026.5.2`, the preferred native Codex setup is `openai/gpt-*` with `agentRuntime.id: "codex"`; `openai-codex/*` remains the PI OAuth compatibility route. See [Model providers](/concepts/model-providers) and [Onboarding (CLI)](/start/wizard).
   </Accordion>
 
   <Accordion title="Why does ChatGPT GPT-5.4 not unlock openai/gpt-5.4 in OpenClaw?">
     OpenClaw treats the two routes separately:
 
-    - `openai-codex/gpt-5.4` = ChatGPT/Codex OAuth
-    - `openai/gpt-5.4` = direct OpenAI Platform API
+    - `openai/gpt-5.4` + `agentRuntime.id: "codex"` = native Codex runtime with ChatGPT/Codex OAuth
+    - `openai-codex/gpt-5.4` = PI OAuth compatibility route
+    - `openai/gpt-5.4` without Codex runtime = direct OpenAI Platform API
 
-    In OpenClaw, ChatGPT/Codex sign-in is wired to the `openai-codex/*` route,
-    not the direct `openai/*` route. If you want the direct API path in
-    OpenClaw, set `OPENAI_API_KEY` (or the equivalent OpenAI provider config).
-    If you want ChatGPT/Codex sign-in in OpenClaw, use `openai-codex/*`.
+    If you want the direct API path in OpenClaw, set `OPENAI_API_KEY` or the
+    equivalent OpenAI provider config. If you want ChatGPT/Codex sign-in, prefer
+    `openai/gpt-*` with `agentRuntime.id: "codex"` for native Codex execution.
 
   </Accordion>
 
@@ -2330,8 +2330,8 @@ for usage/billing and raise limits as needed.
   <Accordion title="Can I use GPT 5.2 for daily tasks and Codex 5.3 for coding?">
     Yes. Set one as default and switch as needed:
 
-    - **Quick switch (per session):** `/model gpt-5.4` for daily tasks, `/model openai-codex/gpt-5.4` for coding with Codex OAuth.
-    - **Default + switch:** set `agents.defaults.model.primary` to `openai/gpt-5.4`, then switch to `openai-codex/gpt-5.4` when coding (or the other way around).
+    - **Quick switch (per session):** `/model openai/gpt-5.4` for daily tasks; use a Codex runtime-backed agent profile for coding.
+    - **Default + runtime:** set `agents.defaults.model.primary` to `openai/gpt-5.4`, then set `agents.defaults.agentRuntime.id` to `"codex"` for the agent/profile that should use native Codex execution.
     - **Sub-agents:** route coding tasks to sub-agents with a different default model.
 
     See [Models](/concepts/models) and [Slash commands](/tools/slash-commands).
@@ -2341,9 +2341,9 @@ for usage/billing and raise limits as needed.
   <Accordion title="How do I configure fast mode for GPT 5.4?">
     Use either a session toggle or a config default:
 
-    - **Per session:** send `/fast on` while the session is using `openai/gpt-5.4` or `openai-codex/gpt-5.4`.
+    - **Per session:** send `/fast on` while the session is using `openai/gpt-5.4` or a compatible `openai-codex/*` PI OAuth route.
     - **Per model default:** set `agents.defaults.models["openai/gpt-5.4"].params.fastMode` to `true`.
-    - **Codex OAuth too:** if you also use `openai-codex/gpt-5.4`, set the same flag there.
+    - **PI OAuth compatibility route:** if you also use `openai-codex/gpt-5.4`, set the same flag there.
 
     Example:
 

@@ -435,10 +435,15 @@ Manage extensions and their config:
 
 - `openclaw plugins list` — discover plugins (use `--json` for machine output).
 - `openclaw plugins inspect <id>` — show details for a plugin (`info` is an alias).
-- `openclaw plugins install <path|.tgz|npm-spec|plugin@marketplace>` — install a plugin (or add a plugin path to `plugins.load.paths`; use `--force` to overwrite an existing install target).
+- `openclaw plugins install <path|.tgz|npm-spec|git:<url>|clawhub:<pkg>>` — install a plugin (or add a plugin path to `plugins.load.paths`; use `--force` to overwrite an existing install target).
+- `openclaw plugins update [id]` — update tracked installs from their recorded source.
+- `openclaw plugins deps` — inspect plugin package dependency state.
 - `openclaw plugins marketplace list <marketplace>` — list marketplace entries before install.
+- `openclaw plugins registry --refresh` — refresh the persisted install registry when package metadata is stale.
 - `openclaw plugins enable <id>` / `disable <id>` — toggle `plugins.entries.<id>.enabled`.
 - `openclaw plugins doctor` — report plugin load errors.
+
+As of `v2026.5.2`, bare package specs are npm-first for the official plugin cutover. Use an explicit `clawhub:` spec when you want ClawHub resolution; ClawPack artifact metadata and npm integrity data are preserved in install/update records when available.
 
 Most plugin changes require a gateway restart. See [/plugin](/tools/plugin).
 

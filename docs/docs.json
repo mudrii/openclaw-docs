@@ -1118,6 +1118,7 @@
                   "plugins/community",
                   "plugins/bundles",
                   "plugins/codex-harness",
+                  "plugins/file-transfer",
                   "plugins/webhooks",
                   "plugins/voice-call",
                   "plugins/memory-wiki",

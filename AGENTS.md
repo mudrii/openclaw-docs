@@ -155,6 +155,20 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
+## Behavioral Changes in v2026.4.27–v2026.5.2
+
+### v2026.5.2
+- **Official plugin cutover is npm-first:** bare package specs install from npm during the launch cutover. Use explicit `clawhub:` specs for ClawHub resolution. Install/update records may include ClawPack artifact metadata, npm integrity, shasum, tarball, digest, and source metadata.
+- **Plugin visibility is descriptor-first where possible:** plugin tool descriptors can be cached from `api.registerTool(...)`, and broad runtime preloads are scoped to effective plugin ids. Do not assume prompt-time visibility means every plugin runtime was loaded.
+- **`git:` plugin installs are first-class:** plugin install/update records can carry git refs and commit metadata. Scanner/staging behavior still applies.
+- **Gateway restart semantics changed:** `openclaw gateway restart --force` and `--wait <duration>` distinguish deferred restarts from explicit forced restarts and log active task run IDs before deferral timers.
+- **`OPENCLAW_INCLUDE_ROOTS`:** `$include` directives can read from approved include roots while default config-directory confinement remains the safe baseline.
+- **Thread-bound session config migrated:** use `threadBindings.spawnSessions`; `doctor --fix` migrates the legacy split subagent/ACP toggles.
+- **Codex subscription routing:** prefer `openai/gpt-*` with `agentRuntime.id: "codex"` for native Codex runtime. Keep `openai-codex/*` for the PI OAuth compatibility route.
+- **WhatsApp Channel/Newsletter routing:** explicit `@newsletter` outbound targets use channel session metadata instead of DM routing.
+- **Slack thread continuity:** Slack tracks bot-participated threads across Gateway restarts so ongoing threaded conversations can continue auto-replying.
+- **Proxy validation:** `openclaw proxy validate` is the operator path to test effective proxy routing, reachability, and expected allow/deny behavior.
+
 ## Behavioral Changes in v2026.4.22–v2026.4.26
 
 ### v2026.4.26

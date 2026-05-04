@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-04-29 | **Version:** v2026.4.26
-**Codebase:** OpenClaw release tag `v2026.4.26`
+**Updated:** 2026-05-04 | **Version:** v2026.5.2
+**Codebase:** OpenClaw release tag `v2026.5.2`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
