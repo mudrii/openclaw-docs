@@ -161,6 +161,11 @@
 - **Official plugin cutover is npm-first:** bare package specs install from npm during the launch cutover. Use explicit `clawhub:` specs for ClawHub resolution. Install/update records may include ClawPack artifact metadata, npm integrity, shasum, tarball, digest, and source metadata.
 - **Plugin visibility is descriptor-first where possible:** plugin tool descriptors can be cached from `api.registerTool(...)`, and broad runtime preloads are scoped to effective plugin ids. Do not assume prompt-time visibility means every plugin runtime was loaded.
 - **`git:` plugin installs are first-class:** plugin install/update records can carry git refs and commit metadata. Scanner/staging behavior still applies.
+- **Restrictive tool profiles stay restrictive:** configured `tools.exec` and `tools.fs` sections no longer implicitly widen `messaging` or `minimal`; use explicit `tools.alsoAllow` for tools that should be visible under restricted profiles.
+- **SDK artifact RPCs are available:** Gateway exposes SDK-facing artifact list/get/download RPCs with transcript provenance and download-source guardrails.
+- **Active-run queueing uses steering defaults:** follow-up messages steer the active run by default with fallback debounce; `messages.visibleReplies` can require visible output through `message(action=send)`.
+- **Memory Wiki is people-aware:** person metadata, aliases, provenance views, relationship graphs, and Active Memory per-conversation filters are part of the released memory surface.
+- **NVIDIA provider is bundled:** NVIDIA has API-key onboarding, static catalog metadata, and provider-prefixed model refs.
 - **Gateway restart semantics changed:** `openclaw gateway restart --force` and `--wait <duration>` distinguish deferred restarts from explicit forced restarts and log active task run IDs before deferral timers.
 - **`OPENCLAW_INCLUDE_ROOTS`:** `$include` directives can read from approved include roots while default config-directory confinement remains the safe baseline.
 - **Thread-bound session config migrated:** use `threadBindings.spawnSessions`; `doctor --fix` migrates the legacy split subagent/ACP toggles.
