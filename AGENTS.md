@@ -155,7 +155,16 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
-## Behavioral Changes in v2026.4.27–v2026.5.2
+## Behavioral Changes in v2026.4.27–v2026.5.3
+
+### v2026.5.3
+- **Progress draft streaming is first-class:** channels can use `streaming.mode: "progress"` with `streaming.progress.label`, `labels`, `maxLines`, and `toolProgress`. Progress drafts are visible work-in-progress messages and are not the same as token-preview `partial` or `block` modes.
+- **Top-level `/steer` targets the current active run:** `/steer <message>` and `/tell <message>` inject guidance into the current session's active run, independent of `/queue` mode, and do not start a run when idle. Use `/subagents steer <id|#> <message>` for child runs.
+- **`/side` aliases `/btw`:** side questions remain live side results and should not be written as normal transcript turns.
+- **File transfer plugin is bundled:** `file_fetch`, `dir_list`, `dir_fetch`, and `file_write` operate under a default-deny per-node path policy, refuse symlink traversal by default, and cap each round trip at 16 MB.
+- **Invalid Gateway config fails closed:** startup and hot reload no longer auto-restore invalid config; use `openclaw doctor --fix` for last-known-good and legacy-key repair. `doctor --fix` can now persist safe migrations even when unrelated validation issues remain.
+- **Official plugin update paths are stricter:** beta-channel plugin updates try beta first and fall back when needed; trusted official external installs recover stale records and missing ledgers, but source-only package installs are rejected before runtime load.
+- **Google Meet realtime voice readiness is stricter:** joins wait for realtime `session.updated`, media permissions are granted against the actual Meet tab/context, and muted/permission-broken states block or report speech instead of pretending the bridge is ready.
 
 ### v2026.5.2
 - **Official plugin cutover is npm-first:** bare package specs install from npm during the launch cutover. Use explicit `clawhub:` specs for ClawHub resolution. Install/update records may include ClawPack artifact metadata, npm integrity, shasum, tarball, digest, and source metadata.

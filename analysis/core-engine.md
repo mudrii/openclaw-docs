@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.2 | Codebase: OpenClaw release tag `v2026.5.2`
+> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
 > Modules: agents (1,172 files), gateway (472 files), tasks (44 files), sessions (17 files), routing (11 files), hooks (52 files), context-engine (7 files)
 
 ---

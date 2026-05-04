@@ -109,7 +109,7 @@ Choose your preferred auth method and follow the setup steps.
     | `openai-codex/gpt-5.3-codex-spark` | PI OAuth compatibility route | Codex sign-in (entitlement-dependent) |
 
     <Note>
-    `v2026.5.2` clarified the split: ChatGPT/Codex subscription setups should prefer `openai/gpt-*` with `agentRuntime.id: "codex"` for native Codex execution. Keep `openai-codex/*` when you intentionally need the PI OAuth provider route.
+    The current release line keeps the `v2026.5.2` routing split: ChatGPT/Codex subscription setups should prefer `openai/gpt-*` with `agentRuntime.id: "codex"` for native Codex execution. Keep `openai-codex/*` when you intentionally need the PI OAuth provider route.
     </Note>
 
     ### Config example

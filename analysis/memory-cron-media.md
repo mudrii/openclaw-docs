@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.2 | Codebase: OpenClaw release tag `v2026.5.2`
+> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
 > Release note: the current released memory surface is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`. Historical `src/memory/` references below describe the older pre-split layout and should be read as historical context only.
 
 ---

@@ -443,7 +443,7 @@ Manage extensions and their config:
 - `openclaw plugins enable <id>` / `disable <id>` — toggle `plugins.entries.<id>.enabled`.
 - `openclaw plugins doctor` — report plugin load errors.
 
-As of `v2026.5.2`, bare package specs are npm-first for the official plugin cutover. Use an explicit `clawhub:` spec when you want ClawHub resolution; ClawPack artifact metadata and npm integrity data are preserved in install/update records when available.
+As of `v2026.5.3`, bare package specs remain npm-first for the official plugin cutover. Use an explicit `clawhub:` spec when you want ClawHub resolution; ClawPack artifact metadata, npm integrity data, dependency install state, and beta-channel fallback behavior are preserved in install/update records when available.
 
 Most plugin changes require a gateway restart. See [/plugin](/tools/plugin).
 

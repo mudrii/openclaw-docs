@@ -6,6 +6,34 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.3 — Release Summary
+
+> **Released:** 2026-05-04 (docs release) | upstream GitHub release `v2026.5.3` published 2026-05-04 07:01:29 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.5.2..v2026.5.3` | 561 commits
+
+### Changes
+
+- **Plugins/file-transfer (`v2026.5.3`):** bundled `file-transfer` adds `file_fetch`, `dir_list`, `dir_fetch`, and `file_write` for binary-safe paired-node file operations. The documented safety model is default-deny per node, refuses symlink traversal by default, and caps round trips at 16 MB.
+- **Channels/progress drafts (`v2026.5.3`):** `streaming.mode: "progress"` adds a shared work-in-progress draft model across Discord, Telegram, Matrix, Slack, and Microsoft Teams, with automatic one-word labels and configurable `streaming.progress.label`, `labels`, `maxLines`, and `toolProgress` metadata.
+- **Agents/commands (`v2026.5.3`):** `/steer <message>` and `/tell <message>` steer the active current-session run without changing the stored `/queue` mode and without starting a run when the session is idle. Subagent steering stays under `/subagents steer`.
+- **Tools/BTW (`v2026.5.3`):** `/side` is a text and native slash-command alias for `/btw` side questions.
+- **Plugins/install and update (`v2026.5.3`):** official external plugin install/update flows harden npm fallback, ClawHub reset-window messaging, dependency-state reporting, beta-channel update paths, source-only package rejection, stale bundled path cleanup, and install-ledger recovery.
+- **Gateway/performance (`v2026.5.3`):** startup and Control UI hot paths lazy-load runtime discovery, shutdown hooks, cron, channel-schema metadata, restart sentinels, sessions, model metadata, and maintenance timers only when needed.
+- **Channels/replies (`v2026.5.3`):** Discord status reactions can track later tool progress, degraded Discord transport and gateway event-loop starvation surface in status output, WhatsApp Channel/Newsletter `@newsletter` outbound targets are explicit, and Telegram, Feishu, Matrix, Microsoft Teams, Mattermost, Slack, Google Chat, Tlon, and WhatsApp delivery/recovery behavior receives targeted fixes.
+- **Doctor/config (`v2026.5.3`):** `doctor --fix` commits safe legacy migrations even when unrelated validation issues prevent full config validation; invalid Gateway config now fails closed and leaves repair ownership to `openclaw doctor --fix`.
+
+### Fixes
+
+- **Google Meet and realtime voice (`v2026.5.3`):** Meet joins now wait for realtime voice `session.updated`, grant media permissions against the actual Meet tab or Playwright context, expose realtime transcripts in status/logs, block speech while muted, refresh browser state during status checks, and report microphone/speaker permission problems instead of falsely marking realtime speech ready.
+- **Agent/runtime reliability (`v2026.5.3`):** streamed provider replies, delayed A2A session replies, prompt/tool delivery, memory recall, web search/fetch provider discovery, Codex-native OAuth routing, provider thinking metadata, and model proxy behavior are preserved across additional edge cases.
+- **Control UI/WebChat (`v2026.5.3`):** rapid repeat internal sends collapse onto the active Gateway run, session compaction boundaries are explained in chat history, dialog rendering avoids disconnected modal errors, and Talk WebRTC strips server-only headers before browser realtime offer preflight.
+- **Gateway/session usage (`v2026.5.3`):** `usage.cost` and `sessions.usage` read from a durable transcript aggregate cache with lock-safe background refreshes, reducing repeated full scans on large session stores.
+- **Security/network/proxy (`v2026.5.3`):** trusted web-search/model-provider hosts can opt into scoped fake-IP DNS handling, `web_fetch` gains a default-off trusted env-proxy option, Node HTTPS proxy routing preserves target TLS host validation, and Google Chat auth header normalization restores webhook token verification.
+- **Plugins/runtime (`v2026.5.3`):** official catalog metadata fills lagging external manifests, optional tools remain hidden when auth is unavailable, runtime allowlist/tool conflict checks are normalized, plugin hook timeouts can be configured, and context-engine/hook-capable plugins preload when needed at Gateway startup.
+- **CLI/update/install (`v2026.5.3`):** macOS LaunchAgent upgrades recover more reliably, `gateway install --force` avoids unsupported version-manager-backed service definitions, packaged postinstall/doctor cleanup stale plugin-runtime symlinks, and update flows run `doctor --non-interactive --fix` after Control UI global package updates.
+
+---
+
 ## OpenClaw v2026.5.2 — Release Summary
 
 > **Released:** 2026-05-04 (docs release) | upstream GitHub release `v2026.5.2` published 2026-05-02 23:37:55 UTC | **Policy note:** latest *documented* released section stays at top.

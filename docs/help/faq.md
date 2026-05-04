@@ -654,7 +654,7 @@ for usage/billing and raise limits as needed.
   </Accordion>
 
   <Accordion title="How does Codex auth work?">
-    OpenClaw supports **OpenAI Code (Codex)** via OAuth (ChatGPT sign-in). On `v2026.5.2`, the preferred native Codex setup is `openai/gpt-*` with `agentRuntime.id: "codex"`; `openai-codex/*` remains the PI OAuth compatibility route. See [Model providers](/concepts/model-providers) and [Onboarding (CLI)](/start/wizard).
+    OpenClaw supports **OpenAI Code (Codex)** via OAuth (ChatGPT sign-in). On the current release line, the preferred native Codex setup is `openai/gpt-*` with `agentRuntime.id: "codex"`; `openai-codex/*` remains the PI OAuth compatibility route. See [Model providers](/concepts/model-providers) and [Onboarding (CLI)](/start/wizard).
   </Accordion>
 
   <Accordion title="Why does ChatGPT GPT-5.4 not unlock openai/gpt-5.4 in OpenClaw?">

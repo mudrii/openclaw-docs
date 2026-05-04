@@ -1098,8 +1098,10 @@
                 "pages": [
                   "concepts/messages",
                   "concepts/streaming",
+                  "concepts/progress-drafts",
                   "concepts/retry",
-                  "concepts/queue"
+                  "concepts/queue",
+                  "concepts/queue-steering"
                 ]
               }
             ]
@@ -1203,6 +1205,7 @@
                     ]
                   },
                   "tools/btw",
+                  "tools/steer",
                   "tools/code-execution",
                   "tools/diffs",
                   "tools/elevated",
