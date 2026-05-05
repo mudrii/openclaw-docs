@@ -155,7 +155,11 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
-## Behavioral Changes in v2026.4.27–v2026.5.3
+## Behavioral Changes in v2026.4.27–v2026.5.3-1
+
+### v2026.5.3-1
+- **Official bundled plugin install scanning avoids a false positive:** install scanning no longer blocks official bundled plugin packages only because `process.env` access and normal API sends appear far apart in the same compiled bundle. This does not change the documented fail-closed behavior for dangerous-code findings in arbitrary third-party plugin or skill installs.
+- **Hotfix scope is narrow:** the upstream release also updates package/version metadata, generated base config schema, and release workflow lane filtering. Do not infer `v2026.5.4-beta.*` behavior into stable docs.
 
 ### v2026.5.3
 - **Progress draft streaming is first-class:** channels can use `streaming.mode: "progress"` with `streaming.progress.label`, `labels`, `maxLines`, and `toolProgress`. Progress drafts are visible work-in-progress messages and are not the same as token-preview `partial` or `block` modes.

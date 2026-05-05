@@ -6,6 +6,24 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.3-1 — Hotfix Release Summary
+
+> **Released:** 2026-05-05 (docs release) | upstream GitHub release `v2026.5.3-1` published 2026-05-04 09:35:36 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.5.3..v2026.5.3-1` | 5 commits
+
+### Fixes
+
+- **Plugins/security scanner (`v2026.5.3-1`):** the install scanner no longer blocks official bundled plugin packages when `process.env` access and normal API sends only appear in distant parts of the same compiled bundle. This is a false-positive fix for the official plugin install path, not a relaxation for arbitrary third-party unsafe installs.
+- **Release package metadata (`v2026.5.3-1`):** the release prepares the core npm package as `openclaw@2026.5.3-1`, corrects the Memory LanceDB plugin package version, and refreshes the generated base config schema.
+- **Release validation (`v2026.5.3-1`):** release workflow metadata filters QA live lanes for the hotfix path while preserving the existing v2026.5.3 feature documentation.
+- **Docs integrity (`v2026.5.3-1` docs):** restored stable docs pages that were already present in the navigation for memory, dreaming, tasks, Task Flow, web search/fetch, media generation, CLI TUI/tasks/memory, and local TUI mode; expanded file-transfer, Slack progress draft, provider index, plugin manifest, and Gateway fail-closed config notes.
+
+### Prerelease Note
+
+- `v2026.5.4-beta.1` and `v2026.5.4-beta.2` exist upstream as prereleases. They are intentionally excluded from this stable docs snapshot.
+
+---
+
 ## OpenClaw v2026.5.3 — Release Summary
 
 > **Released:** 2026-05-04 (docs release) | upstream GitHub release `v2026.5.3` published 2026-05-04 07:01:29 UTC | **Policy note:** latest *documented* released section stays at top.

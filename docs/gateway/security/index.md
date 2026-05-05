@@ -652,7 +652,8 @@ Even with strong system prompts, **prompt injection is not solved**. System prom
 - Treat links, attachments, and pasted instructions as hostile by default.
 - Run sensitive tool execution in a sandbox; keep secrets out of the agent’s reachable filesystem.
 - Note: sandboxing is opt-in. If sandbox mode is off, implicit `host=auto` resolves to the gateway host. Explicit `host=sandbox` still fails closed because no sandbox runtime is available. Set `host=gateway` if you want that behavior to be explicit in config.
-- Limit high-risk tools (`exec`, `browser`, `web_fetch`, `web_search`) to trusted agents or explicit allowlists.
+- Limit high-risk tools (`exec`, `browser`, `web_fetch`, `web_search`, `file_fetch`, `dir_list`, `dir_fetch`, `file_write`) to trusted agents or explicit allowlists.
+- The bundled `file-transfer` tools are default-deny per node. They require both `gateway.nodes.allowCommands` entries for `file.fetch`, `dir.list`, `dir.fetch`, and `file.write` and matching `plugins.entries.file-transfer.config.nodes.<node>.allowReadPaths` or `allowWritePaths`. Keep `denyPaths` for secrets and leave `followSymlinks: false` unless symlink target behavior is reviewed.
 - If you allowlist interpreters (`python`, `node`, `ruby`, `perl`, `php`, `lua`, `osascript`), enable `tools.exec.strictInlineEval` so inline eval forms still need explicit approval.
 - **Model choice matters:** older/smaller/legacy models are significantly less robust against prompt injection and tool misuse. For tool-enabled agents, use the strongest latest-generation, instruction-hardened model available.
 

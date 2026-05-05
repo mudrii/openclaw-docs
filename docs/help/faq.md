@@ -274,6 +274,21 @@ Quick answers plus deeper troubleshooting for real-world setups (local dev, VPS,
 
   </Accordion>
 
+  <Accordion title="Why did the Gateway stop after a config edit?">
+    Invalid Gateway config fails closed. Startup and config reload do not auto-restore
+    invalid config as a normal recovery path.
+
+    Fix the file or run:
+
+    ```bash
+    openclaw doctor --fix
+    ```
+
+    `doctor --fix` can still persist safe legacy migrations even when unrelated
+    validation issues remain. It then reports the remaining issues for manual repair.
+
+  </Accordion>
+
   <Accordion title="Can I migrate my setup to a new machine (Mac mini) without redoing onboarding?">
     Yes. Copy the **state directory** and **workspace**, then run Doctor once. This
     keeps your bot "exactly the same" (memory, session history, auth, and channel
@@ -1566,6 +1581,14 @@ for usage/billing and raise limits as needed.
     - Ollama Web Search is key-free, but it uses your configured Ollama host and requires `ollama signin`.
     - DuckDuckGo is key-free, but it is an unofficial HTML-based integration.
     - SearXNG is key-free/self-hosted; configure `SEARXNG_BASE_URL` or `plugins.entries.searxng.config.webSearch.baseUrl`.
+
+    Proxy note: direct `web_fetch` keeps DNS-pinned SSRF protection and ignores
+    ambient HTTP(S) environment proxies by default. Set
+    `tools.web.fetch.useTrustedEnvProxy: true` only when the proxy is
+    operator-controlled and enforces outbound policy after DNS resolution. For
+    trusted fake-IP proxy environments, keep overrides narrow with
+    `tools.web.fetch.ssrfPolicy.allowRfc2544BenchmarkRange` or
+    `allowIpv6UniqueLocalRange`.
 
     **Recommended:** run `openclaw configure --section web` and choose a provider.
     Environment alternatives:

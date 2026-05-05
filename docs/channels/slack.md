@@ -735,6 +735,34 @@ Notes:
 - `block`: append chunked preview updates.
 - `progress`: show progress status text while generating, then send final text.
 
+Progress mode also accepts channel-level progress draft settings:
+
+```json5
+{
+  channels: {
+    slack: {
+      streaming: {
+        mode: "progress",
+        progress: {
+          label: "Working",
+          labels: ["Reading", "Testing", "Writing"],
+          maxLines: 6,
+          toolProgress: true,
+          render: "rich",
+          commandText: "status",
+        },
+      },
+    },
+  },
+}
+```
+
+- `label` and `labels` control the short status text shown in progress drafts.
+- `maxLines` bounds retained progress rows when Slack Block Kit limits are approached.
+- `toolProgress` controls whether tool-start/status lines appear in progress drafts.
+- `render: "rich"` enables Block Kit progress rendering when available.
+- `commandText: "status"` hides raw command text in progress rows while keeping a status line.
+
 `channels.slack.streaming.nativeTransport` controls Slack native text streaming when `channels.slack.streaming.mode` is `partial` (default: `true`).
 
 - A reply thread must be available for native text streaming and Slack assistant thread status to appear. Thread selection still follows `replyToMode`.

@@ -305,6 +305,12 @@ openclaw [--dev] [--profile <name>] <command>
     camera list|snap|clip
     screen record
     location get
+
+    File operations on paired nodes use the bundled file-transfer tools, not
+    generic `nodes invoke`: use `file_fetch`, `dir_list`, `dir_fetch`, and
+    `file_write`. The generic `nodes.invoke` path rejects `file.fetch`,
+    `dir.list`, `dir.fetch`, and `file.write` so per-node path policy, audit
+    logging, size caps, and symlink checks always apply.
   devices
     list
     remove
@@ -627,6 +633,8 @@ Options:
 - `--repair` (alias: `--fix`): attempt automatic repairs for detected issues.
 - `--force`: force repairs even when not strictly needed.
 - `--generate-gateway-token`: generate a new gateway auth token.
+
+Invalid Gateway config fails closed. Gateway startup and config reload do not auto-restore invalid config as a normal recovery path; fix the file or run `openclaw doctor --fix`, then retry or restart. `doctor --fix` can still persist safe legacy migrations even when unrelated validation issues remain, then reports the remaining issues for manual repair.
 
 ### `dashboard`
 

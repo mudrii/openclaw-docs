@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
+> Updated: 2026-05-05 | Version: v2026.5.3-1 | Codebase: OpenClaw release tag `v2026.5.3-1`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -224,7 +224,7 @@ Comprehensive security audit framework, content sanitization, skill/plugin code 
 | `fix.ts` | Auto-remediation: `chmod` state dirs, config files, OAuth dirs to safe permissions |
 | `scan-paths.ts` | Path traversal guard: `isPathInside`, extension scanner path checks |
 | `secret-equal.ts` | Timing-safe string comparison via `crypto.timingSafeEqual` |
-| `skill-scanner.ts` | Static analysis scanner for skill/plugin code — detects dangerous patterns (eval, exec, fetch) |
+| `skill-scanner.ts` | Static analysis scanner for skill/plugin code — detects dangerous patterns (eval, exec, fetch); `v2026.5.3-1` narrows an official bundled-plugin install false positive when distant `process.env` access and normal API sends appear in the same compiled bundle |
 | `config-regex.ts` | Configuration regex patterns for security validation |
 | `windows-acl.ts` | Windows-specific ACL inspection via `icacls` |
 | **New (src/infra/)** | |
@@ -1105,6 +1105,16 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 - **Host exec env override blocking expands:** released hardening now blocks more request-scoped env overrides that could redirect Docker endpoints, trust roots, compilers, or language-specific runtime environments.
 - **Nostr inbound DMs verify signatures before side effects:** forged events no longer create pairing requests or reply attempts on the stable line.
+
+---
+
+## v2026.5.3-1 Hotfix Notes
+
+### Install Scanner False Positive
+
+- **Official bundled plugin packages are no longer blocked by distant scanner context:** `src/security/skill-scanner.ts` now requires the `env-harvesting` source rule's `process.env` access and network-send context to appear within an 8-line window. This prevents compiled official plugin bundles from being rejected merely because an env-default helper and a normal API send live far apart in the same generated file.
+- **Fail-closed install behavior remains:** the hotfix narrows one false-positive path for official bundled plugin packages. Dangerous-code `critical` findings and install-time scan failures for arbitrary plugin or skill installs remain blocking unless the operator explicitly uses the documented unsafe-install override.
+- **Regression coverage:** `src/security/skill-scanner.test.ts` verifies that ordinary env defaults plus distant bundled API sends are not flagged, while local `process.env` values sent through `fetch` still produce `env-harvesting`.
 
 ---
 

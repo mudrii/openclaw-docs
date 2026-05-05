@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.5.3 (2026-05-04).** Latest published upstream release: v2026.5.3 (signed tag, published 2026-05-04 07:01:29 UTC).
+> **Current docs version: v2026.5.3-1 (2026-05-05).** Latest published upstream release: v2026.5.3-1 (published 2026-05-04 09:35:36 UTC).
 
 ---
 
@@ -67,7 +67,12 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.5.3 additions (current release line):**
+**v2026.5.3-1 hotfix (current release line):**
+
+- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.3-1` (published 2026-05-04 09:35:36 UTC; window `v2026.5.3..v2026.5.3-1`, 5 commits). The release is a core npm hotfix for official bundled plugin package installation: the install scanner no longer blocks packages merely because `process.env` access and normal API sends appear in distant parts of the same compiled bundle.
+- **Behavioral change surface (`v2026.5.3..v2026.5.3-1`):** verify `src/security/skill-scanner.ts` and `skill-scanner.test.ts` when changing install scanner rules; keep dangerous-code `critical` install failures fail-closed for arbitrary third-party plugins/skills; and treat release workflow/config-schema/package-version changes as release metadata unless the source diff shows runtime behavior.
+
+**v2026.5.3 additions (historical):**
 
 - **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.3` (signed tag, published 2026-05-04 07:01:29 UTC; window `v2026.5.2..v2026.5.3`, 561 commits). Include bundled `file-transfer` tools (`file_fetch`, `dir_list`, `dir_fetch`, `file_write`) and their default-deny node path policy; unified `streaming.mode: "progress"` drafts and `streaming.progress.*` channel metadata; top-level `/steer <message>` and `/tell`; `/side` as `/btw`; official external plugin install/update hardening; `plugins list --json` dependency state; beta-channel plugin update fallback; stale install-ledger recovery; Gateway startup/runtime lazy-loading; `doctor --fix` safe legacy migration persistence; sandbox registry sharding; durable usage/session-usage caching; Google Meet realtime voice readiness/permission/status fixes; and broad transport/channel/provider/runtime reliability fixes.
 - **Behavioral change surface (`v2026.5.2..v2026.5.3`):** verify progress-draft rendering/finalization and standalone progress suppression when touching channel streaming code; distinguish top-level `/steer` from `/subagents steer`; keep `/btw` and `/side` side-result behavior out of transcript history; test file-transfer path allow/deny policy, symlink handling, and 16 MB ceiling before changing paired-node file operations; verify official plugin update fallback across stable/beta/npm/ClawHub paths; treat invalid Gateway config as fail-closed while `doctor --fix` owns repair; and check Google Meet realtime joins wait for `session.updated` before reporting voice readiness.

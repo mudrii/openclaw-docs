@@ -31,10 +31,12 @@ Looking for chat channel docs (WhatsApp/Telegram/Discord/Slack/Mattermost (plugi
 - [Anthropic (API + Claude CLI)](/providers/anthropic)
 - [Arcee AI (Trinity models)](/providers/arcee)
 - [BytePlus (International)](/concepts/model-providers#byteplus-international)
+- Cerebras - bundled first-party provider plugin; authenticate with `CEREBRAS_API_KEY` and use `cerebras/<model>` refs.
 - [Chutes](/providers/chutes)
 - [ComfyUI](/providers/comfy)
 - [Cloudflare AI Gateway](/providers/cloudflare-ai-gateway)
 - [DeepSeek](/providers/deepseek)
+- DeepInfra - bundled provider plugin; authenticate with `DEEPINFRA_API_KEY` and use `deepinfra/<model>` refs.
 - [fal](/providers/fal)
 - [Fireworks](/providers/fireworks)
 - [GitHub Copilot](/providers/github-copilot)
@@ -46,6 +48,7 @@ Looking for chat channel docs (WhatsApp/Telegram/Discord/Slack/Mattermost (plugi
 - [Kilocode](/providers/kilocode)
 - [LiteLLM (unified gateway)](/providers/litellm)
 - [LM Studio (local models)](/providers/lmstudio)
+- Microsoft Foundry - bundled provider plugin for Azure AI Foundry/OpenAI-compatible deployments; authenticate with Azure provider credentials such as `AZURE_OPENAI_API_KEY` where applicable.
 - [MiniMax](/providers/minimax)
 - [Mistral](/providers/mistral)
 - [Moonshot AI (Kimi + Kimi Coding)](/providers/moonshot)
@@ -63,6 +66,7 @@ Looking for chat channel docs (WhatsApp/Telegram/Discord/Slack/Mattermost (plugi
 - [StepFun](/providers/stepfun)
 - [Synthetic](/providers/synthetic)
 - [Together AI](/providers/together)
+- Tencent TokenHub - bundled Tencent provider plugin; authenticate with `TOKENHUB_API_KEY` and use Tencent-owned provider/model refs.
 - [Venice (Venice AI, privacy-focused)](/providers/venice)
 - [Vercel AI Gateway](/providers/vercel-ai-gateway)
 - [Vydra](/providers/vydra)
