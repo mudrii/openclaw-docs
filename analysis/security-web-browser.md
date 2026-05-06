@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web Search, WhatsApp & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-05 | Version: v2026.5.3-1 | Codebase: OpenClaw release tag `v2026.5.3-1` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 
@@ -1374,3 +1374,33 @@ The following entries are added to the Security Model section for `src/browser`:
 
 **v2026.4.22:**
 - Matrix DM-pairing-store entries continue to be blocked from room-control commands (#67294); v2026.4.22 adds an audit log entry whenever a DM entry is rejected for a room-control attempt.
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### Security / Container Hardening (v2026.5.4)
+- **Gateway container capabilities:** `NET_RAW` and `NET_ADMIN` capabilities dropped from the gateway container; `no-new-privileges` enabled in bundled `docker-compose.yml`. Thanks @VintageAyu.
+- **Docker plugin dist prune:** Package-excluded plugin dist directories pruned from runtime images unless the build explicitly opts in. Fixes #77424. Thanks @vincentkoc.
+- **Diagnostics event bus:** Internal diagnostics event bus granted only to official installed diagnostics exporter plugins (e.g., `@openclaw/diagnostics-prometheus`). Not granted to arbitrary global plugins. Fixes #76628. Thanks @RayWoo.
+
+### Security / Container Hardening (v2026.5.5)
+- **docker-compose.yml hardening:** `no-new-privileges` and capability drops also confirmed in v2026.5.5 release. Thanks @VintageAyu.
+
+### Exec Approvals (v2026.5.4)
+- **Tree-sitter shell explainer:** Tree-sitter-backed shell command explainer added for future exec approval and command-review surfaces. (#75004) Thanks @jesse-merhi.
+- **Sandbox registry sharding:** Sandbox container and browser registry entries now stored as per-runtime shard files. `openclaw doctor --fix` migrates legacy monolithic registry files. (#74831) Thanks @luckylhb90.
+- **Auth profile format cooldown:** Providers no longer put on cooldown for format-level rejections. (#77280) Thanks @vincentkoc.
+
+### Exec Approvals (v2026.5.5)
+- **Windows rename-overwrite fallback:** Falls back to a guarded copy when Windows rejects rename-overwrite for `exec-approvals.json`, while preserving symlink, hard-link, and owner-only permission safeguards. Fixes #77785. (#77907) Thanks @Alex-Alaniz, @MilleniumGenAI.
+
+### Security / Secrets (v2026.5.4)
+- **keyRef/tokenRef preservation in secrets apply:** Auth-profile `keyRef` and `tokenRef` fields preserved when scrubbing provider-target secrets during `secrets apply`, so canonical SecretRef metadata survives without keeping plaintext values. Thanks @Beandon13.
+- **SecretRef external dist/ resolution:** `<rootDir>/dist/` now checked when resolving `secret-contract-api` sidecar for npm-published externalized channel plugins. Fixes env-backed `channels.discord.token` SecretRefs silently failing to resolve at gateway start. Thanks @mogglemoss.
+
+### Providers / Auth (v2026.5.5)
+- **OPENCLAW_GATEWAY_TOKEN shadow detection:** Warning emitted when `OPENCLAW_GATEWAY_TOKEN` would shadow a different active `gateway.auth.token` source for local CLI commands. Fixes #74271. Thanks @yelog.
+
+### iOS Pairing / Security (v2026.5.5)
+- **LAN gateway pairing:** Setup-code and manual `ws://` connects allowed for private LAN and `.local` gateways while keeping Tailscale/public routes on `wss://`. Explicit gateway passwords preferred over stale bootstrap tokens in mixed-auth reconnects. Fixes #47887. Thanks @draix, @BunsDev.

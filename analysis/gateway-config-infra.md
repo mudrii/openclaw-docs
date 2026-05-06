@@ -1,8 +1,8 @@
 # OpenClaw Core Architecture — Part 1: Module Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-05-04 | **Version:** v2026.5.2
-**Codebase:** OpenClaw release tag `v2026.5.2`
+**Updated:** 2026-05-06 | **Version:** v2026.5.5
+**Codebase:** OpenClaw release tag `v2026.5.5`
 **Total lines (6 modules):** release-tag snapshot across gateway/config/infra/daemon/routing/types
 
 ---
@@ -1025,3 +1025,60 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 
 **v2026.4.22:**
 - Config write-through for single-file `$include` targets (#41050, #66048) extended to nested top-level `$include` arrays where exactly one entry resolves to a writable file.
+
+## v2026.5.2–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.2..v2026.5.5` | Spans v2026.5.3, v2026.5.3-1, v2026.5.4, v2026.5.5 releases
+
+### Gateway Startup Performance (v2026.5.4)
+- **Deferred non-readiness sidecars:** Non-readiness sidecars defer until after the ready signal, reducing gateway cold-start time.
+- **Hot-path import avoidance:** Channel plugin barrel imports avoided; `jiti` not imported on native-loadable plugin startup paths (compiled plugins don't pay source-transform loader cost unless fallback loading is needed).
+- **Trusted bundled plugin fast-path:** Trusted bundled plugin metadata fast-pathed during gateway startup.
+- **Model-catalog helpers deferred:** Run-session lookup, QR pairing helpers, and TypeBox memory-tool schema construction kept out of hot startup import paths.
+- **Startup phase spans:** Startup phase spans, active work labels, stale terminal bridge markers, and default sync-I/O tracing added in `pnpm gateway:watch`.
+- **Provider plugin loading:** Provider plugins that own explicitly configured image, video, or music generation defaults now loaded at startup so generation tools are live immediately after restart. Fixes #77244.
+
+### Gateway Performance (v2026.5.4)
+- **Reset/refresh responsiveness:** Gateway reset and refresh paths kept responsive. (#77701)
+- **Plugin model resolution skip:** Plugin model resolution skipped in gateway session lists.
+
+### Gateway Shutdown (v2026.5.5)
+- **Maintenance cancellation:** Delayed post-ready maintenance cancelled during close; maintenance/cron startup suppressed after quick restarts, preventing orphaned background timers.
+- **ShutdownResult:** Structured shutdown warnings and HTTP close timeout warnings delivered through `ShutdownResult`. Thanks @edenfunf.
+- **Supervisor restart visibility:** Recent supervisor restart handoffs reported in `openclaw doctor --deep` and `openclaw gateway status --deep`. Thanks @shakkernerd.
+
+### Gateway HTTP / OpenAI-compat (v2026.5.5)
+- **Initial stream chunk flush:** Initial chat stream chunk flushed correctly so first-token streaming is visible to clients.
+- **Assistant role SSE chunk:** Sent immediately when streaming chat-completion headers are accepted, preventing bodyless 200 responses on slow cold starts.
+- **Media sidecar skip:** Non-media HTTP routes skip media sidecar handling entirely.
+- **Model catalog caching:** Empty read-only model catalog results cached until reload, preventing TUI/control-plane loops from hammering plugin metadata reads.
+
+### Gateway Status (v2026.5.5)
+- **Process uptime:** Compact Gateway process uptime and host system uptime shown in `/status`. Thanks @vincentkoc.
+- **Event-loop degraded guard:** Fast repeated health/status samples no longer trigger false degraded alerts before a sustained sampling window. Thanks @shakkernerd.
+- **Health probe auth:** Local gateway probe auth resolved from installed config during post-update restart verification. Thanks @vincentkoc.
+
+### Config / Doctor (v2026.5.4)
+- **Auth profiles metadata intact:** Active `auth.profiles` metadata preserved when `doctor --fix` strips stale secret fields from configs. Fixes #77400.
+- **Plugin allow-only repair:** `plugins.allow`-only official plugin ids included in release configured-plugin repair set so `doctor --fix` installs them instead of removing them as stale. Fixes #77155. Thanks @hclsys.
+- **Session routing cleanup:** Auto-created stale session routing state cleared from sessions store when plugin-owned model/runtime/auth/session bindings are outside the current configured route. Refs #68615.
+- **keyRef/tokenRef preservation:** Auth-profile `keyRef` and `tokenRef` fields preserved when scrubbing provider-target secrets. Thanks @Beandon13.
+- **Plugin auto-enable alias:** Claiming plugin manifest id preferred over built-in channel alias when auto-allowlisting configured channels. Thanks @Beandon13.
+- **SecretRef dist/ resolution:** `<rootDir>/dist/` checked when resolving `secret-contract-api` sidecar for npm-published externalized channel plugins so env-backed SecretRefs resolve correctly. Thanks @mogglemoss.
+
+### Config / Doctor (v2026.5.5)
+- **OPENCLAW_GATEWAY_TOKEN shadow warning:** Warning emitted when env token would shadow a different active `gateway.auth.token` source for local CLI commands. Fixes #74271. Thanks @yelog.
+- **openai-codex route repair:** `doctor --fix` repairs legacy `openai-codex/*` routes to canonical `openai/*` across primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel overrides, and stale session pins. Thanks @vincentkoc.
+- **Heartbeat-poisoned session repair:** `doctor --fix` moves heartbeat-poisoned default main session store entries to recovery keys and clears stale TUI restore pointers. Thanks @vincentkoc.
+- **Doctor deep gateway:** Recent supervisor restart handoffs reported in `openclaw doctor --deep` using installed service environment. Thanks @shakkernerd.
+
+### Infrastructure / Windows (v2026.5.4)
+- **Windows IPv6 loopback:** Default loopback listener binds only to `127.0.0.1` on Windows, avoiding libuv dual-stack `::1` issues. (#69701, fixes #69674) Thanks @SARAMALI15792.
+- **Windows POSIX path skip:** `/tmp/openclaw` skipped on Windows; writes land in `%TEMP%\openclaw-<uid>`. Fixes #60713. Thanks @juan-flores077.
+- **Windows media EPERM:** Saved attachment temp files opened read/write before fsync, fixing WebChat and `chat.send` media EPERM during durability flush. (#76593) Thanks @qq230849622-a11y.
+- **Windows drive-letter Docker bind:** Drive-absolute Docker bind sources accepted with Windows-case-insensitive sandbox policy comparisons. (#42174) Thanks @6607changchun.
+
+### Security (v2026.5.4 / v2026.5.5)
+- **Container capability hardening:** Gateway container drops `NET_RAW` and `NET_ADMIN` capabilities; `no-new-privileges` enabled in bundled `docker-compose.yml`. Thanks @VintageAyu.
+- **Diagnostics event bus access:** Internal diagnostics event bus granted only to official installed diagnostics exporter plugins (e.g., `@openclaw/diagnostics-prometheus`). Fixes #76628. Thanks @RayWoo.
+

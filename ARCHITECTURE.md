@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-05-05 (docs snapshot: v2026.5.3-1) | Released baseline: GitHub `v2026.5.3-1` (published 2026-05-04 09:35:36 UTC; core npm hotfix)
+> Updated: 2026-05-06 (docs snapshot: v2026.5.5) | Released baseline: GitHub `v2026.5.5` (published 2026-05-06 08:12:30 UTC)
 
 ---
 
@@ -30,7 +30,7 @@
 
 Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.5.3-1`), the `agents` and `auto-reply` modules remain the top-sized core subtrees, while the `tasks` module (`src/tasks/`) continues to provide the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (125 extension directories, 119 extension packages as of `v2026.5.3-1`). The current stable line keeps the v2026.4.26 provider-manifest routing model, then adds npm-first official plugin cutover records, ClawHub artifact metadata, `git:` plugin install records, descriptor-first plugin tool planning, scoped plugin runtime preloads, and `file-transfer` paired-node tools so prompt-time tool/provider visibility and file movement do not require broad runtime loading or unsafe shell stdout paths. The `v2026.5.3-1` hotfix narrows official bundled-plugin install scanner false positives without changing the plugin architecture. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (133 extension directories, 119 extension packages as of `v2026.5.5`). The v2026.5.4 release adds Google Meet Twilio realtime Gemini voice bridge, `openclaw models auth list`, tree-sitter exec-approval explainer, per-runtime sandbox registry shards, ClawHub 429 rate-limit annotations, `registerIfAbsent` plugin runtime state, Plugin SDK `SessionEntry` projection and `before_agent_finalize` retry, workspace-scoped plugin metadata snapshot reuse, externalized channel dist/ SecretRef contract resolution, Slack Block Kit rich progress drafts, Discord degraded-transport status signals, agent-first Control UI session picker, collapsible cron New Job sidebar, Gateway startup perf improvements, and Docker NET_RAW/NET_ADMIN capability hardening. The v2026.5.5 release is a targeted fix release covering Feishu topic threading, LINE dmPolicy validation, Telegram/Codex progress rendering, Discord heartbeat and guild routing, Matrix approval retry, iOS LAN pairing, TUI session management, Doctor legacy route repair, Gateway shutdown hardening, Control UI responsiveness, session artifact pruning, and Fireworks/xAI provider reasoning controls. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -954,6 +954,16 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | Released skill entrypoints (`SKILL.md` across `skills/`, `.agents/skills/`, `extensions/`) | 87 |
 
 > Current analyzed source package: released `v2026.5.3-1`. Counts measured from the `v2026.5.3-1` released tree.
+
+### v2026.5.4–v2026.5.5 Released Changes (2026-05-05 to 2026-05-06 docs snapshot)
+
+- **23,527 TypeScript files** (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`; validated against release tag `v2026.5.5`)
+- **133 extension directories**, **119 extension packages**, **211 bundled skill entrypoints** in the released tree
+- **Files changed v2026.5.3-1→v2026.5.5:** 1,561 files, +73,905/−11,891 lines
+- **v2026.5.4 window:** 527 commits (`v2026.5.3-1..v2026.5.4`), published 2026-05-05 07:37:19 UTC
+- **v2026.5.5 window:** 54 commits (`v2026.5.4..v2026.5.5`), published 2026-05-06 08:12:30 UTC (pure fix release)
+- **Key additions (v2026.5.4):** `openclaw models auth list`; tree-sitter exec-approval explainer (`src/agents/exec-approval-result.ts` surface); per-runtime sandbox container/browser registry shards (replacing monolithic registry); `agents.defaults.toolProgressDetail` verbose control; `registerIfAbsent` plugin keyed-store API; Plugin SDK `SessionEntry` slot projection; `before_agent_finalize` bounded retry hook; post-compaction tool-loop guard (`tools.loopDetection.postCompactionGuard`); Gateway deferred non-readiness sidecars; Docker NET_RAW/NET_ADMIN dropped + no-new-privileges
+- **Key fixes (v2026.5.5):** Feishu topic starter thread hydration; LINE dmPolicy wildcard enforcement; Discord heartbeat ACK measurement; Matrix approval retry; iOS LAN pairing; TUI session picker bounded; Doctor `openai-codex/*` route repair; Gateway shutdown maintenance cancel; exec-approvals.json Windows rename fallback; session artifact pruning; hook session-memory filename collision suffixes; Fireworks Kimi thinking-off; xAI reasoning controls stopped for Grok Responses; video aspect-ratio normalization
 
 ### Key External Dependencies
 

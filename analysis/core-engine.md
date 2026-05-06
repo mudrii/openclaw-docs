@@ -1,7 +1,7 @@
 # OpenClaw Core Engine — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5`
 > Modules: agents (1,172 files), gateway (472 files), tasks (44 files), sessions (17 files), routing (11 files), hooks (52 files), context-engine (7 files)
 
 ---
@@ -1605,3 +1605,45 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - Gateway diagnostics export (stability recording by default): sanitized logs, status, health, config, stability snapshots.
 - Codex harness now fires `before_prompt_build`, `before_compaction`/`after_compaction`, `llm_input`/`llm_output`/`agent_end` for native app-server turns.
 - GPT-5 overlay moved to shared provider runtime; `agents.defaults.promptOverlays.gpt5.personality` toggle.
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### Gateway (v2026.5.4)
+- **Startup performance:** Non-readiness sidecars now defer until after the ready signal; hot-path channel plugin barrel imports avoided; trusted bundled plugin metadata fast-pathed during startup.
+- **`jiti` import avoided:** Native-loadable plugin startup paths no longer import `jiti`, reducing source-transform loader cost on normal built plugins.
+- **Diagnostics:** Added startup phase spans, active work labels, stale terminal bridge markers, and default sync-I/O tracing in `pnpm gateway:watch` for easier latency attribution.
+- **Windows IPv6:** Default loopback listener now binds only to `127.0.0.1` on Windows, avoiding libuv dual-stack `::1` localhost HTTP request issues. (#69701)
+
+### Gateway (v2026.5.5)
+- **Shutdown hardening:** Delayed post-ready maintenance cancelled during close; maintenance/cron startup suppressed after quick restarts to prevent orphaned background timers.
+- **ShutdownResult:** Structured shutdown warnings and HTTP close timeout warnings now delivered through `ShutdownResult`.
+- **Status signals:** Recent supervisor restart handoffs reported in `openclaw doctor --deep` and `openclaw gateway status --deep`; compact Gateway process uptime and host system uptime shown in `/status`.
+- **Model catalog:** Empty read-only model catalog results cached until reload, preventing TUI/control-plane refresh loops from hammering plugin metadata reads.
+- **Media sidecar:** Non-media HTTP routes skip media sidecar handling entirely.
+- **OpenAI-compat:** Initial chat stream chunk flushed immediately so first-token streaming is visible; assistant role SSE chunk sent as soon as streaming headers are accepted.
+- **Event-loop degraded guard:** Fast repeated health/status samples no longer trigger false degraded alerts before a sustained sampling window.
+
+### Sessions / Tasks (v2026.5.4)
+- **Sandbox registry sharding:** Sandbox container and browser registry entries now stored as per-runtime shard files (replacing the legacy monolithic registry). `openclaw doctor --fix` migrates legacy files. (#74831)
+- **Export filename collisions:** Session export filenames now deduplicated to avoid collisions. (#77762)
+
+### Sessions / Tasks (v2026.5.5)
+- **Artifact pruning:** `sessions cleanup` now prunes old unreferenced transcript, compaction checkpoint, and trajectory artifacts, preventing gateway restart/crash orphan accumulation. Fixes #77608.
+- **TUI session picker:** Bounded to recent rows; uses exact lookup-style refreshes for the active session.
+- **TUI respawn wrapper:** TUI now skips the generic CLI respawn wrapper for interactive launches, exits cleanly on terminal loss, and refuses to restore heartbeat sessions as the remembered chat session.
+
+### Hooks / Context Engine (v2026.5.4)
+- **Session-memory filename dedup:** Fallback memory filenames now get collision suffixes so repeated `/new` or `/reset` in the same minute don't overwrite earlier archives.
+- **Prompt-cache reuse:** Per-turn runtime context kept out of ordinary chat system prompts while still delivering hidden current-turn context, restoring prompt-cache reuse on chat continuations. Fixes #77431.
+
+### Hooks / Context Engine (v2026.5.5)
+- **Session-memory hook:** Renamed capture runs off the command reply path; LLM-generated filename slugs are now opt-in (`llmSlug: true`); `/new`/`/reset` no longer block WhatsApp and other channel replies on hook housekeeping.
+- **Session-memory collision suffix:** Fallback filenames get collision suffixes (also fixes duplicate from v2026.5.4 backport).
+- **Context engine isolation:** Hidden OpenClaw runtime-context custom messages excluded from context-engine assemble, afterTurn, and ingest hooks, so transcript reconstruction plugins only see conversation messages.
+
+### Routing / CLI (v2026.5.5)
+- **CLI status:** Selected agent runtime/harness now shown in `openclaw status` session rows and `openclaw sessions` table.
+- **CLI channels bootstrap skip:** Bare `openclaw channels` parent-help command skips config, proxy, plugin startup bootstrap for fast exit.
+- **CLI gateway:** Non-TTY stdin paused after full CLI command completion; `openclaw agent` no longer falls back to embedded mode after gateway request/auth failures.

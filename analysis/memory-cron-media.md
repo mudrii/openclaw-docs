@@ -1,7 +1,7 @@
 # OpenClaw Analysis: Memory, Cron & Media Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5`
 > Release note: the current released memory surface is split across `src/memory-host-sdk/` and `extensions/memory-core/src/memory/`. Historical `src/memory/` references below describe the older pre-split layout and should be read as historical context only.
 
 ---
@@ -1275,3 +1275,35 @@ Added in the v2026.4.7 window. A separate persistent wiki compiler plugin distin
 - Cron/MCP: single shared cleanup path for isolated cron run ends, persistent session rollover, and `deleteAfterRun` fallback cleanup. Fixes #69145, #68623, #68827.
 - MCP/gateway: tear down stdio MCP process trees on transport close; dispose bundled MCP runtimes on session delete/reset (prevents orphaned processes). Fixes #68809, #69465.
 - Active Memory: stop reviving removed live `active-memory` config from startup snapshots; turning off the plugin entry takes effect immediately without restart.
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### Memory / Active Memory (v2026.5.4)
+- **QQ c2c channel skip:** Active Memory recall subagent now skips session-store channel entries containing `:` (e.g., QQ c2c agent IDs `c2c:10D4F7C2…`) so they don't reach `dirName` validation and crash recall runs. (#77396) Thanks @hclsys.
+- **memory-core json5 dep:** `json5` added to memory-core plugin runtime dependency set so packaged `memory_search` sandboxes can resolve generated OpenClaw runtime chunks that parse JSON5 config. Fixes #77461.
+
+### Session Memory Hooks (v2026.5.4)
+- **Filename collision suffix:** Fallback memory filenames now get collision suffixes so repeated `/new` or `/reset` captures in the same minute don't overwrite earlier session archives. Thanks @vincentkoc.
+- **Prompt-cache reuse:** Per-turn runtime context kept out of ordinary chat system prompts while still delivering hidden current-turn context, restoring prompt-cache reuse on chat continuations. Fixes #77431.
+
+### Session Memory Hooks (v2026.5.5)
+- **Off reply path:** Session-memory capture now runs off the command reply path so `/new`/`/reset` no longer block WhatsApp and other message-channel reset replies on hook housekeeping or nested model calls. Thanks @vincentkoc.
+- **LLM slug opt-in:** Model-generated memory filename slugs made opt-in with `llmSlug: true` to prevent unnecessary nested model calls on every reset. Thanks @vincentkoc.
+- **Collision suffixes:** Fallback filenames get collision suffixes (consolidated fix). Thanks @vincentkoc.
+
+### Media Generation (v2026.5.4)
+- **Codex audio transcription:** Codex audio transcription advertised in runtime/manifest metadata; active Codex chat models routed to OpenAI transcription default instead of sending chat model IDs to audio transcription. Thanks @vincentkoc.
+- **TTS telephony overrides:** Provider voice/model overrides honored in telephony synthesis providers. Thanks @vincentkoc.
+- **Realtime audio queue bound:** Paced Twilio audio queue bounded; overloaded realtime streams closed before audio piles up behind the websocket backpressure guard. Thanks @vincentkoc.
+- **Gateway media defaults:** Provider plugins owning explicitly configured image/video/music generation defaults now loaded at gateway startup so generation tools become live immediately after restart. Fixes #77244. Thanks @buyuangtampan, @Nikoxx99, @vincentkoc.
+
+### Media Generation (v2026.5.5)
+- **Video aspect-ratio normalization:** Provider-specific aspect-ratio and resolution hints accepted at tool boundary; `720P` normalized to MiniMax's supported `768P`; `generateAudio` not sent on Gemini video requests. Thanks @vincentkoc.
+- **Attachment media dedup:** Attachment-style message tool actions treated as completed chat sends, preventing duplicate fallback media posts.
+- **Codex WebChat media:** Codex app-server generated images staged into managed media before display, avoiding `LocalMediaAccessError`. Thanks @frankekn.
+
+### Cron (v2026.5.4)
+- **Control UI collapsible sidebar:** New Job cron sidebar made collapsible so the jobs list can reclaim space while keeping the form one click away. Thanks @BunsDev.
+

@@ -1,7 +1,7 @@
 # Utilities & Support Modules — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-**Updated:** 2026-05-04 | **Version:** v2026.5.2 | **Codebase:** OpenClaw release tag `v2026.5.2`
+**Updated:** 2026-05-06 | **Version:** v2026.5.5 | **Codebase:** OpenClaw release tag `v2026.5.5`
 **Cluster:** Utilities & Support Modules  
 **Total files analyzed:** stable release-line snapshot across 14 support modules plus `apps/macos`
 
@@ -1205,3 +1205,52 @@ Shared test utilities and mock factories.
 
 **v2026.4.22:**
 - Detached runtime registration contract (#68915) gained a default cancellation propagation path so plugins that don't wire their own cancel handler still respect session teardown.
+
+## v2026.5.2–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.2..v2026.5.5` | Spans v2026.5.3, v2026.5.3-1, v2026.5.4, v2026.5.5 releases
+
+### Control UI (v2026.5.4)
+- **Agent name in breadcrumbs:** Active agent name shown in dashboard breadcrumbs without adding the current session key.
+- **Collapsible cron sidebar:** New Job cron sidebar made collapsible so the jobs list can reclaim space while keeping the form one click away. Thanks @BunsDev.
+- **Long animation frame recording:** Browser long animation frame or long task entries recorded in debug event log for slow render attribution.
+- **Agent-first session picker:** Chat session picker uses agent-first filter; controls/composer kept responsive across phone/tablet/desktop; desktop chat controls kept on one row; duplicate avatar refreshes avoided; row hidden while scrolling down. Thanks @BunsDev.
+- **Consecutive duplicate collapse:** Consecutive duplicate text messages collapsed into one bubble with count so no-op heartbeat acknowledgements stay compact. Thanks @BunsDev.
+
+### Control UI (v2026.5.5)
+- **Compaction checkpoint disclosure:** Compaction count displayed as compact `N Checkpoint(s)` disclosure with expanded session-level details and modern checkpoint history cards across responsive table layouts. Thanks @BunsDev.
+- **Responsive history payloads:** Chat and channel tabs kept responsive while history payloads and channel probes are slow; partial channel status labelled; slow render timings recorded in event log. Thanks @BunsDev.
+- **`/new` hook scoping:** Documented `/new` command and lifecycle hooks fired only for explicit Control UI session creation (not SDK parent-session creates). Fixes #76957. Thanks @BunsDev.
+- **Session runtime display:** Each session's agent runtime shown in Sessions table with runtime label filtering. Thanks @vincentkoc.
+- **Progress text persistence:** Persisted assistant progress text kept visible when transcript turn also contains tool-use metadata. Fixes #77374. Thanks @BunsDev.
+
+### Status / CLI (v2026.5.4)
+- **`openclaw models auth list`:** New CLI command `openclaw models auth list [--provider <id>] [--json]` to inspect saved per-agent auth profiles without dumping secrets. Thanks @vincentkoc.
+- **Discord degraded-transport status:** Degraded Discord transport and gateway event-loop starvation signals in `openclaw channels status` and `openclaw status --deep`. (#76327) Thanks @joshavant.
+- **Model switching hint:** Exact additive allowlist repair command included when `/model ... --runtime ...` targets a blocked model. Thanks @vincentkoc.
+
+### Status / CLI (v2026.5.5)
+- **Uptime in status:** Compact Gateway process uptime and host system uptime shown in `/status` and `openclaw status` session rows. Thanks @vincentkoc.
+- **Runtime in sessions table:** Selected agent runtime shown in `openclaw sessions` table and `openclaw status` session rows. Thanks @vincentkoc.
+- **CLI channels fast exit:** Bare `openclaw channels` parent-help command skips config/plugin startup bootstrap for fast exit. Thanks @vincentkoc.
+
+### Pairing / Doctor (v2026.5.5)
+- **iOS LAN pairing:** Setup-code and manual `ws://` connects allowed for private LAN and `.local` gateways while keeping Tailscale/public routes on `wss://`. Fixes #47887. Thanks @draix, @BunsDev.
+- **OPENCLAW_GATEWAY_TOKEN warning:** Warning emitted when env token would shadow a different active `gateway.auth.token` source. Fixes #74271. Thanks @yelog.
+- **Supervisor restart reports:** Recent supervisor restart handoffs shown in `openclaw doctor --deep` and `openclaw gateway status --deep`. Thanks @shakkernerd.
+
+### Auth Profiles (v2026.5.4)
+- **SecretRef preservation:** Auth-profile `keyRef` and `tokenRef` fields preserved when scrubbing provider-target secrets. Thanks @Beandon13.
+- **Models auth list:** `openclaw models auth list [--provider <id>] [--json]` allows inspection without dumping secrets. Thanks @vincentkoc.
+
+### Auth Profiles (v2026.5.5)
+- **Format rejection cooldown:** Providers no longer put on cooldown for format-level rejections so fallback profiles can still be tried when a model name is unsupported. (#77280) Thanks @vincentkoc.
+
+### CLI Update (v2026.5.4)
+- **Absolute POSIX npm shell:** Package-manager update steps use an absolute POSIX npm script shell, fixing restricted PATH environments. Fixes #77530. Thanks @PeterTremonti.
+- **Plugin sync on update failure:** CLI update disables/skips plugins that fail package-update plugin sync. Thanks @vincentkoc.
+- **Dev-channel stop on fetch failure:** Dev-channel updates stop cleanly after a fetch failure. Thanks @vincentkoc.
+
+### CLI Update (v2026.5.5)
+- **Dev-channel lint opt-in:** Dev-channel preflight lint made opt-in and constrained when enabled, preventing Ubuntu OOM-kills from blocking main-channel updates. Thanks @vincentkoc.
+

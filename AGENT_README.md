@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.5.3-1 (2026-05-05).** Latest published upstream release: v2026.5.3-1 (published 2026-05-04 09:35:36 UTC).
+> **Current docs version: v2026.5.5 (2026-05-06).** Latest published upstream release: v2026.5.5 (published 2026-05-06 08:12:30 UTC).
 
 ---
 
@@ -67,10 +67,15 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.5.3-1 hotfix (current release line):**
+**v2026.5.5 (current release line):**
 
-- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.3-1` (published 2026-05-04 09:35:36 UTC; window `v2026.5.3..v2026.5.3-1`, 5 commits). The release is a core npm hotfix for official bundled plugin package installation: the install scanner no longer blocks packages merely because `process.env` access and normal API sends appear in distant parts of the same compiled bundle.
-- **Behavioral change surface (`v2026.5.3..v2026.5.3-1`):** verify `src/security/skill-scanner.ts` and `skill-scanner.test.ts` when changing install scanner rules; keep dangerous-code `critical` install failures fail-closed for arbitrary third-party plugins/skills; and treat release workflow/config-schema/package-version changes as release metadata unless the source diff shows runtime behavior.
+- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.5` (published 2026-05-06 08:12:30 UTC; window `v2026.5.4..v2026.5.5`, 54 commits). The release is a targeted fix release covering Feishu topic threading, LINE dmPolicy validation, Telegram/Codex progress rendering, Discord heartbeat and guild routing, Matrix approval retry, iOS LAN pairing, TUI session management, Doctor legacy route repair, Gateway shutdown hardening, Control UI responsiveness, session artifact pruning, and Fireworks/xAI provider reasoning controls.
+- **Behavioral change surface (`v2026.5.4..v2026.5.5`):** verify Doctor `openai-codex/*` route repair selects `agentRuntime.id: "codex"` only when the Codex plugin is installed/enabled/has usable OAuth; verify TUI session restore no longer uses heartbeat sessions as the remembered chat session; check exec-approvals.json Windows rename fallback when changing approval persistence paths; and treat session artifact pruning as active cleanup when touching session lifecycle code.
+
+**v2026.5.4 additions (historical):**
+
+- **Current release-line checks:** this docs snapshot covers upstream `v2026.5.4` (published 2026-05-05 07:37:19 UTC; window `v2026.5.3-1..v2026.5.4`, 527 commits). Includes `openclaw models auth list`; tree-sitter exec-approval explainer; per-runtime sandbox container/browser registry shards replacing the monolithic registry; `agents.defaults.toolProgressDetail` verbose control; `registerIfAbsent` plugin keyed-store API; Plugin SDK `SessionEntry` slot projection; `before_agent_finalize` bounded retry hook; post-compaction tool-loop guard (`tools.loopDetection.postCompactionGuard`); Gateway deferred non-readiness sidecars; Docker NET_RAW/NET_ADMIN dropped + no-new-privileges; and broad channel/provider/UI additions.
+- **Behavioral change surface (`v2026.5.3-1..v2026.5.4`):** verify sandbox registry shard migration via `openclaw doctor --fix` before assuming monolithic registry format; test post-compaction loop guard (windowSize=3 default) when changing tool-loop detection; verify `agents.defaults.toolProgressDetail: "raw"` applies globally before per-agent overrides; test `registerIfAbsent` atomicity when implementing keyed-store plugin state; and verify Gateway startup deferred-sidecar ordering when changing startup sequences.
 
 **v2026.5.3 additions (historical):**
 
@@ -784,6 +789,8 @@ All type files are in `src/config/`, all Zod schemas in `src/config/`.
 > **v2026.4.2 additions:** `plugins.entries.xai.config.xSearch.*` — plugin-owned xAI x_search config (migrated from `tools.web.x_search.*`). `plugins.entries.xai.config.webSearch.apiKey` — xAI web search API key. `plugins.entries.firecrawl.config.webFetch.*` — plugin-owned Firecrawl web_fetch config (migrated from `tools.web.fetch.firecrawl.*`). `agents.defaults.compaction.notifyUser` (bool) — opt-in compaction start notice. Provider transport policy: insecure TLS/runtime overrides blocked; proxy-hop TLS separated from target mTLS.
 >
 > **v2026.4.1 additions:** `agents.defaults.params` (object) — global default provider parameters applied to all model calls unless overridden per-agent or per-model. `gateway.webchat.chatHistoryMaxChars` (number) — configurable chat history text truncation for webchat. `auth.cooldowns.rateLimitedProfileRotations` (number) — cap for same-provider auth-profile retries before cross-provider fallback. `channels.telegram.errorPolicy` (string) and `channels.telegram.errorCooldownMs` (number) — per-account/chat/topic error suppression. `channels.whatsapp.reactionLevel` (string) — agent reaction guidance level. `webSearch.searxng.host` (string) — SearXNG instance host for bundled web search provider.
+>
+> **v2026.5.4 additions:** `agents.defaults.toolProgressDetail: "raw"` (string) — verbose mode override for tool progress output; forces raw tool progress detail globally when set to `"raw"`. `tools.loopDetection.postCompactionGuard.windowSize` (number, default 3) — post-compaction tool-loop guard window; abort threshold for repeated `(tool, args, result)` triples after auto-compaction-retry. `tools.loopDetection.enabled` (boolean) — master toggle for tool-loop detection including the post-compaction guard.
 
 ### How to Add a New Config Key
 
@@ -886,6 +893,8 @@ src/<module>/
 - **Behavioral Shifts (v2026.4.20):** #145, #146
 - **Behavioral Shifts (v2026.4.21):** #147, #148
 - **Breaking Changes (v2026.4.2):** #129, #130, #131, #132, #133, #134
+- **Behavioral Shifts (v2026.5.4+):** #153, #154
+- **Behavioral Shifts (v2026.5.5+):** #155, #156
 - **Operational Notes (v2026.3.28):** #111, #112, #113
 - **Exec/Shell Security (v2026.2.22):** #64, #65, #66
 - **Feishu:** #101
@@ -1285,6 +1294,20 @@ src/<module>/
 
 134. **Task Flow managed child spawning with sticky cancel** — external orchestrators can stop scheduling immediately via sticky cancel intent, and parent Task Flows settle to `cancelled` once active child tasks finish. If you change task cancellation or flow lifecycle, verify that cancel intent propagates correctly through managed child hierarchies and that parent flows do not settle prematurely.
 
+### v2026.5.4–v2026.5.5 Specific
+
+**BEHAVIORAL SHIFTS (v2026.5.4+):**
+
+153. **Post-compaction tool-loop guard arms automatically** — after auto-compaction-retry, the guard aborts runs that send the same `(tool, args, result)` triple `windowSize` times (default 3). Disable via `tools.loopDetection.enabled: false`; tune via `tools.loopDetection.postCompactionGuard.windowSize`. Agents that legitimately repeat the same tool call after compaction (e.g. polling) may need the window size increased or the guard disabled.
+
+154. **Sandbox registry is now per-runtime shard files** — sandbox container/browser registry entries are no longer stored in a single monolithic registry file. `openclaw doctor --fix` migrates legacy monolithic registry files. Do not manually edit the old monolithic file after upgrading; the sharded files are the source of truth.
+
+**BEHAVIORAL SHIFTS (v2026.5.5+):**
+
+155. **Doctor `openai-codex/*` route repair is selective** — `doctor --fix` now repairs legacy `openai-codex/*` primary model routes to canonical `openai/*`, but only selects `agentRuntime.id: "codex"` when the Codex plugin is installed, enabled, and has usable OAuth. Configs that previously relied on `openai-codex/*` routes without the Codex plugin installed will be repaired to `openai/*` without the Codex runtime.
+
+156. **TUI no longer restores heartbeat sessions as the remembered chat session** — TUI session restore skips heartbeat-poisoned entries. `doctor --fix` clears stale TUI restore pointers and moves heartbeat-poisoned main session entries to recovery keys. If your TUI was resuming a heartbeat session, it will now start fresh or restore a non-heartbeat session instead.
+
 ### v2026.3.28 Specific
 
 **BREAKING CHANGES (v2026.3.28):**
@@ -1631,6 +1654,7 @@ Quick reference for commands mentioned throughout this document.
 | `openclaw config get <key>` | Read a config key |
 | `openclaw config patch <path> <json>` | Patch nested config path — always read-back verify after |
 | `openclaw message send ...` | Send a test message |
+| `openclaw models auth list [--provider <id>] [--json]` | Inspect saved per-agent auth profiles; filter by provider ID or output as JSON |
 
 ### State Directory (`~/.openclaw/`)
 

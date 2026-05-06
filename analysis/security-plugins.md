@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 5: Security, Plugins & Extensions
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-05 | Version: v2026.5.3-1 | Codebase: OpenClaw release tag `v2026.5.3-1`
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5`
 
 ## 1. `src/security/` — Security Guards, Audit, SSRF, Auth
 
@@ -1253,3 +1253,51 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 - Amazon Bedrock Mantle: Claude Opus 4.7 via Mantle Anthropic Messages bearer-auth route (tokens refreshed at runtime, not baked at discovery).
 - Providers/OpenAI Codex: `~/.codex` OAuth material no longer imported from onboarding; use browser login or device pairing.
 - ACPX: `openClawToolsMcpBridge` option injects core MCP server for built-in tools (starting with `cron`).
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3-1..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### Security / Container Hardening (v2026.5.4)
+- **Gateway container capabilities:** `NET_RAW` and `NET_ADMIN` capabilities dropped from the gateway container; `no-new-privileges` enabled in bundled `docker-compose.yml`. Thanks @VintageAyu.
+- **Docker plugin dist prune:** Package-excluded plugin dist directories pruned from runtime images unless the build explicitly opts in. Fixes #77424. Thanks @vincentkoc.
+- **Diagnostics event bus:** Internal diagnostics event bus granted only to official installed diagnostics exporter plugins (e.g., `@openclaw/diagnostics-prometheus`). Not granted to arbitrary global plugins. Fixes #76628. Thanks @RayWoo.
+
+### Plugins / Installation (v2026.5.4)
+- **npm pack installs:** `plugins install` now supports npm pack (`*.tgz`) file-based installs.
+- **Externalized plugin migration hints:** Catalog-backed install hints emitted when `plugins.entries` or `plugins.allow` references an official external plugin not installed, pointing to `openclaw plugins install <spec>`. (#77483) Thanks @hclsys.
+- **dist/ SecretRef contracts:** `<rootDir>/dist/` checked when resolving `secret-contract-api` sidecar for npm-published externalized channel plugins so env-backed SecretRefs resolve correctly at gateway start. Thanks @mogglemoss.
+- **Beta channel installs:** Beta update channel honored for onboarding and doctor-managed plugin installs (`@beta` specs). Thanks @vincentkoc.
+- **Git install hint:** Git install hint shown when npm plugin installation fails with `spawn git ENOENT`; WhatsApp plugin's Git-on-PATH requirement documented. Thanks @vincentkoc.
+
+### Plugins / Update (v2026.5.4)
+- **Plugin sync during host update:** Installed official npm and ClawHub plugins kept synced during host updates even when disabled or previously exact-pinned; third-party pins preserved. Thanks @vincentkoc.
+- **Peer link repair:** Missing plugin-local `openclaw` peer links repaired before skipping unchanged npm plugin updates. (#77544) Thanks @ProspectOre.
+- **pnpm/npm-prefix swap:** Package upgrades now cleanly swap pnpm/npm-prefix installs; beta-channel defaults to latest when plugin beta releases fail install validation. Thanks @vincentkoc, @joshavant.
+- **Trusted source-linked migrations:** Official externalized bundled npm migrations and ClawHub-to-npm fallbacks treated as trusted source-linked installs. Thanks @vincentkoc.
+- **ClawHub-preferred restore:** ClawHub-preferred plugins moved back to ClawHub after earlier npm fallback once ClawHub package becomes available. Thanks @vincentkoc.
+- **Stale bundled paths cleaned:** Stale bundled load paths for already-externalized pinned plugins cleaned on release-channel sync. Thanks @vincentkoc.
+- **Corrupt plugin tolerance:** Corrupt managed plugin records tolerated during update so core package updates can complete and report the plugin repair path. Thanks @vincentkoc.
+- **Disabled plugin sync:** CLI update disables/skips plugins that fail package-update plugin sync so a broken plugin can't fail a successful core update. Thanks @vincentkoc.
+
+### Plugins / Update (v2026.5.5)
+- **Stale npm-root peer repair:** Stale managed npm-root `openclaw` peer packages repaired before plugin installs so beta-channel official plugin updates are not downgraded by old core package-lock state. Thanks @vincentkoc.
+- **Peer link reassertion:** Managed npm plugin `openclaw` peer links reasserted after shared-root npm installs, updates, and uninstalls. Thanks @vincentkoc.
+- **Official plugins synced:** Installed official npm and ClawHub plugins (Codex, Discord, WhatsApp, diagnostics) kept synced during host updates. Thanks @vincentkoc.
+
+### Plugins / SDK & Runtime State (v2026.5.4)
+- **`registerIfAbsent`:** New `registerIfAbsent` API for atomic keyed-store dedupe claims that return whether the plugin successfully claimed a key without overwriting an existing live value. Thanks @amknight.
+- **`SessionEntry` slot projection:** Plugin-owned `SessionEntry` slot projection and scoped trusted-policy session extension reads added. (#75609) Thanks @100yenadmin.
+- **`before_agent_finalize` retry:** Bounded `before_agent_finalize` retry instructions added so workflow plugins can request one more model pass. Thanks @100yenadmin.
+
+### Plugins / Loader (v2026.5.4)
+- **Native fast-path error preservation:** Real compiled plugin module evaluation errors preserved on native fast path instead of treating every thrown `.js` module as a source-transform fallback miss. Thanks @vincentkoc.
+- **Plugin diagnostics actionable:** Source-only TypeScript package warnings now explain that missing compiled runtime output is a publisher packaging issue and point users to update/reinstall or disable/uninstall. Fixes #77835. Thanks @googlerest.
+
+### Plugin SDK / ClawHub (v2026.5.4)
+- **ClawHub 429 annotations:** 429 errors annotated with reset window from `RateLimit-Reset`/`Retry-After` and `Sign in for higher rate limits.` hint when unauthenticated. Thanks @romneyda.
+
+### Sandbox (v2026.5.4)
+- **Per-runtime shard files:** Sandbox container and browser registry entries now stored as per-runtime shard files, reducing unrelated session lock contention. `openclaw doctor --fix` migrates legacy monolithic registry files. (#74831) Thanks @luckylhb90.
+- **Windows drive-letter bind sources:** Docker bind sources with drive-absolute paths accepted with Windows-case-insensitive policy comparisons. (#42174) Thanks @6607changchun.
+

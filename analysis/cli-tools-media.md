@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — PART 4: CLI, TOOLS & MEDIA
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5`
 
 ## Overview
 
@@ -1091,3 +1091,33 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 
 **v2026.4.22:**
 - Google/Gemini TTS default voice (`Kore`) and model (`gemini-3.1-flash-tts-preview`) carry forward unchanged; v2026.4.22 adds graceful fallback to the next provider in the chain when the upstream returns a quota error.
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### Models/Auth CLI (v2026.5.4)
+- **`openclaw models auth list`:** New CLI command `openclaw models auth list [--provider <id>] [--json]` to inspect saved per-agent auth profiles without dumping secrets. Avoids the old "too many arguments" path. Thanks @vincentkoc.
+
+### Exec Approvals (v2026.5.4)
+- **Tree-sitter shell explainer:** Tree-sitter-backed shell command explainer added for future approval and command-review surfaces. (#75004) Thanks @jesse-merhi.
+- **Sandbox registry sharding:** Sandbox container and browser registry entries stored as per-runtime shard files, reducing unrelated session lock contention. `openclaw doctor --fix` migrates legacy monolithic registry files. (#74831) Thanks @luckylhb90.
+
+### Exec Approvals (v2026.5.5)
+- **Windows rename-overwrite fallback:** Falls back to a guarded copy when Windows rejects rename-overwrite for `exec-approvals.json`, preserving symlink, hard-link, and owner-only permission safeguards. Fixes #77785. (#77907) Thanks @Alex-Alaniz, @MilleniumGenAI.
+
+### Media Generation (v2026.5.4)
+- **Codex audio transcription:** Codex audio transcription advertised in runtime and manifest metadata; active Codex chat models routed to OpenAI transcription default instead of sending chat model IDs to audio transcription. Thanks @vincentkoc.
+- **TTS/telephony overrides:** Provider voice/model overrides now honored in telephony synthesis providers. Thanks @vincentkoc.
+- **Gateway provider plugin load:** Provider plugins that own explicitly configured image, video, or music generation defaults now loaded at gateway startup so generation tools become live immediately after restart. Fixes #77244. Thanks @buyuangtampan, @Nikoxx99, @vincentkoc.
+
+### Media Generation (v2026.5.5)
+- **Video aspect-ratio normalization:** Provider-specific aspect-ratio and resolution hints accepted at tool boundary; `720P` normalized to MiniMax's supported `768P`; Gemini video requests no longer send `generateAudio`. Thanks @vincentkoc.
+- **Generated media dedup:** Attachment-style message tool actions treated as completed chat sends, preventing duplicate fallback media posts.
+- **WebChat/Codex media:** Codex app-server generated local images staged into managed media before display; no `LocalMediaAccessError` while keeping Codex home out of the display allowlist. Thanks @frankekn.
+
+### Plugins/Windows (v2026.5.4)
+- **Git install hint:** Git install hint shown when npm plugin installation fails with `spawn git ENOENT`. WhatsApp plugin's Git-on-PATH requirement documented for Baileys/libsignal installs.
+- **Windows POSIX path skip:** `/tmp/openclaw` skipped on Windows in `resolvePreferredOpenClawTmpDir`; writes land in `%TEMP%\openclaw-<uid>`. Fixes #60713. Thanks @juan-flores077.
+- **Windows media EPERM:** Saved attachment temp files now opened read/write before fsync, fixing WebChat and `chat.send` media EPERM errors. (#76593) Thanks @qq230849622-a11y.
+- **Windows drive-letter bind sources:** Docker bind sources with drive-absolute paths accepted while keeping sandbox policy comparisons Windows-case-insensitive. (#42174) Thanks @6607changchun.

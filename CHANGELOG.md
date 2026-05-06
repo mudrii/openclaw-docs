@@ -6,6 +6,160 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.5 — Fix Release Summary
+
+> **Released:** 2026-05-06 (docs release) | upstream GitHub release `v2026.5.5` published 2026-05-06 08:12:30 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.5.4..v2026.5.5` | 54 commits
+
+### Changes
+
+- **Feishu (`v2026.5.5`):** hydrate missing native topic starter thread IDs before session routing so first turns and follow-ups stay in the same topic session. Fixes #78262. Thanks @joeyzenghuan.
+- **LINE (`v2026.5.5`):** reject `dmPolicy: "open"` configs without wildcard `allowFrom` so webhook DMs fail validation instead of being acknowledged and silently blocked. Fixes #78316.
+- **Telegram/Codex (`v2026.5.5`):** keep message-tool-only progress drafts visible and render native Codex tool progress once per tool instead of duplicating item/tool draft lines. Fixes #75641. (#77949)
+- **Providers/xAI (`v2026.5.5`):** stop sending OpenAI-style reasoning effort controls to native Grok Responses models (`xai/grok-4.3`). Clamp bundled xAI thinking profile to `off` to prevent unsupported reasoning levels.
+- **Matrix/approvals (`v2026.5.5`):** retry approval delivery up to 3 times with short backoff. (#78179) Thanks @Patrick-Erichsen.
+- **Discord/gateway (`v2026.5.5`):** measure heartbeat ACK timeouts from actual heartbeat send, preventing false reconnect loops. Fixes #77668. (#78087) Thanks @bryce-d-greybeard, @NikolaFC.
+- **Discord/guilds (`v2026.5.5`):** route plain text control commands (`/steer` etc.) through normal auth and mention gate. Fixes #78080. Thanks @ramitrkar-hash.
+- **Control UI/Sessions (`v2026.5.5`):** make compaction count a compact `N Checkpoint(s)` disclosure with expanded session-level details and modern checkpoint history cards. Thanks @BunsDev.
+- **Control UI/performance (`v2026.5.5`):** keep chat and channel tabs responsive during slow history payloads and channel probes; label partial channel status; record slow render timings. Thanks @BunsDev.
+- **Control UI/sessions (`v2026.5.5`):** fire documented `/new` command and lifecycle hooks only for explicit Control UI session creation. Fixes #76957. Thanks @BunsDev.
+- **Exec approvals (`v2026.5.5`):** fall back to guarded copy when Windows rejects rename-overwrite for `exec-approvals.json`, preserving symlink/hard-link/permission safeguards. Fixes #77785. (#77907) Thanks @Alex-Alaniz, @MilleniumGenAI.
+- **Slack (`v2026.5.5`):** preserve Socket Mode SDK error context and structured Slack API fields in reconnect logs.
+- **iOS pairing (`v2026.5.5`):** allow setup-code and manual `ws://` connects for private LAN and `.local` gateways while keeping Tailscale/public routes on `wss://`. Fixes #47887. Thanks @draix, @BunsDev.
+- **Plugins/diagnostics (`v2026.5.5`):** make source-only TypeScript package warnings actionable (missing compiled runtime = publisher packaging issue). Fixes #77835. Thanks @googlerest.
+- **Control UI/chat (`v2026.5.5`):** keep persisted assistant progress text visible when transcript turn also contains tool-use metadata. Fixes #77374. Thanks @BunsDev.
+- **TUI (`v2026.5.5`):** skip generic CLI respawn wrapper for interactive launches, exit cleanly on terminal loss, refuse heartbeat sessions as remembered chat session. Thanks @vincentkoc.
+- **Doctor/sessions (`v2026.5.5`):** move heartbeat-poisoned default main session store entries to recovery keys and clear stale TUI restore pointers. Thanks @vincentkoc.
+- **Agents/context engines (`v2026.5.5`):** keep hidden OpenClaw runtime-context custom messages out of context-engine assemble, afterTurn, and ingest hooks. Thanks @vincentkoc.
+- **Gateway/shutdown (`v2026.5.5`):** cancel delayed post-ready maintenance during close, suppress maintenance/cron startup after quick restarts. Thanks @vincentkoc.
+- **Agents/generated media (`v2026.5.5`):** treat attachment-style message tool actions as completed chat sends to prevent duplicate fallback media posts.
+- **Control UI/sessions (`v2026.5.5`):** show each session's agent runtime in Sessions table with runtime label filtering. Thanks @vincentkoc.
+- **Discord/streaming (`v2026.5.5`):** show live reasoning text in progress drafts.
+- **Gateway/status (`v2026.5.5`):** avoid marking fast repeated health/status samples as event-loop degraded prematurely. Thanks @shakkernerd.
+- **Plugins/update (`v2026.5.5`):** keep installed official npm and ClawHub plugins synced during host updates even when disabled or previously exact-pinned, preserving third-party pins. Thanks @vincentkoc.
+- **Doctor/status (`v2026.5.5`):** warn when `OPENCLAW_GATEWAY_TOKEN` would shadow a different active `gateway.auth.token` source. Fixes #74271. Thanks @yelog.
+- **Providers/Fireworks (`v2026.5.5`):** expose Kimi models as thinking-off-only; clamp K2.5/K2.6 to `thinking: disabled`. Thanks @frankekn. Refs #74289.
+- **Video generation (`v2026.5.5`):** accept provider-specific aspect-ratio and resolution hints; normalize `720P` to MiniMax's supported `768P`; fix Gemini video requests. Thanks @vincentkoc.
+- **Status (`v2026.5.5`):** show compact Gateway process uptime and host system uptime in `/status`. Thanks @vincentkoc.
+- **Hooks/session-memory (`v2026.5.5`):** add collision suffixes to fallback memory filenames; make LLM slug opt-in (`llmSlug: true`); run capture off command reply path so `/new`/`/reset` don't block WhatsApp replies. Thanks @vincentkoc.
+- **CLI/sessions (`v2026.5.5`):** prune old unreferenced transcript, compaction checkpoint, and trajectory artifacts during `sessions cleanup`. Fixes #77608. Thanks @slideshow-dingo.
+- **Doctor/Codex (`v2026.5.5`):** repair legacy `openai-codex/*` routes to canonical `openai/*` in primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel overrides, and stale session pins; select `agentRuntime.id: "codex"` only when Codex plugin is installed, enabled, and has usable OAuth. Thanks @vincentkoc.
+- **TUI/sessions (`v2026.5.5`):** bound session picker to recent rows; use exact lookup-style refreshes for active session. Thanks @vincentkoc.
+- **Gateway/shutdown (`v2026.5.5`):** report structured shutdown warnings through `ShutdownResult`. Thanks @edenfunf.
+- **CLI/update (`v2026.5.5`):** make dev-channel preflight lint opt-in. Thanks @vincentkoc.
+- **CLI/channels (`v2026.5.5`):** skip config/startup bootstrap for bare `openclaw channels` parent-help command. Thanks @vincentkoc.
+- **Gateway/model catalog (`v2026.5.5`):** cache empty read-only model catalog results until reload. Thanks @vincentkoc.
+- **WhatsApp responsiveness (`v2026.5.5`):** stop only verified stale local TUI clients when they degrade the Gateway event loop. Thanks @vincentkoc.
+- **Plugins/install (`v2026.5.5`):** reassert managed npm plugin `openclaw` peer links after shared-root npm installs. Thanks @vincentkoc.
+- **Agents/config (`v2026.5.5`):** remove ambiguous legacy `main` agent dir helper from runtime paths. Thanks @vincentkoc.
+- **CLI/status (`v2026.5.5`):** show selected agent runtime/harness in `openclaw status` session rows. Thanks @vincentkoc.
+- **Sessions CLI (`v2026.5.5`):** show selected agent runtime in `openclaw sessions` table. Thanks @vincentkoc.
+- **Doctor/gateway (`v2026.5.5`):** report recent supervisor restart handoffs in `openclaw doctor --deep`. Thanks @shakkernerd.
+- **Gateway/status (`v2026.5.5`):** show recent supervisor restart handoffs in `openclaw gateway status --deep`. Thanks @shakkernerd.
+- **Docker/Gateway (`v2026.5.5`):** harden gateway container by dropping `NET_RAW` and `NET_ADMIN` capabilities and enabling `no-new-privileges` in bundled `docker-compose.yml`. Thanks @VintageAyu.
+- **OpenAI/Gateway (`v2026.5.5`):** flush initial chat stream chunk correctly so first-token streaming is visible.
+- **Gateway/HTTP (`v2026.5.5`):** skip media sidecar handling for unrelated HTTP routes.
+- **Discord (`v2026.5.5`):** show reasoning text in progress drafts.
+- **Auth profiles (`v2026.5.5`):** avoid provider cooldown for format-level rejections.
+- **Plugins/update (`v2026.5.5`):** repair stale managed npm-root `openclaw` peer packages before plugin installs. Thanks @vincentkoc.
+- **Plugins/install (`v2026.5.5`):** reassert managed npm plugin `openclaw` peer links after shared-root npm installs, updates, and uninstalls.
+
+---
+
+## OpenClaw v2026.5.4 — Release Summary
+
+> **Released:** 2026-05-06 (docs release) | upstream GitHub release `v2026.5.4` published 2026-05-05 07:37:19 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.5.3-1..v2026.5.4` | 527 commits
+
+### Highlights
+
+- **Google Meet/Voice Call (`v2026.5.4`):** Twilio dial-in joins routed through realtime Gemini voice bridge with paced audio streaming, backpressure-aware buffering, and barge-in queue clearing. (#77064) Thanks @scoootscooob.
+
+### Changes
+
+- **Gateway/Windows (`v2026.5.4`):** bind default loopback listener only to `127.0.0.1` on Windows, avoiding libuv dual-stack `::1` issues. (#69701, fixes #69674) Thanks @SARAMALI15792.
+- **Plugins/migration (`v2026.5.4`):** emit catalog-backed install hints when `plugins.entries` or `plugins.allow` references official external plugin not installed, pointing to `openclaw plugins install <spec>`. (#77483) Thanks @hclsys.
+- **OpenAI/Codex media (`v2026.5.4`):** advertise Codex audio transcription in runtime/manifest metadata; route active Codex chat models to OpenAI transcription default. Thanks @vincentkoc.
+- **Dependencies (`v2026.5.4`):** refresh Pi 0.73.0, ACPX adapters, OpenAI, Anthropic, Slack, TypeScript native preview; Bedrock installer pinned below Windows ARM Node 24 npm resolver failure.
+- **Agents/performance (`v2026.5.4`):** pass resolved workspace through BTW, compaction, embedded-run model generation, and PDF setup to reuse workspace-scoped plugin metadata snapshot. (#77519, #77532)
+- **Plugins/performance (`v2026.5.4`):** unscoped model catalog and manifest-contract readers reuse current workspace-compatible plugin metadata snapshot. (#77519, #77532)
+- **Config/plugin auto-enable (`v2026.5.4`):** prefer claiming plugin manifest id over built-in channel alias when auto-allowlisting. Thanks @Beandon13.
+- **Secrets/apply (`v2026.5.4`):** preserve auth-profile `keyRef` and `tokenRef` fields when scrubbing provider-target secrets. Thanks @Beandon13.
+- **Plugins/active-memory (`v2026.5.4`):** skip session-store channel entries containing `:` when resolving recall subagent's channel (QQ c2c agent IDs like `c2c:10D4F7C2…`). (#77396) Thanks @hclsys.
+- **Secrets/external channel contracts (`v2026.5.4`):** look in `<rootDir>/dist/` when resolving `secret-contract-api` sidecar for npm-published externalized channel plugins. Thanks @mogglemoss.
+- **Models/auth (`v2026.5.4`):** add `openclaw models auth list [--provider <id>] [--json]` to inspect saved per-agent auth profiles. Thanks @vincentkoc.
+- **Control UI/header (`v2026.5.4`):** show active agent name in dashboard breadcrumbs.
+- **Control UI/cron (`v2026.5.4`):** make New Job sidebar collapsible. Thanks @BunsDev.
+- **Agents/verbose (`v2026.5.4`):** use compact explain-mode tool summaries for `/verbose` and progress drafts by default; `agents.defaults.toolProgressDetail: "raw"` for raw output. Thanks @vincentkoc.
+- **Control UI/chat (`v2026.5.4`):** agent-first filter in chat session picker; keep controls responsive across phone/tablet/desktop; collapse consecutive duplicate text messages with count. Thanks @BunsDev.
+- **Agents/subagents (`v2026.5.4`):** preserve every grouped child result when direct completion fallback bypasses requester-agent announce turn. Thanks @vincentkoc.
+- **TTS/telephony (`v2026.5.4`):** honor provider voice/model overrides in telephony synthesis providers. Thanks @vincentkoc.
+- **Voice Call/realtime (`v2026.5.4`):** bound paced Twilio audio queue and close overloaded realtime streams before audio piles up. Thanks @vincentkoc.
+- **Docs (`v2026.5.4`):** clarify IRC uses raw TCP/TLS sockets outside operator-managed forward proxy routing. Thanks @jesse-merhi.
+- **Gateway/performance (`v2026.5.4`):** defer non-readiness sidecars until after ready signal; avoid hot-path channel plugin barrel imports; fast-path trusted bundled plugin metadata.
+- **Gateway/performance (`v2026.5.4`):** avoid importing `jiti` on native-loadable plugin startup paths.
+- **Gateway/diagnostics (`v2026.5.4`):** add startup phase spans, active work labels, stale terminal bridge markers, and default sync-I/O tracing in `pnpm gateway:watch`.
+- **Plugins/loader (`v2026.5.4`):** preserve real compiled plugin module evaluation errors on native fast path. Thanks @vincentkoc.
+- **Exec approvals (`v2026.5.4`):** add tree-sitter-backed shell command explainer for approval and command-review surfaces. (#75004) Thanks @jesse-merhi.
+- **Agents/sandbox (`v2026.5.4`):** store sandbox container and browser registry entries as per-runtime shard files; `openclaw doctor --fix` migrates legacy monolithic registry files. (#74831) Thanks @luckylhb90.
+- **Plugins/ClawHub (`v2026.5.4`):** annotate 429 errors with `RateLimit-Reset`/`Retry-After` window and `Sign in for higher rate limits.` hint when unauthenticated. Thanks @romneyda.
+- **Plugins/runtime state (`v2026.5.4`):** add `registerIfAbsent` for atomic keyed-store dedupe claims. Thanks @amknight.
+- **Plugin SDK (`v2026.5.4`):** add plugin-owned `SessionEntry` slot projection and scoped trusted-policy session extension reads. (#75609) Thanks @100yenadmin.
+- **Plugins/SDK (`v2026.5.4`):** add bounded `before_agent_finalize` retry instructions for workflow plugins. Thanks @100yenadmin.
+- **Sandbox/Windows (`v2026.5.4`):** accept drive-absolute Docker bind sources with Windows-case-insensitive policy comparisons. (#42174) Thanks @6607changchun.
+- **Slack/streaming (`v2026.5.4`):** add `streaming.progress.render: "rich"` for Block Kit progress drafts; keep newest rich progress lines when Block Kit limits trim. Thanks @vincentkoc.
+- **Channels/streaming (`v2026.5.4`):** cap progress-draft tool lines by default.
+- **Discord/status (`v2026.5.4`):** add degraded Discord transport and gateway event-loop starvation signals to `openclaw channels status` and `openclaw status --deep`. (#76327) Thanks @joshavant.
+- **Providers/OpenRouter (`v2026.5.4`):** add opt-in response caching params (X-OpenRouter-Cache headers); expand app-attribution categories. Thanks @vincentkoc.
+- **Channels/WhatsApp (`v2026.5.4`):** support explicit WhatsApp Channel/Newsletter `@newsletter` outbound message targets. Fixes #13417. Thanks @vincentkoc, @agentz-manfred.
+- **Telegram (`v2026.5.4`):** accept plugin-owned numeric forum-topic targets in agent message tool. Fixes #77137. Thanks @richardmqq.
+- **Google Meet (`v2026.5.4`):** preserve `realtime.introMessage: ""` for silent realtime Chrome joins. Thanks @vincentkoc.
+- **Plugin SDK (`v2026.5.4`):** add `registerIfAbsent` for atomic keyed-store dedupe claims; bounded `before_agent_finalize` retry. Thanks @amknight, @100yenadmin.
+- **Docker (`v2026.5.4`):** prune package-excluded plugin dist directories from runtime images. Fixes #77424. Thanks @vincentkoc.
+- **Security (`v2026.5.4`):** harden gateway container by dropping `NET_RAW` and `NET_ADMIN` capabilities and enabling `no-new-privileges`. Thanks @VintageAyu.
+- **Control UI/performance (`v2026.5.4`):** record browser long animation frame or long task entries in debug event log.
+- **QA/Mantis (`v2026.5.4`):** add `pnpm openclaw qa mantis slack-desktop-smoke`; pass runtime env through desktop-browser Crabbox; return screenshot path on failure.
+
+### Fixes
+
+- **WhatsApp/onboarding (`v2026.5.4`):** canonicalize allowlist entries to digit-only phone ids. Thanks @vincentkoc.
+- **Gateway/startup (`v2026.5.4`):** load provider plugins that own explicitly configured image/video/music generation defaults. Fixes #77244. Thanks @buyuangtampan, @Nikoxx99, @vincentkoc.
+- **Slack/subagents (`v2026.5.4`):** keep resumed parent sends in originating thread. Thanks @bek91.
+- **Slack/mentions (`v2026.5.4`):** record thread participation for successful visible threaded sends. Fixes #77648. Thanks @bek91.
+- **Infra/Windows (`v2026.5.4`):** skip `/tmp/openclaw` on Windows; use `%TEMP%\openclaw-<uid>`. Fixes #60713. Thanks @juan-flores077.
+- **Media/Windows (`v2026.5.4`):** open saved attachment temp files read/write before fsync. (#76593) Thanks @qq230849622-a11y.
+- **Agents/tools (`v2026.5.4`):** honor narrow runtime tool allowlists when constructing embedded-runner tool families. (#77519, #77532)
+- **Codex plugin (`v2026.5.4`):** mirror experimental upstream app-server protocol; format generated TypeScript before drift checks.
+- **Agents/cache (`v2026.5.4`):** keep per-turn runtime context out of ordinary chat system prompts to restore prompt-cache reuse. Fixes #77431. Thanks @Udjin79.
+- **Gateway/update (`v2026.5.4`):** resolve local gateway probe auth from installed config during post-update restart verification. Thanks @vincentkoc.
+- **Agents/Tools (`v2026.5.4`):** add post-compaction loop guard in `pi-embedded-runner` (`tools.loopDetection.postCompactionGuard.windowSize`, default 3). Refs #77474. Thanks @efpiva.
+- **Plugins/runtime-deps (`v2026.5.4`):** include `json5` in memory-core plugin runtime dependency set. Fixes #77461.
+- **Doctor/config (`v2026.5.4`):** keep active `auth.profiles` metadata intact when `doctor --fix` strips stale secret fields. Fixes #77400.
+- **Doctor/plugins (`v2026.5.4`):** include `plugins.allow`-only official plugin ids in release configured-plugin repair set. Fixes #77155. Thanks @hclsys.
+- **Doctor/sessions (`v2026.5.4`):** clear auto-created stale session routing state when `doctor --fix` sees plugin-owned bindings outside current configured route.
+- **CLI/update (`v2026.5.4`):** disable/skip plugins that fail package-update plugin sync. Thanks @vincentkoc.
+- **CLI/update (`v2026.5.4`):** use absolute POSIX npm script shell. Fixes #77530. Thanks @PeterTremonti.
+- **Diagnostics (`v2026.5.4`):** grant internal diagnostics event bus to official installed diagnostics exporter plugins. Fixes #76628. Thanks @RayWoo.
+- **Discord/replies (`v2026.5.4`):** treat failed final reply delivery as failed turn. Fixes #77520. Thanks @Patrick-Erichsen.
+- **Discord (`v2026.5.4`):** prefer IPv4 for REST and gateway WebSocket startup. Fixes #77398. Thanks @Beandon13.
+- **Channels/plugins (`v2026.5.4`):** key bundled package-state probes by channel id instead of manifest plugin id. Thanks @vincentkoc.
+- **Model switching (`v2026.5.4`):** include exact additive allowlist repair command when `/model ... --runtime ...` targets blocked model. Thanks @vincentkoc.
+- **Doctor/sessions (`v2026.5.4`):** clear auto-created stale session routing state from sessions store. Refs #68615.
+- **Telegram/streaming (`v2026.5.4`):** reuse active preview as first chunk for long text finals. Thanks @vincentkoc.
+- **Telegram/media (`v2026.5.4`):** derive no-caption inbound media placeholders from saved MIME metadata. Fixes #69793. Thanks @aspalagin.
+- **OpenAI/Gateway (`v2026.5.4`):** keep OpenAI role SSE chunks marked unfinished; flush initial chat stream chunk correctly.
+- **Agents/OpenAI (`v2026.5.4`):** default direct OpenAI Responses models to SSE transport. Thanks @vincentkoc.
+- **Codex harness (`v2026.5.4`):** preserve app-server usage-limit reset details; deliver runtime failure notices through tool-only source-reply mode. (#77557) Thanks @pashpashpash.
+- **Plugins/update (`v2026.5.4`):** repair missing plugin-local `openclaw` peer links before skipping unchanged npm plugin updates. (#77544) Thanks @ProspectOre.
+- **Plugins/update (`v2026.5.4`):** make package upgrades swap pnpm/npm-prefix installs cleanly; beta-channel fall back to default/latest. Thanks @vincentkoc, @joshavant.
+- **Plugins/update (`v2026.5.4`):** treat official externalized bundled npm migrations as trusted source-linked installs. Thanks @vincentkoc.
+- **Plugins/update (`v2026.5.4`):** move ClawHub-preferred plugins back to ClawHub after earlier npm fallback. Thanks @vincentkoc.
+- **Plugins/update (`v2026.5.4`):** clean stale bundled load paths for externalized pinned plugins. Thanks @vincentkoc.
+- **Plugins/install (`v2026.5.4`):** honor beta update channel for onboarding and doctor-managed installs. Thanks @vincentkoc.
+- **Plugins/update (`v2026.5.4`):** keep installed official plugins synced during host updates. Thanks @vincentkoc.
+
+---
+
 ## OpenClaw v2026.5.3-1 — Hotfix Release Summary
 
 > **Released:** 2026-05-05 (docs release) | upstream GitHub release `v2026.5.3-1` published 2026-05-04 09:35:36 UTC | **Policy note:** latest *documented* released section stays at top.

@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis — Part 2: Agent System
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5`
 
 ## 1. `src/agents/` — Agent Execution, Tool System, PI Tools
 
@@ -1443,3 +1443,37 @@ When event fires:
 - Tokenjuice: initial bundled opt-in plugin for compacting `exec`/`bash` results in Pi embedded runs.
 - Codex harness hooks: fires `before_prompt_build`, `before_compaction`/`after_compaction`, `llm_input`/`llm_output`/`agent_end`, `after_tool_call` for native app-server turns; `before_message_write` for mirrored Codex transcript writes.
 - GPT-5 overlay moved to shared provider runtime; `agents.defaults.promptOverlays.gpt5.personality` as global toggle.
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### Agent Performance (v2026.5.4)
+- **Workspace-scoped plugin metadata snapshot:** Resolved workspace now passed through BTW, compaction, embedded-run model generation, and PDF model setup so explicit agent-dir model refreshes can reuse current workspace-scoped plugin metadata snapshot instead of cold plugin metadata scans. (#77519, #77532)
+- **Unscoped catalog reuse:** Unscoped model catalog and manifest-contract readers also reuse the current workspace-compatible plugin metadata snapshot on hot control-plane paths. (#77519, #77532)
+
+### Agent Tools (v2026.5.4)
+- **Post-compaction loop guard:** `pi-embedded-runner` now arms a post-compaction loop guard after auto-compaction-retry that aborts runs where the same `(tool, args, result)` triple appears `windowSize` times (default 3) within the detection window. Disable via `tools.loopDetection.enabled`; tune via `tools.loopDetection.postCompactionGuard.windowSize`. Refs #77474.
+- **Narrow tool allowlists:** Embedded-runner tool families and bundled MCP/LSP runtimes now honor narrow runtime tool allowlists when constructing tool sets. (#77519, #77532)
+- **Tree-sitter exec explainer:** Tree-sitter-backed shell command explainer added for exec approval and command-review surfaces. (#75004) Thanks @jesse-merhi.
+- **Subagent grouped results:** Every grouped child result preserved when direct completion fallback bypasses requester-agent announce turn. Thanks @vincentkoc.
+- **Agents/config:** Ambiguous legacy `main` agent dir helper removed from runtime paths; model/auth/gateway/plugin resolution now goes through `agents.list`/agent-scope helpers.
+
+### Agent Tools (v2026.5.5)
+- **Tool allowlists in Codex/subagent runs:** Cron/subagent runs that request tools such as `update_plan`, `browser`, `x_search`, channel login tools, or `group:plugins` no longer start with missing tools or unrelated bootstrap work.
+- **Attachment media dedup:** Attachment-style message tool actions treated as completed chat sends, preventing duplicate fallback media posts when generated files were already uploaded.
+- **Context engine isolation:** Hidden OpenClaw runtime-context custom messages excluded from context-engine assemble, afterTurn, and ingest hooks.
+
+### Verbose / Progress (v2026.5.4)
+- **`agents.defaults.toolProgressDetail`:** New config key `agents.defaults.toolProgressDetail: "raw"` (and per-agent overrides) enables raw command/detail output in verbose mode. Default is compact explain-mode summaries for `/verbose` and progress drafts.
+- **Subagent completion rows:** Successful silent child completion rows suppressed from follow-up findings (Slack context).
+
+### Auto-Reply / Memory (v2026.5.4)
+- **Active-memory QQ c2c:** Skip session-store channel entries containing `:` when resolving recall subagent's channel, so QQ c2c agent IDs (`c2c:10D4F7C2…`) don't reach `dirName` validation and crash recall runs. (#77396)
+- **Agent cache restore:** Prompt-cache reuse on chat continuations restored by keeping per-turn runtime context out of ordinary chat system prompts. Fixes #77431.
+
+### Doctor / Session Recovery (v2026.5.5)
+- **Heartbeat-poisoned session repair:** `doctor --fix` moves heartbeat-poisoned default main session store entries to recovery keys and clears stale TUI restore pointers.
+- **TUI heartbeat guard:** TUI refuses to restore heartbeat sessions as the remembered chat session.
+- **openai-codex route repair:** `doctor --fix` repairs legacy `openai-codex/*` routes in primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel overrides, and stale session pins to canonical `openai/*`. Selects `agentRuntime.id: "codex"` only when Codex plugin is installed, enabled, contributes the `codex` harness, and has usable OAuth.
+- **Stale session routing:** `doctor --fix` clears auto-created stale session routing state from sessions store when plugin-owned model/runtime/auth/session bindings are outside the current configured route.

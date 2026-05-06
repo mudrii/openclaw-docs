@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3`
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.
@@ -1724,3 +1724,65 @@ Changes in the current released line are recorded inline above under each channe
 - Providers/STT: Voice Call streaming for Deepgram, ElevenLabs (+ Scribe v2 batch), Mistral — alongside existing OpenAI and xAI paths.
 - Plugin SDK/STT: shared realtime WebSocket transport + multipart batch transcription form helpers across STT providers.
 - WhatsApp: `replyToMode` native reply quoting; per-group/direct `systemPrompt` forwarded as `GroupSystemPrompt` with `"*"` wildcard and account-scoped overrides (`channels.whatsapp.accounts.<id>.{groups,direct}`).
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### Telegram (v2026.5.4)
+- **Forum-topic targets:** Plugin-owned numeric forum-topic targets now accepted in the agent message tool; reply-dispatch provider chunks kept behind a stable runtime alias during in-place package updates. Fixes #77137. Thanks @richardmqq.
+- **Streaming text dedup:** Active preview reused as first chunk for long text finals, eliminating the transient extra bubble that appeared and disappeared. Thanks @vincentkoc.
+- **Media attachment placeholders:** No-caption inbound media placeholders now derived from saved MIME metadata instead of Telegram `photo` shape, so non-image and mixed attachments no longer reach the model as `<media:image>`. Fixes #69793. Thanks @aspalagin.
+
+### Telegram (v2026.5.5)
+- **Codex tool progress:** Message-tool-only progress drafts kept visible; native Codex tool progress rendered once per tool (no duplicate item/tool draft lines). Fixes #75641. (#77949)
+
+### Discord (v2026.5.4)
+- **IPv4 preference:** Discord REST and gateway WebSocket startup paths now prefer IPv4, fixing IPv4-only networks that stalled before Gateway READY and inbound message dispatch. Fixes #77398. Thanks @Beandon13.
+- **Reply delivery:** Failed final reply delivery now treated as a failed turn instead of a delivered automatic reply. Fixes #77520. Thanks @Patrick-Erichsen.
+- **Degraded transport status:** Degraded Discord transport and gateway event-loop starvation signals added to `openclaw channels status`, `openclaw status --deep`, and fetch-timeout logs. (#76327) Thanks @joshavant.
+- **Bundled package-state probes:** Probes, env/config presence, and read-only command defaults now keyed by channel id instead of manifest plugin id, preserving setup/native-command detection when package id differs from channel alias.
+
+### Discord (v2026.5.5)
+- **Heartbeat ACK timeout:** Measured from actual heartbeat send time, preventing late initial heartbeats from triggering false reconnect loops. Fixes #77668. (#78087) Thanks @bryce-d-greybeard, @NikolaFC.
+- **Guild text commands:** Plain text control commands (`/steer` etc.) in guild channels now routed through normal auth and mention gate instead of being silently dropped. Fixes #78080. Thanks @ramitrkar-hash.
+- **Streaming reasoning:** Live reasoning text shown in progress drafts.
+
+### Slack (v2026.5.4)
+- **Block Kit rich progress:** `streaming.progress.render: "rich"` config option for Block Kit progress drafts backed by structured progress line data. Newest rich progress lines kept when Block Kit limits trim long drafts. Thanks @vincentkoc.
+- **Subagent thread tracking:** Resumed parent `message.send` calls kept in originating Slack thread when ambient session thread context is present; successful silent child completion rows suppressed. Thanks @bek91.
+- **Mention thread tracking:** Thread participation recorded for successful visible threaded Slack sends (message-tool and media delivery paths), so unmentioned replies in bot-participated threads bypass mention gating. Fixes #77648. Thanks @bek91.
+
+### Slack (v2026.5.5)
+- **Socket Mode error context:** Socket Mode SDK error context and structured Slack API fields now preserved in reconnect logs instead of collapsing to bare `unknown error`.
+
+### WhatsApp (v2026.5.4)
+- **Newsletter targets:** Explicit WhatsApp Channel/Newsletter `@newsletter` outbound message targets supported with channel session metadata. Fixes #13417. Thanks @vincentkoc, @agentz-manfred.
+- **Onboarding allowlist:** Setup and pairing allowlist entries now canonicalized to digit-only phone ids while accepting E.164, JID, and `whatsapp:` inputs. Thanks @vincentkoc.
+
+### WhatsApp (v2026.5.5)
+- **Responsiveness:** Stale local TUI clients now stopped only when verified to degrade the Gateway event loop. Thanks @vincentkoc.
+
+### Google Meet / Voice Call (v2026.5.4)
+- **Twilio realtime Gemini voice bridge:** Twilio dial-in joins now routed through the realtime Gemini voice bridge with paced audio streaming, backpressure-aware buffering, barge-in queue clearing, and no TwiML fallback during realtime speech. (#77064) Thanks @scoootscooob.
+- **Paced Twilio audio queue:** Overloaded realtime streams closed before provider audio piles up behind the websocket backpressure guard. Thanks @vincentkoc.
+- **Silent intro:** `realtime.introMessage: ""` preserved so realtime Chrome joins can stay silent. Thanks @vincentkoc.
+
+### Feishu (v2026.5.5)
+- **Topic starter thread hydration:** Missing native topic starter thread IDs hydrated before session routing so first turns and follow-ups stay in the same topic session. Fixes #78262. Thanks @joeyzenghuan.
+
+### LINE (v2026.5.5)
+- **dmPolicy validation:** `dmPolicy: "open"` configs without wildcard `allowFrom` now rejected at validation time (webhook DMs fail validation instead of being silently blocked). Fixes #78316.
+
+### Matrix (v2026.5.5)
+- **Approval retry:** Approval delivery retried up to 3 times with short backoff so transient Matrix send failures don't strand pending approval prompts. (#78179) Thanks @Patrick-Erichsen.
+
+### iOS Pairing (v2026.5.5)
+- **LAN gateway pairing:** Setup-code and manual `ws://` connects now allowed for private LAN and `.local` gateways while keeping Tailscale/public routes on `wss://`; explicit gateway passwords preferred over stale bootstrap tokens in mixed-auth reconnects. Fixes #47887. Thanks @draix, @BunsDev.
+
+### Mattermost / LINE (v2026.5.4)
+- **Model picker clarification:** Mattermost and LINE model picker now clarifies it changes only the session model (not the runtime); runtime switches require `/oc_model <provider/model> --runtime <runtime>`. Thanks @vincentkoc.
+
+### Channels (General) (v2026.5.4)
+- **Progress-draft cap:** Progress-draft tool lines capped by default to avoid jumpy reflow from long wrapped lines.
+- **IRC documentation:** Clarified that IRC uses raw TCP/TLS sockets outside operator-managed forward proxy routing; direct IRC egress should be explicitly approved before enabling IRC. Thanks @jesse-merhi.

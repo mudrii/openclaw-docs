@@ -1,7 +1,7 @@
 # OpenClaw CLI, Config & Infrastructure — Comprehensive Analysis
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-04 | Version: v2026.5.3 | Codebase: OpenClaw release tag `v2026.5.3` | Cluster: CLI, CONFIG & INFRASTRUCTURE
+> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5` | Cluster: CLI, CONFIG & INFRASTRUCTURE
 
 ---
 
@@ -2020,3 +2020,56 @@ User types: openclaw <command> [args]
 - Config: `config set --merge` for additive model/provider map updates; `--replace` for intentional clobbers. Fixes #65920, #68392, #68653.
 - Config gateway: restore last-known-good config on critical clobber signatures; recover configs accidentally prefixed with non-JSON output.
 - Docs/i18n: Thai translation support added.
+
+## v2026.5.4–v2026.5.5 Released Changes (Delta Notes)
+
+> Window: `v2026.5.3..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
+
+### CLI Commands (v2026.5.4)
+- **`openclaw models auth list`:** New subcommand `openclaw models auth list [--provider <id>] [--json]` to inspect saved per-agent auth profiles without dumping secrets. Avoids the old "too many arguments" path. Thanks @vincentkoc.
+- **`openclaw models auth` list path clarification:** Model picker updates for Mattermost/LINE clarify that `/oc_model <provider/model> --runtime <runtime>` is required for runtime changes (not just the session model). Thanks @vincentkoc.
+
+### CLI Update (v2026.5.4)
+- **Absolute POSIX npm shell:** Package-manager update steps now use an absolute POSIX npm script shell, fixing restricted PATH environments that couldn't run dependency lifecycle scripts when updating from `--tag main`. Fixes #77530. Thanks @PeterTremonti.
+- **Plugin sync on update failure:** CLI update disables/skips plugins that fail package-update plugin sync, so a broken plugin can't turn a successful core update into a failed result. Thanks @vincentkoc.
+- **Dev-channel stop on fetch failure:** Dev-channel updates stop cleanly after a fetch failure instead of continuing into later update steps. Thanks @vincentkoc.
+
+### CLI Update (v2026.5.5)
+- **Dev-channel lint opt-in:** Dev-channel preflight lint made opt-in and constrained when enabled, preventing Ubuntu OOM-kills from blocking main-channel updates. Thanks @vincentkoc.
+- **Channels bootstrap skip:** Bare `openclaw channels` parent-help command skips config, proxy, channel-option catalog, banner-config, and plugin startup bootstrap. Thanks @vincentkoc.
+- **CLI status runtime:** Selected agent runtime/harness shown in `openclaw status` session rows. Thanks @vincentkoc.
+- **Sessions table runtime:** Selected agent runtime shown in the `openclaw sessions` table. Thanks @vincentkoc.
+- **Session artifact pruning:** `sessions cleanup` now prunes old unreferenced transcript, compaction checkpoint, and trajectory artifacts. Fixes #77608. Thanks @slideshow-dingo.
+- **Gateway auth on update:** Local gateway probe auth resolved from installed config during post-update restart verification, so token/device-authenticated VPS gateways not misreported as unhealthy port conflicts. Thanks @vincentkoc.
+
+### Config / Doctor (v2026.5.4)
+- **Auth profiles metadata intact:** Active `auth.profiles` metadata preserved when `doctor --fix` strips stale secret fields from configs. Fixes #77400.
+- **Plugin allow-only repair:** `plugins.allow`-only official plugin ids included in the release configured-plugin repair set, so `doctor --fix` installs them instead of removing as stale allow entries. Fixes #77155. Thanks @hclsys.
+- **Session routing cleanup:** Auto-created stale session routing state cleared from sessions store when plugin-owned model/runtime/auth/session bindings are outside the current configured route. Refs #68615.
+- **keyRef/tokenRef preservation:** Auth-profile `keyRef` and `tokenRef` fields preserved when scrubbing provider-target secrets. Thanks @Beandon13.
+- **Plugin auto-enable alias:** Claiming plugin manifest id preferred over built-in channel alias when auto-allowlisting, fixing WeCom/Yuanbao-style aliases. Thanks @Beandon13.
+- **SecretRef dist/ resolution:** `<rootDir>/dist/` now checked when resolving `secret-contract-api` sidecar for npm-published externalized channel plugins so env-backed SecretRefs resolve correctly. Thanks @mogglemoss.
+- **Plugin sync on update:** Installed official npm and ClawHub plugins kept synced during host updates even when disabled or previously exact-pinned. Thanks @vincentkoc.
+- **Corrupt plugin tolerance:** Corrupt managed plugin records tolerated during update so core package updates still complete. Thanks @vincentkoc.
+
+### Config / Doctor (v2026.5.5)
+- **OPENCLAW_GATEWAY_TOKEN shadow warning:** Warning emitted when env token would shadow a different active `gateway.auth.token` source for local CLI commands. Fixes #74271. Thanks @yelog.
+- **openai-codex route repair:** `doctor --fix` now repairs legacy `openai-codex/*` routes in primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel overrides, and stale session pins to canonical `openai/*`. Selects `agentRuntime.id: "codex"` only when the Codex plugin is installed, enabled, contributes the `codex` harness, and has usable OAuth. Thanks @vincentkoc.
+- **Heartbeat-poisoned session repair:** `doctor --fix` moves heartbeat-poisoned default main session store entries to recovery keys and clears stale TUI restore pointers. Thanks @vincentkoc.
+- **Doctor deep gateway:** Recent supervisor restart handoffs reported in `openclaw doctor --deep` using installed service environment. Thanks @shakkernerd.
+
+### Infrastructure (v2026.5.4)
+- **Windows IPv6 loopback:** Default loopback listener binds only to `127.0.0.1` on Windows, avoiding libuv dual-stack `::1` issues. (#69701, fixes #69674) Thanks @SARAMALI15792.
+- **Windows POSIX path skip:** `/tmp/openclaw` skipped on Windows in `resolvePreferredOpenClawTmpDir`; writes land in `%TEMP%\openclaw-<uid>`. Fixes #60713. Thanks @juan-flores077.
+- **Windows media EPERM:** Saved attachment temp files opened read/write before fsync, fixing WebChat and `chat.send` media EPERM during durability flush. (#76593) Thanks @qq230849622-a11y.
+- **Windows drive-letter Docker bind:** Drive-absolute Docker bind sources accepted while keeping sandbox policy comparisons Windows-case-insensitive. (#42174) Thanks @6607changchun.
+- **Windows Git install hint:** Git install hint shown when npm plugin installation fails with `spawn git ENOENT`. Thanks @vincentkoc.
+- **Diagnostics event bus access:** Internal diagnostics event bus granted only to official installed diagnostics exporter plugins. Fixes #76628. Thanks @RayWoo.
+
+### Providers / Models (v2026.5.4)
+- **OpenRouter caching:** Opt-in response caching params added (`X-OpenRouter-Cache`, `X-OpenRouter-Cache-TTL`); app-attribution categories expanded. Thanks @vincentkoc.
+- **Auth profile cooldown:** Providers no longer put on cooldown for format-level rejections, so fallback profiles can still be tried. (#77280) Thanks @vincentkoc.
+
+### Providers / Models (v2026.5.5)
+- **xAI Grok Responses:** OpenAI-style reasoning effort controls no longer sent to native Grok Responses models. Bundled xAI thinking profile clamped to `off`.
+- **Fireworks Kimi:** Kimi models (K2.5/K2.6) exposed as thinking-off-only; requests clamped to `thinking: disabled`. Refs #74289. Thanks @frankekn.
