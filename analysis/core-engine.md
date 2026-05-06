@@ -1627,9 +1627,9 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 
 ### Sessions / Tasks (v2026.5.4)
 - **Sandbox registry sharding:** Sandbox container and browser registry entries now stored as per-runtime shard files (replacing the legacy monolithic registry). `openclaw doctor --fix` migrates legacy files. (#74831)
-- **Export filename collisions:** Session export filenames now deduplicated to avoid collisions. (#77762)
 
 ### Sessions / Tasks (v2026.5.5)
+- **Export filename collisions:** Session export filenames now deduplicated to avoid collisions. (#77762)
 - **Artifact pruning:** `sessions cleanup` now prunes old unreferenced transcript, compaction checkpoint, and trajectory artifacts, preventing gateway restart/crash orphan accumulation. Fixes #77608.
 - **TUI session picker:** Bounded to recent rows; uses exact lookup-style refreshes for the active session.
 - **TUI respawn wrapper:** TUI now skips the generic CLI respawn wrapper for interactive launches, exits cleanly on terminal loss, and refuses to restore heartbeat sessions as the remembered chat session.

@@ -1457,9 +1457,9 @@ When event fires:
 - **Narrow tool allowlists:** Embedded-runner tool families and bundled MCP/LSP runtimes now honor narrow runtime tool allowlists when constructing tool sets. (#77519, #77532)
 - **Tree-sitter exec explainer:** Tree-sitter-backed shell command explainer added for exec approval and command-review surfaces. (#75004) Thanks @jesse-merhi.
 - **Subagent grouped results:** Every grouped child result preserved when direct completion fallback bypasses requester-agent announce turn. Thanks @vincentkoc.
-- **Agents/config:** Ambiguous legacy `main` agent dir helper removed from runtime paths; model/auth/gateway/plugin resolution now goes through `agents.list`/agent-scope helpers.
 
 ### Agent Tools (v2026.5.5)
+- **Agents/config:** Ambiguous legacy `main` agent dir helper removed from runtime paths; model/auth/gateway/plugin resolution now goes through `agents.list`/agent-scope helpers.
 - **Tool allowlists in Codex/subagent runs:** Cron/subagent runs that request tools such as `update_plan`, `browser`, `x_search`, channel login tools, or `group:plugins` no longer start with missing tools or unrelated bootstrap work.
 - **Attachment media dedup:** Attachment-style message tool actions treated as completed chat sends, preventing duplicate fallback media posts when generated files were already uploaded.
 - **Context engine isolation:** Hidden OpenClaw runtime-context custom messages excluded from context-engine assemble, afterTurn, and ingest hooks.

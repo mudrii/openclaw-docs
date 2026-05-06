@@ -1258,7 +1258,7 @@ Per `config-state.ts`: `device-pair`, `phone-control`, `talk-voice` are enabled 
 
 > Window: `v2026.5.3-1..v2026.5.5` | v2026.5.4: 527 commits (2026-05-05) | v2026.5.5: 54 commits (2026-05-06)
 
-### Security / Container Hardening (v2026.5.4)
+### Security / Container Hardening (v2026.5.5)
 - **Gateway container capabilities:** `NET_RAW` and `NET_ADMIN` capabilities dropped from the gateway container; `no-new-privileges` enabled in bundled `docker-compose.yml`. Thanks @VintageAyu.
 - **Docker plugin dist prune:** Package-excluded plugin dist directories pruned from runtime images unless the build explicitly opts in. Fixes #77424. Thanks @vincentkoc.
 - **Diagnostics event bus:** Internal diagnostics event bus granted only to official installed diagnostics exporter plugins (e.g., `@openclaw/diagnostics-prometheus`). Not granted to arbitrary global plugins. Fixes #76628. Thanks @RayWoo.
