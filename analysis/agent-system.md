@@ -516,7 +516,7 @@ Channel plugin (telegram/discord/etc.) → dispatchInboundMessage(ctx, cfg, disp
 ### Purpose
 Lightweight session utility module providing session key parsing, send policies, model/level overrides, transcript events, and input provenance tracking. **Not** the session store itself (that's in `config/sessions`); this module provides cross-cutting session utilities.
 
-### Key Files (7 files)
+### Key Files (12 files)
 
 | File | Role |
 |------|------|
@@ -527,6 +527,11 @@ Lightweight session utility module providing session key parsing, send policies,
 | `input-provenance.ts` | Track where input came from (user, cron, subagent, etc.) |
 | `transcript-events.ts` | Event emitter for session transcript updates (pub/sub pattern) |
 | `session-label.ts` | Session label/display name resolution |
+| `session-id.ts` | Session ID generation and formatting |
+| `session-id-resolution.ts` | Resolve session IDs from context or configuration |
+| `session-lifecycle-events.ts` | Event emitter for session lifecycle transitions |
+| `session-chat-type.ts` | Chat type classification for sessions |
+| `session-chat-type-shared.ts` | Shared chat type constants and helpers |
 
 ### Exported Functions
 - `parseAgentSessionKey(key)` → `{agentId, rest}` — parse canonical session keys
@@ -1457,10 +1462,10 @@ When event fires:
 - **Narrow tool allowlists:** Embedded-runner tool families and bundled MCP/LSP runtimes now honor narrow runtime tool allowlists when constructing tool sets. (#77519, #77532)
 - **Tree-sitter exec explainer:** Tree-sitter-backed shell command explainer added for exec approval and command-review surfaces. (#75004) Thanks @jesse-merhi.
 - **Subagent grouped results:** Every grouped child result preserved when direct completion fallback bypasses requester-agent announce turn. Thanks @vincentkoc.
+- **Tool allowlists in Codex/subagent runs:** Cron/subagent runs that request tools such as `update_plan`, `browser`, `x_search`, channel login tools, or `group:plugins` no longer start with missing tools or unrelated bootstrap work.
 
 ### Agent Tools (v2026.5.5)
 - **Agents/config:** Ambiguous legacy `main` agent dir helper removed from runtime paths; model/auth/gateway/plugin resolution now goes through `agents.list`/agent-scope helpers.
-- **Tool allowlists in Codex/subagent runs:** Cron/subagent runs that request tools such as `update_plan`, `browser`, `x_search`, channel login tools, or `group:plugins` no longer start with missing tools or unrelated bootstrap work.
 - **Attachment media dedup:** Attachment-style message tool actions treated as completed chat sends, preventing duplicate fallback media posts when generated files were already uploaded.
 - **Context engine isolation:** Hidden OpenClaw runtime-context custom messages excluded from context-engine assemble, afterTurn, and ingest hooks.
 

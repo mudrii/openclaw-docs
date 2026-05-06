@@ -1740,7 +1740,6 @@ Changes in the current released line are recorded inline above under each channe
 ### Discord (v2026.5.4)
 - **IPv4 preference:** Discord REST and gateway WebSocket startup paths now prefer IPv4, fixing IPv4-only networks that stalled before Gateway READY and inbound message dispatch. Fixes #77398. Thanks @Beandon13.
 - **Reply delivery:** Failed final reply delivery now treated as a failed turn instead of a delivered automatic reply. Fixes #77520. Thanks @Patrick-Erichsen.
-- **Degraded transport status:** Degraded Discord transport and gateway event-loop starvation signals added to `openclaw channels status`, `openclaw status --deep`, and fetch-timeout logs. (#76327) Thanks @joshavant.
 - **Bundled package-state probes:** Probes, env/config presence, and read-only command defaults now keyed by channel id instead of manifest plugin id, preserving setup/native-command detection when package id differs from channel alias.
 
 ### Discord (v2026.5.5)
@@ -1774,11 +1773,6 @@ Changes in the current released line are recorded inline above under each channe
 ### LINE (v2026.5.5)
 - **dmPolicy validation:** `dmPolicy: "open"` configs without wildcard `allowFrom` now rejected at validation time (webhook DMs fail validation instead of being silently blocked). Fixes #78316.
 
-### Matrix (v2026.5.5)
-- **Approval retry:** Approval delivery retried up to 3 times with short backoff so transient Matrix send failures don't strand pending approval prompts. (#78179) Thanks @Patrick-Erichsen.
-
-### iOS Pairing (v2026.5.5)
-- **LAN gateway pairing:** Setup-code and manual `ws://` connects now allowed for private LAN and `.local` gateways while keeping Tailscale/public routes on `wss://`; explicit gateway passwords preferred over stale bootstrap tokens in mixed-auth reconnects. Fixes #47887. Thanks @draix, @BunsDev.
 
 ### Mattermost / LINE (v2026.5.4)
 - **Model picker clarification:** Mattermost and LINE model picker now clarifies it changes only the session model (not the runtime); runtime switches require `/oc_model <provider/model> --runtime <runtime>`. Thanks @vincentkoc.

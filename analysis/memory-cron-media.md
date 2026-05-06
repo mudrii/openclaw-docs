@@ -564,7 +564,7 @@ Low-level **media file handling**: MIME detection, file fetching with size limit
 
 - **Sandbox TOCTOU hardening** — Sandbox media reads are hardened against time-of-check-to-time-of-use (TOCTOU) path escapes.
 
-### File Inventory (34 files)
+### File Inventory (68 files)
 
 | File | Description |
 |------|-------------|

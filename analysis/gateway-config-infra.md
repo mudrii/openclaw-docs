@@ -157,7 +157,6 @@
 | `protocol/schema/*.ts` | Zod schemas for frames, agents, channels, config, cron, devices, exec-approvals, logs, nodes, sessions, snapshot, wizard |
 | `protocol/client-info.ts` | Client identification |
 | **Subsystems** | |
-| `server-browser.ts` | Browser control server |
 | `server-channels.ts` | Channel plugin management |
 | `server-cron.ts` | Cron job scheduling |
 | `server-lanes.ts` | Request lane management (concurrency) |
@@ -647,15 +646,18 @@ Service runs: openclaw gateway start → server.impl.ts (gateway module)
 
 | File | Declares types for |
 |------|-------------------|
-| `cli-highlight.d.ts` | `cli-highlight` — syntax highlighting |
+| `create-markdown-preview.d.ts` | `create-markdown-preview` — markdown preview |
+| `global-agent.d.ts` | `global-agent` — global HTTP/HTTPS proxy agent |
 | `lydell-node-pty.d.ts` | `@lydell/node-pty` — PTY (pseudo-terminal) |
-| `napi-rs-canvas.d.ts` | `@napi-rs/canvas` — canvas rendering |
+| `microsoft-teams-sdk.d.ts` | `@microsoft/teams-js` — Microsoft Teams SDK |
+| `modelcontextprotocol-sdk-subpaths.d.ts` | `@modelcontextprotocol/sdk` subpath exports |
 | `node-edge-tts.d.ts` | `node-edge-tts` — Edge TTS |
 | `node-llama-cpp.d.ts` | `node-llama-cpp` — local LLM inference |
-| `osc-progress.d.ts` | `osc-progress` — terminal progress |
 | `pdfjs-dist-legacy.d.ts` | `pdfjs-dist` — PDF parsing |
-| `proper-lockfile.d.ts` | `proper-lockfile` — file locking |
-| `qrcode-terminal.d.ts` | `qrcode-terminal` — QR code display |
+| `pi-agent-core.d.ts` | `@mariozechner/pi-agent-core` — pi agent core |
+| `pi-coding-agent.d.ts` | `@mariozechner/pi-coding-agent` — pi coding agent |
+| `qrcode.d.ts` | `qrcode` — QR code generation |
+| `web-push.d.ts` | `web-push` — Web Push notifications |
 
 ### Dependencies
 None — these are ambient declarations.
@@ -1039,10 +1041,10 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 - **Provider plugin loading:** Provider plugins that own explicitly configured image, video, or music generation defaults now loaded at startup so generation tools are live immediately after restart. Fixes #77244.
 
 ### Gateway Performance (v2026.5.4)
-- **Reset/refresh responsiveness:** Gateway reset and refresh paths kept responsive. (#77701)
 - **Plugin model resolution skip:** Plugin model resolution skipped in gateway session lists.
 
 ### Gateway Shutdown (v2026.5.5)
+- **Reset/refresh responsiveness:** Gateway reset and refresh paths kept responsive. (#77701)
 - **Maintenance cancellation:** Delayed post-ready maintenance cancelled during close; maintenance/cron startup suppressed after quick restarts, preventing orphaned background timers.
 - **ShutdownResult:** Structured shutdown warnings and HTTP close timeout warnings delivered through `ShutdownResult`. Thanks @edenfunf.
 - **Supervisor restart visibility:** Recent supervisor restart handoffs reported in `openclaw doctor --deep` and `openclaw gateway status --deep`. Thanks @shakkernerd.
@@ -1051,7 +1053,6 @@ v2026.2.22 — Optional built-in auto-updater for package installs, default-off.
 - **Initial stream chunk flush:** Initial chat stream chunk flushed correctly so first-token streaming is visible to clients.
 - **Assistant role SSE chunk:** Sent immediately when streaming chat-completion headers are accepted, preventing bodyless 200 responses on slow cold starts.
 - **Media sidecar skip:** Non-media HTTP routes skip media sidecar handling entirely.
-- **Model catalog caching:** Empty read-only model catalog results cached until reload, preventing TUI/control-plane loops from hammering plugin metadata reads.
 
 ### Gateway Status (v2026.5.5)
 - **Process uptime:** Compact Gateway process uptime and host system uptime shown in `/status`. Thanks @vincentkoc.

@@ -23,7 +23,7 @@
 ### Overview
 Lightweight utility module for session metadata, key parsing, transcript events, and policy enforcement. No classes — pure functions. Provides the foundational vocabulary (types + helpers) that the routing and gateway modules build on.
 
-### File Inventory (10 source, 5 tests)
+### File Inventory (12 source, 7 tests)
 
 | File | Description |
 |------|-------------|
@@ -37,6 +37,8 @@ Lightweight utility module for session metadata, key parsing, transcript events,
 | `session-id.ts` | Session ID generation and validation |
 | `session-id-resolution.ts` | Session ID resolution from keys and context |
 | `session-lifecycle-events.ts` | Session lifecycle event types and emitters |
+| `session-chat-type.ts` | Chat type classification for sessions |
+| `session-chat-type-shared.ts` | Shared chat type constants and helpers |
 
 ### Key Types & Interfaces
 
@@ -86,7 +88,11 @@ Sessions module is a **leaf dependency** — it provides utilities consumed by r
 ### Test Coverage
 - `send-policy.test.ts` — Rule matching, channel/chatType filtering, key prefix matching
 - `model-overrides.test.ts` — Override application, stale runtime field clearing, fallback notice cleanup (added v2026.3.1)
-- Session-key parsing is validated through routing/session-key tests in `src/routing/` (no dedicated `session-key-utils.test.ts` in this release).
+- `input-provenance.test.ts` — Provenance normalization and user message attachment
+- `session-id.test.ts` — Session ID generation and validation
+- `session-id-resolution.test.ts` — Session ID resolution from keys and context
+- `session-lifecycle-events.test.ts` — Lifecycle event emission and subscription
+- `transcript-events.test.ts` — Transcript pub/sub subscribe and emit
 
 ### Known Patterns
 - **Observer** — `transcript-events.ts` (listener set with add/remove)
@@ -1626,7 +1632,7 @@ Agent bootstrap → hooks: "agent:bootstrap" (extra files, boot checklist)
 - **Event-loop degraded guard:** Fast repeated health/status samples no longer trigger false degraded alerts before a sustained sampling window.
 
 ### Sessions / Tasks (v2026.5.4)
-- **Sandbox registry sharding:** Sandbox container and browser registry entries now stored as per-runtime shard files (replacing the legacy monolithic registry). `openclaw doctor --fix` migrates legacy files. (#74831)
+- **Sandbox registry sharding:** Sandbox container and browser registry entries now stored as per-runtime shard files (replacing the legacy monolithic registry). `openclaw doctor --fix` migrates legacy files.
 
 ### Sessions / Tasks (v2026.5.5)
 - **Export filename collisions:** Session export filenames now deduplicated to avoid collisions. (#77762)

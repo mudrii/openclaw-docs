@@ -11,13 +11,13 @@
 
 1. [src/auto-reply (287 files)](#srcauto-reply)
 2. [src/utils (29 files)](#srcutils)
-3. [src/shared (51 files)](#srcshared)
+3. [src/shared (112 files)](#srcshared)
 4. [src/types (9 files)](#srctypes)
 5. [src/logging (29 files)](#srclogging)
 6. [src/process (28 files)](#srcprocess)
 7. [src/pairing (9 files)](#srcpairing)
 8. [src/node-host (16 files)](#srcnode-host)
-9. [apps/macos (353 Swift files)](#appsmacos)
+9. [apps/macos (2220 Swift files)](#appsmacos)
 10. [src/compat (1 file)](#srccompat)
 11. [src/scripts (2 files)](#srcscripts)
 12. [src/docs (1 file)](#srcdocs)
@@ -418,7 +418,7 @@ None (pure Node.js utilities).
 
 ### Module Overview
 
-Shared utilities used across both gateway and CLI/node-host contexts. Designed to be import-safe without heavy side effects. The module has expanded to 80+ files.
+Shared utilities used across both gateway and CLI/node-host contexts. Designed to be import-safe without heavy side effects. The module has expanded to 112+ files.
 
 ### File Inventory (selected key files)
 
@@ -482,15 +482,18 @@ TypeScript ambient declaration files (`.d.ts`) for untyped npm packages.
 
 | File | Declares types for |
 |------|-------------------|
-| `cli-highlight.d.ts` | `cli-highlight` — syntax highlighting |
+| `create-markdown-preview.d.ts` | `create-markdown-preview` — markdown preview |
+| `global-agent.d.ts` | `global-agent` — global HTTP/HTTPS proxy agent |
 | `lydell-node-pty.d.ts` | `@lydell/node-pty` — PTY spawning |
-| `napi-rs-canvas.d.ts` | `@napi-rs/canvas` — canvas creation |
+| `microsoft-teams-sdk.d.ts` | `@microsoft/teams-js` — Microsoft Teams SDK |
+| `modelcontextprotocol-sdk-subpaths.d.ts` | `@modelcontextprotocol/sdk` subpath exports |
 | `node-edge-tts.d.ts` | `node-edge-tts` — Edge TTS API |
 | `node-llama-cpp.d.ts` | `node-llama-cpp` — local LLM inference |
-| `osc-progress.d.ts` | `osc-progress` — terminal progress bars |
 | `pdfjs-dist-legacy.d.ts` | `pdfjs-dist/legacy` — PDF parsing |
-| `proper-lockfile.d.ts` | `proper-lockfile` — file locking |
-| `qrcode-terminal.d.ts` | `qrcode-terminal` — QR code rendering |
+| `pi-agent-core.d.ts` | `@mariozechner/pi-agent-core` — pi agent core |
+| `pi-coding-agent.d.ts` | `@mariozechner/pi-coding-agent` — pi coding agent |
+| `qrcode.d.ts` | `qrcode` — QR code generation |
+| `web-push.d.ts` | `web-push` — Web Push notifications |
 
 No runtime code, no dependencies, no tests.
 

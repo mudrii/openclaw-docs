@@ -1099,12 +1099,6 @@ src/channels/ ────► src/markdown/ir + render (per-platform formatting)
 ### Models/Auth CLI (v2026.5.4)
 - **`openclaw models auth list`:** New CLI command `openclaw models auth list [--provider <id>] [--json]` to inspect saved per-agent auth profiles without dumping secrets. Avoids the old "too many arguments" path. Thanks @vincentkoc.
 
-### Exec Approvals (v2026.5.4)
-- **Tree-sitter shell explainer:** Tree-sitter-backed shell command explainer added for future approval and command-review surfaces. (#75004) Thanks @jesse-merhi.
-- **Sandbox registry sharding:** Sandbox container and browser registry entries stored as per-runtime shard files, reducing unrelated session lock contention. `openclaw doctor --fix` migrates legacy monolithic registry files. (#74831) Thanks @luckylhb90.
-
-### Exec Approvals (v2026.5.5)
-- **Windows rename-overwrite fallback:** Falls back to a guarded copy when Windows rejects rename-overwrite for `exec-approvals.json`, preserving symlink, hard-link, and owner-only permission safeguards. Fixes #77785. (#77907) Thanks @Alex-Alaniz, @MilleniumGenAI.
 
 ### Media Generation (v2026.5.4)
 - **Codex audio transcription:** Codex audio transcription advertised in runtime and manifest metadata; active Codex chat models routed to OpenAI transcription default instead of sending chat model IDs to audio transcription. Thanks @vincentkoc.
