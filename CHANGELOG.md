@@ -6,6 +6,51 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.7 — Fix Release Summary
+
+> **Released:** 2026-05-10 (docs release) | upstream GitHub release `v2026.5.7` published 2026-05-07 20:57:43 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Window analyzed:** `v2026.5.5..v2026.5.7` | 93 commits
+
+### Fixes
+
+- **OpenAI (`v2026.5.7`):** add `openai/chat-latest` as an explicit direct API-key model override for experimenting with the moving ChatGPT Instant API alias without changing the stable default model.
+- **Cron CLI (`v2026.5.7`):** include computed `status` in `cron list --json` and `cron show --json` output so automation can read disabled/running/ok/error/skipped/idle state directly. (#78701) Thanks @aweiker.
+- **Channels CLI (`v2026.5.7`):** make `openclaw channels list` channel-only, add `--all` for bundled and catalog channels, render installed/configured/enabled state, and move provider auth/usage inspection to `openclaw models auth list`, `openclaw status`, and `openclaw models list`. (#78456) Thanks @sliverp.
+- **Native commands and Active Memory (`v2026.5.7`):** enforce owner checks for native command handlers and require admin scope for global memory toggles. (#78864, #78863) Thanks @pgondhi987.
+- **Gateway/sessions (`v2026.5.7`):** clear cached skill snapshots during `/new` and `sessions.reset`, and persist a new generated transcript file when daily gateway-agent session rollover changes the session id. (#78873, fixes #78607) Thanks @Evizero, @nailujac, @zerone0x, and @sallyom.
+- **Auto-reply and tools (`v2026.5.7`):** gate inline skill tool dispatch through before-tool-call authorization hooks, resolve Tavily tool SecretRefs from the active runtime config snapshot, and clamp compaction summary reserve tokens to each model's output limit. (#78517, #78610, #54392) Thanks @pgondhi987, @VACInc, and @adzendo.
+- **Plugins/install (`v2026.5.7`):** use the same absolute POSIX npm lifecycle shell for managed plugin install/rollback/repair/uninstall, apply host npm overrides inside managed roots, and skip managed npm peer resolution to avoid stale bundled package resolution. Thanks @vincentkoc.
+- **Agents/context engine (`v2026.5.7`):** invalidate cached assembled context views when source history shrinks or assembly fails, preventing stale pre-reset history from being reused. Fixes #77968. (#78163) Thanks @brokemac79 and @ChrisBot2026.
+- **Discord (`v2026.5.7`):** parse provider-prefixed targets like `discord:channel:<id>` as channel sends; audit voice-channel permissions in `channels capabilities` and `channels status --probe`; extend voice capture silence grace to 2.5s with `voice.captureSilenceGraceMs`. Fixes #78572.
+- **Cron/doctor and delivery (`v2026.5.7`):** repair invalid persisted cron model sentinels during `doctor --fix`, fail implicit isolated announce delivery before model execution when `delivery.channel=last` has no previous route, and report failed outbound delivery when no adapter result exists. Fixes #78549, #78608, and #78532.
+- **Doctor/Codex OAuth (`v2026.5.7`):** preserve working `openai-codex/*` PI routes during `doctor --fix` and recover 2026.5.5-rewritten `openai/*` GPT-5 PI routes when only Codex OAuth auth is available. Fixes #78407.
+- **Telegram (`v2026.5.7`):** honor `accessGroup:*` allowlists, keep the polling watchdog tied to `getUpdates`, treat successful same-chat message-tool sends as delivered, and parse provider ids containing dots in `/models` callback buttons. Fixes #78660, #78422, #78685, and #38745.
+- **Gateway/tasks (`v2026.5.7`):** reconcile stale CLI run-context tasks whose live run context disappeared and bound channel hot-reload deferrals so stale task records cannot block Discord/Slack/Telegram reloads forever.
+- **WhatsApp (`v2026.5.7`):** route proactive phone-number sends through Baileys LID forward mappings when available and send captioned `MEDIA:` directive auto-replies only once. Fixes #67378 and #78770.
+- **Codex approvals (`v2026.5.7`):** let Codex's reviewer own native permission approvals, remember identical allow-always decisions within the active session window, and validate plugin approval decisions against the request's declared decision set.
+- **Model providers (`v2026.5.7`):** normalize APNG uploads, preserve Gemini 3 tool-call thought-signature replay with fallback signatures, accept legacy `__env__:VAR` custom-provider keys, and repair snake_case tool-call transcript sanitization.
+- **Release/plugin publishing (`v2026.5.7`):** retry transient ClawHub CLI dependency install failures, keep preview-passing plugins publishable when one preview cell flakes, and verify expected ClawHub package versions after publish.
+
+### Prerelease Note
+
+- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` are prereleases. They are intentionally excluded from this stable docs snapshot.
+
+---
+
+## OpenClaw v2026.5.6 — Fix Release Summary
+
+> **Released:** 2026-05-10 (docs release) | upstream GitHub release `v2026.5.6` published 2026-05-06 17:51:03 UTC.
+> **Window analyzed:** included in `v2026.5.5..v2026.5.7`
+
+### Fixes
+
+- **Doctor/OpenAI Codex (`v2026.5.6`):** revert the 2026.5.5 `doctor --fix` repair that rewrote valid `openai-codex/*` ChatGPT/Codex OAuth routes to `openai/*`, which could break OAuth-only GPT-5.5 setups or accidentally move users onto the OpenAI API-key route. Fixes #78407.
+- **Plugins/runtime fetch (`v2026.5.6`):** drop third-party symbol metadata from plain request header dictionaries before passing them into native `fetch` or `Headers`. Fixes #77846.
+- **Debug proxy (`v2026.5.6`):** normalize captured fetch header dictionaries before replaying requests so caller-owned symbol metadata cannot break replay.
+- **Web fetch (`v2026.5.6`):** bound guarded dispatcher cleanup after request timeouts so timed-out fetches return tool errors instead of leaving Gateway tool lanes active. (#78439) Thanks @obviyus.
+
+---
+
 ## OpenClaw v2026.5.5 — Fix Release Summary
 
 > **Released:** 2026-05-06 (docs release) | upstream GitHub release `v2026.5.5` published 2026-05-06 08:12:30 UTC | **Policy note:** latest *documented* released section stays at top.

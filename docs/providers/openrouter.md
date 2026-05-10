@@ -73,6 +73,13 @@ does **not** inject those OpenRouter-specific headers or Anthropic cache markers
 ## Advanced notes
 
 <AccordionGroup>
+  <Accordion title="Video generation">
+    OpenRouter also registers a `video_generate` provider using OpenRouter's
+    asynchronous `/videos` API. Default model: `openrouter/google/veo-3.1-fast`;
+    supported durations are `4`, `6`, and `8` seconds; supported resolutions
+    are `720P` and `1080P`; supported aspect ratios are `16:9` and `9:16`.
+  </Accordion>
+
   <Accordion title="Anthropic cache markers">
     On verified OpenRouter routes, Anthropic model refs keep the
     OpenRouter-specific Anthropic `cache_control` markers that OpenClaw uses for

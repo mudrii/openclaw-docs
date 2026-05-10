@@ -98,11 +98,20 @@ running, OpenClaw suppresses that partial parent update instead of announcing it
 - `--light-context`: skip workspace bootstrap file injection
 - `--tools exec,read`: restrict which tools the job can use
 
-`--model` uses the selected allowed model for that job. If the requested model
-is not allowed, cron logs a warning and falls back to the job's agent/default
-model selection instead. Configured fallback chains still apply, but a plain
-model override with no explicit per-job fallback list no longer appends the
-agent primary as a hidden extra retry target.
+`--model` uses the selected allowed model as that job's primary model. It is not
+the same as a chat-session `/model` override: configured fallback chains still
+apply when the job primary fails. If the requested model is not allowed or
+cannot be resolved, cron fails the run with an explicit validation error instead
+of silently falling back to the job's agent/default model selection.
+
+If older or hand-edited `jobs.json` entries store `payload.model` as
+`"default"`, `"null"`, a blank string, or JSON `null`, run
+`openclaw doctor --fix`. Doctor removes those invalid persisted override
+sentinels; runtime does not support them as fallback aliases. Omit the model
+field to use the normal agent/default model selection.
+
+`cron list --json` and `cron show <job-id> --json` include a computed top-level
+`status` value: `disabled`, `running`, `ok`, `error`, `skipped`, or `idle`.
 
 Model-selection precedence for isolated jobs is:
 

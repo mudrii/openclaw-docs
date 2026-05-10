@@ -128,9 +128,10 @@ OpenClaw's plugin system has four layers:
    Core decides whether a discovered plugin is enabled, disabled, blocked, or
    selected for an exclusive slot such as memory.
 3. **Runtime loading**
-   Native OpenClaw plugins are loaded in-process via jiti and register
-   capabilities into a central registry. Compatible bundles are normalized into
-   registry records without importing runtime code.
+   Native OpenClaw plugins load in-process through a native compiled-JS fast
+   path when possible. jiti/source-transform loading is reserved for TS/TSX
+   sources, SDK alias-rewrite cases, and fallback paths. Compatible bundles are
+   normalized into registry records without importing runtime code.
 4. **Surface consumption**
    The rest of OpenClaw reads the registry to expose tools, channels, provider
    setup, hooks, HTTP routes, CLI commands, and services.

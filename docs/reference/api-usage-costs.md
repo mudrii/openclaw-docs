@@ -84,7 +84,7 @@ See [Models](/providers/models) for pricing config and [Token use & costs](/refe
 
 Inbound media can be summarized/transcribed before the reply runs. This uses model/provider APIs.
 
-- Audio: OpenAI / Groq / Deepgram / Google / Mistral.
+- Audio: OpenAI/OpenAI Codex, Groq, Deepgram, Google, Mistral, DeepInfra, ElevenLabs, xAI, and SenseAudio where configured.
 - Image: OpenAI / OpenRouter / Anthropic / Google / MiniMax / Moonshot / Qwen / Z.AI.
 - Video: Google / Qwen / Moonshot.
 
@@ -94,13 +94,13 @@ See [Media understanding](/nodes/media-understanding).
 
 Shared generation capabilities can also spend provider keys:
 
-- Image generation: OpenAI / Google / fal / MiniMax
-- Video generation: Qwen
+- Image generation: ComfyUI, DeepInfra, fal, Google, LiteLLM, MiniMax, OpenAI, OpenRouter, Vydra, and xAI when their providers/auth are configured.
+- Video generation: Alibaba, BytePlus, ComfyUI, DeepInfra, fal, Google, MiniMax, OpenAI, OpenRouter, Qwen, Runway, Together, Vydra, and xAI when configured.
 
 Image generation can infer an auth-backed provider default when
-`agents.defaults.imageGenerationModel` is unset. Video generation currently
-requires an explicit `agents.defaults.videoGenerationModel` such as
-`qwen/wan2.6-t2v`.
+`agents.defaults.imageGenerationModel` is unset. Video generation can use an
+explicit `agents.defaults.videoGenerationModel` such as `qwen/wan2.6-t2v`, or
+auth-backed provider defaults when available.
 
 See [Image generation](/tools/image-generation), [Qwen Cloud](/providers/qwen),
 and [Models](/concepts/models).

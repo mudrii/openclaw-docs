@@ -140,6 +140,19 @@ Before opening a GHSA, verify all of these:
 
 Use this baseline first, then selectively re-enable tools per trusted agent:
 
+For Docker deployments, keep the bundled compose hardening in place: both
+`openclaw-gateway` and `openclaw-cli` drop `NET_RAW` and `NET_ADMIN` and set
+`security_opt: ["no-new-privileges:true"]`. Treat overrides that restore those
+capabilities as an explicit security review item.
+
+### v2026.5.7 Access-Control Notes
+
+- Native command handlers enforce owner checks.
+- Global Active Memory toggles require admin scope.
+- Inline skill tool dispatch goes through before-tool-call authorization hooks.
+- Plugin fetch paths strip third-party symbol metadata from plain header dictionaries before native `fetch`.
+- Guarded `web_fetch` dispatcher cleanup is bounded after request timeouts.
+
 ```json5
 {
   gateway: {

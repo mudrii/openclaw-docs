@@ -9,7 +9,7 @@ title: "Text-to-Speech"
 
 # Text-to-speech (TTS)
 
-OpenClaw can convert outbound replies into audio using ElevenLabs, Google, Microsoft, MiniMax, or OpenAI.
+OpenClaw can convert outbound replies into audio through registered speech providers, including ElevenLabs, Google, Microsoft, MiniMax, OpenAI, and other installed or bundled providers such as Azure Speech, DeepInfra, Gradium, Inworld, OpenRouter, Local CLI, Volcengine, Vydra, xAI, and Xiaomi when configured.
 It works anywhere OpenClaw can send audio.
 
 ## Supported services

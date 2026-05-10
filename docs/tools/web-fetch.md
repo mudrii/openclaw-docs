@@ -66,9 +66,9 @@ Truncate output to this many characters.
       fetch: {
         enabled: true, // default: true
         provider: "firecrawl", // optional; omit for auto-detect
-        maxChars: 50000, // max output chars
-        maxCharsCap: 50000, // hard cap for maxChars param
-        maxResponseBytes: 2000000, // max download size before truncation
+        maxChars: 20000, // max output chars
+        maxCharsCap: 20000, // hard cap for maxChars param
+        maxResponseBytes: 750000, // max download size before truncation
         timeoutSeconds: 30,
         cacheTtlMinutes: 15,
         maxRedirects: 3,
@@ -84,6 +84,8 @@ Truncate output to this many characters.
   },
 }
 ```
+
+`maxResponseBytes` is clamped between `32000` and `10000000` bytes.
 
 ## Firecrawl fallback
 

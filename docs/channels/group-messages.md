@@ -5,13 +5,30 @@ read_when:
 title: "Group Messages"
 ---
 
-# Group messages (WhatsApp web channel)
+# Group Messages Across Channels
 
-Goal: let Clawd sit in WhatsApp groups, wake up only when pinged, and keep that thread separate from the personal DM session.
+Goal: let OpenClaw sit in group surfaces, wake up only when allowed, and keep
+group/thread context separate from personal DM sessions.
 
-Note: `agents.list[].groupChat.mentionPatterns` is now used by Telegram/Discord/Slack/iMessage as well; this doc focuses on WhatsApp-specific behavior. For multi-agent setups, set `agents.list[].groupChat.mentionPatterns` per agent (or use `messages.groupChat.mentionPatterns` as a global fallback).
+`agents.list[].groupChat.mentionPatterns` is shared by Telegram, Discord,
+Slack, iMessage, and WhatsApp. For multi-agent setups, set
+`agents.list[].groupChat.mentionPatterns` per agent, or use
+`messages.groupChat.mentionPatterns` as a global fallback.
 
-## Current implementation (2025-12-03)
+## Shared behavior
+
+| Channel | Group allowlist surface | Mention/topic behavior |
+| --- | --- | --- |
+| Slack | channel allowlists and app scopes | Threaded replies can preserve one OpenClaw session per Slack thread. |
+| Feishu | `groupPolicy`, `groupAllowFrom`, `groups.<chat_id>` | Native topics can use `groupSessionScope` and `replyInThread`. |
+| Telegram | `groupPolicy`, `groupAllowFrom`, `groups.<chatId>` | Forum topics can have per-topic config and numeric topic targets. |
+| Discord | guild/channel allowlists | Threads, progress drafts, and voice-channel capability probes are channel-aware. |
+| WhatsApp | `groups`, `groupPolicy`, `groupAllowFrom` | Mentions and per-group sessions keep personal DMs separate. |
+
+Group checks run before mention activation. Replying to a bot message does not
+bypass sender allowlists such as `groupAllowFrom`.
+
+## WhatsApp behavior
 
 - Activation modes: `mention` (default) or `always`. `mention` requires a ping (real WhatsApp @-mentions via `mentionedJids`, safe regex patterns, or the bot’s E.164 anywhere in the text). `always` wakes the agent on every message but it should reply only when it can add meaningful value; otherwise it returns the exact silent token `NO_REPLY` / `no_reply`. Defaults can be set in config (`channels.whatsapp.groups`) and overridden per group via `/activation`. When `channels.whatsapp.groups` is set, it also acts as a group allowlist (include `"*"` to allow all).
 - Group policy: `channels.whatsapp.groupPolicy` controls whether group messages are accepted (`open|disabled|allowlist`). `allowlist` uses `channels.whatsapp.groupAllowFrom` (fallback: explicit `channels.whatsapp.allowFrom`). Default is `allowlist` (blocked until you add senders).

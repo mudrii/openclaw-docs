@@ -21,26 +21,26 @@ Best current local stack. Load a large model in LM Studio (for example, a full-s
 {
   agents: {
     defaults: {
-      model: { primary: “lmstudio/my-local-model” },
+      model: { primary: "lmstudio/my-local-model" },
       models: {
-        “anthropic/claude-opus-4-6”: { alias: “Opus” },
-        “lmstudio/my-local-model”: { alias: “Local” },
+        "anthropic/claude-opus-4-6": { alias: "Opus" },
+        "lmstudio/my-local-model": { alias: "Local" },
       },
     },
   },
   models: {
-    mode: “merge”,
+    mode: "merge",
     providers: {
       lmstudio: {
-        baseUrl: “http://127.0.0.1:1234/v1”,
-        apiKey: “lmstudio”,
-        api: “openai-responses”,
+        baseUrl: "http://127.0.0.1:1234/v1",
+        apiKey: "lmstudio",
+        api: "openai-responses",
         models: [
           {
-            id: “my-local-model”,
-            name: “Local Model”,
+            id: "my-local-model",
+            name: "Local Model",
             reasoning: false,
-            input: [“text”],
+            input: ["text"],
             cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
             contextWindow: 196608,
             maxTokens: 8192,
@@ -62,6 +62,9 @@ Best current local stack. Load a large model in LM Studio (for example, a full-s
 - For WhatsApp, stick to Responses API so only final text is sent.
 
 Keep hosted models configured even when running local; use `models.mode: "merge"` so fallbacks stay available.
+
+Use Responses API (`api: "openai-responses"`) when the backend supports it;
+otherwise use Chat Completions (`api: "openai-completions"`).
 
 ### Hybrid config: hosted primary, local fallback
 

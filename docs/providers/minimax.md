@@ -286,6 +286,9 @@ The bundled `minimax` plugin also registers video generation through the shared
 - Default video model: `minimax/MiniMax-Hailuo-2.3`
 - Modes: text-to-video and single-image reference flows
 - Supports `aspectRatio` and `resolution`
+- `MiniMax-Hailuo-2.3`, `MiniMax-Hailuo-2.3-Fast`, and
+  `MiniMax-Hailuo-02` support `768P` and `1080P`; OpenClaw normalizes `720P`
+  requests to MiniMax's supported `768P`.
 
 To use MiniMax as the default video provider:
 

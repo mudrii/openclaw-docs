@@ -1502,7 +1502,7 @@
                   },
                   {
                     "group": "Configuration",
-                    "pages": ["cli/config", "cli/configure", "cli/webhooks"]
+                    "pages": ["cli/config", "cli/configure", "cli/models", "cli/webhooks"]
                   },
                   {
                     "group": "Plugins and skills",

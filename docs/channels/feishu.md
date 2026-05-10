@@ -42,9 +42,13 @@ Feishu/Lark is an all-in-one collaboration platform where teams chat, share docu
 Configure `dmPolicy` to control who can DM the bot:
 
 - `"pairing"` — unknown users receive a pairing code; approve via CLI
-- `"allowlist"` — only users listed in `allowFrom` can chat (default: bot owner only)
+- `"allowlist"` — only users listed in `allowFrom` can chat
 - `"open"` — allow all users
-- `"disabled"` — disable all DMs
+
+Default: `pairing`. `open` requires `channels.feishu.allowFrom` to include
+`"*"`; otherwise validation rejects the config. Feishu does not currently
+support `dmPolicy: "disabled"`; use allowlists or disable the channel/account
+instead.
 
 **Approve a pairing request:**
 
@@ -266,6 +270,14 @@ Reduce the number of Feishu/Lark API calls with two optional flags:
 }
 ```
 
+### Topic sessions and threaded replies
+
+For Feishu group topics, configure `groupSessionScope: "group_topic"` or
+`"group_topic_sender"` to isolate sessions by native topic. Set
+`replyInThread: "enabled"` when replies should continue or create Feishu topic
+threads. Since `v2026.5.5`, OpenClaw hydrates missing native topic starter
+thread IDs so first turns and follow-ups stay in the same topic session.
+
 ### ACP sessions
 
 Feishu/Lark supports ACP for DMs and group thread messages. Feishu/Lark ACP is text-command driven — there are no native slash-command menus, so use `/acp ...` messages directly in the conversation.
@@ -384,7 +396,7 @@ Full configuration: [Gateway configuration](/gateway/configuration)
 | `channels.feishu.accounts.<id>.appId`             | App ID                                     | —                |
 | `channels.feishu.accounts.<id>.appSecret`         | App Secret                                 | —                |
 | `channels.feishu.accounts.<id>.domain`            | Per-account domain override                | `feishu`         |
-| `channels.feishu.dmPolicy`                        | DM policy                                  | `allowlist`      |
+| `channels.feishu.dmPolicy`                        | DM policy                                  | `pairing`        |
 | `channels.feishu.allowFrom`                       | DM allowlist (open_id list)                | [BotOwnerId]     |
 | `channels.feishu.groupPolicy`                     | Group policy                               | `allowlist`      |
 | `channels.feishu.groupAllowFrom`                  | Group allowlist                            | —                |

@@ -58,6 +58,11 @@ OpenClaw includes these xAI model families out of the box:
 The plugin also forward-resolves newer `grok-4*` and `grok-code-fast*` ids when
 they follow the same API shape.
 
+Grok 4.3 refs such as `xai/grok-4.3` are forward-resolved by the bundled xAI
+provider. Native xAI Responses requests do not receive OpenAI-style `reasoning`
+or `reasoningEffort` fields; OpenClaw clamps bundled xAI thinking to `off` for
+models such as `grok-4.3`.
+
 <Tip>
 `grok-4-fast`, `grok-4-1-fast`, and the `grok-4.20-beta-*` variants are the
 current image-capable Grok refs in the bundled catalog.

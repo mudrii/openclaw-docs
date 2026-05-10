@@ -50,8 +50,9 @@ Choose your preferred auth method and follow the setup steps.
 
     | Model ref | Route | Auth |
     |-----------|-------|------|
-    | `openai/gpt-5.4` | Direct OpenAI Platform API | `OPENAI_API_KEY` |
-    | `openai/gpt-5.4-pro` | Direct OpenAI Platform API | `OPENAI_API_KEY` |
+    | `openai/gpt-5.5` | Direct OpenAI Platform API | `OPENAI_API_KEY` |
+    | `openai/gpt-5.5-pro` | Direct OpenAI Platform API | `OPENAI_API_KEY` |
+    | `openai/chat-latest` | Direct OpenAI Platform API moving alias | `OPENAI_API_KEY` |
 
     <Note>
     Direct Platform API access uses `OPENAI_API_KEY`. For ChatGPT/Codex subscription access, configure the native Codex runtime as shown in the Codex tab.
@@ -62,9 +63,14 @@ Choose your preferred auth method and follow the setup steps.
     ```json5
     {
       env: { OPENAI_API_KEY: "sk-..." },
-      agents: { defaults: { model: { primary: "openai/gpt-5.4" } } },
+      agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
     }
     ```
+
+    To try ChatGPT's current Instant model from the OpenAI API, set the model
+    to `openai/chat-latest`. It is a moving alias for experiments, not the
+    stable default; keep `openai/gpt-5.5` for production API usage unless you
+    explicitly want alias behavior.
 
     <Warning>
     OpenClaw does **not** expose `openai/gpt-5.3-codex-spark` on the direct API path. Live OpenAI API requests reject that model. Spark is Codex-only.
@@ -89,7 +95,7 @@ Choose your preferred auth method and follow the setup steps.
       </Step>
       <Step title="Set the default model">
         ```bash
-        openclaw config set agents.defaults.model.primary openai/gpt-5.4
+        openclaw config set agents.defaults.model.primary openai/gpt-5.5
         openclaw config set agents.defaults.agentRuntime.id codex
         ```
       </Step>
@@ -104,12 +110,18 @@ Choose your preferred auth method and follow the setup steps.
 
     | Model ref | Route | Auth |
     |-----------|-------|------|
-    | `openai/gpt-5.4` + `agentRuntime.id: "codex"` | Native Codex app-server runtime | Codex sign-in |
-    | `openai-codex/gpt-5.4` | PI OAuth compatibility route | Codex sign-in |
-    | `openai-codex/gpt-5.3-codex-spark` | PI OAuth compatibility route | Codex sign-in (entitlement-dependent) |
+    | `openai/gpt-5.5` + `agentRuntime.id: "codex"` | Native Codex app-server runtime | Codex sign-in |
+    | `openai-codex/gpt-5.5` | PI OAuth compatibility route | Codex sign-in |
+    | `openai-codex/gpt-5.5-pro` | PI OAuth compatibility route | Codex sign-in |
 
     <Note>
-    The current release line keeps the `v2026.5.2` routing split: ChatGPT/Codex subscription setups should prefer `openai/gpt-*` with `agentRuntime.id: "codex"` for native Codex execution. Keep `openai-codex/*` when you intentionally need the PI OAuth provider route.
+    The current release line keeps the routing split: ChatGPT/Codex
+    subscription setups should prefer `openai/gpt-*` with
+    `agentRuntime.id: "codex"` for native Codex execution. Keep
+    `openai-codex/*` when you intentionally need the PI OAuth provider route.
+    `openclaw doctor --fix` preserves working PI routes and recovers only the
+    broken `v2026.5.5` rewrites where `openai/*` GPT-5 routes were left on PI
+    while only Codex OAuth auth was available.
     </Note>
 
     ### Config example
@@ -118,7 +130,7 @@ Choose your preferred auth method and follow the setup steps.
     {
       agents: {
         defaults: {
-          model: { primary: "openai/gpt-5.4" },
+          model: { primary: "openai/gpt-5.5" },
           agentRuntime: { id: "codex" },
         },
       },
@@ -133,7 +145,7 @@ Choose your preferred auth method and follow the setup steps.
 
     OpenClaw treats model metadata and the runtime context cap as separate values.
 
-    For `openai-codex/gpt-5.4`:
+    For `openai-codex/gpt-5.5`:
 
     - Native `contextWindow`: `1050000`
     - Default runtime `contextTokens` cap: `272000`

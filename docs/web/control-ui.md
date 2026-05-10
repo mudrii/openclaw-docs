@@ -35,6 +35,11 @@ and selected gateway URL; passwords are not persisted. Onboarding usually
 generates a gateway token for shared-secret auth on first connect, but password
 auth works too when `gateway.auth.mode` is `"password"`.
 
+The current Control UI also supports browser Talk realtime sessions, bounded
+chat-history refreshes, partial channel-probe labels, local-only Appearance
+theme imports, raw editor reset behavior that preserves the authored config
+shape, and event-log entries for long animation frames or long tasks.
+
 ## Device pairing (first connection)
 
 When you connect to the Control UI from a new browser or device, the Gateway
