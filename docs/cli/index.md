@@ -599,7 +599,7 @@ Options:
 
 ### `config`
 
-Non-interactive config helpers (get/set/unset/file/schema/validate). Running `openclaw config` with no
+Non-interactive config helpers (get/set/patch/unset/file/schema/validate). Running `openclaw config` with no
 subcommand launches the wizard.
 
 Subcommands:
@@ -614,6 +614,7 @@ Subcommands:
 - `config set --allow-exec --dry-run`: opt in to exec SecretRef dry-run checks (may execute provider commands).
 - `config set --dry-run --json`: emit machine-readable dry-run output (checks + completeness signal, operations, refs checked/skipped, errors).
 - `config set --strict-json`: require JSON5 parsing for path/value input. `--json` remains a legacy alias for strict parsing outside dry-run output mode.
+- `config patch`: merge a JSON5 config patch from `--file` or `--stdin`; supports `--dry-run`, `--allow-exec`, `--json`, and repeatable `--replace-path <path>` for replacing a target object or array instead of recursively merging it.
 - `config unset <path>`: remove a value.
 - `config file`: print the active config file path.
 - `config schema`: print the generated JSON schema for `openclaw.json`, including propagated field `title` / `description` docs metadata across nested object, wildcard, array-item, and composition branches, plus best-effort live plugin/channel schema metadata.
@@ -1486,8 +1487,11 @@ Include `--token` or `--password` explicitly. Missing explicit credentials is an
 Subcommands:
 
 - `gateway call <method> [--params <json>] [--url <url>] [--token <token>] [--password <password>] [--timeout <ms>] [--expect-final] [--json]`
+- `gateway usage-cost --days <days>`
 - `gateway health`
 - `gateway status`
+- `gateway stability [--limit <n>] [--type <type>] [--since-seq <seq>] [--bundle [path|latest]] [--export] [--output <path>]`
+- `gateway diagnostics export [--output <path>] [--log-lines <count>] [--log-bytes <bytes>]`
 - `gateway probe`
 - `gateway discover`
 - `gateway install|uninstall|start|stop|restart`

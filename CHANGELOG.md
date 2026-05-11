@@ -6,6 +6,23 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.7-1 — Docs Correction Summary
+
+> **Released:** 2026-05-11 (docs correction) | upstream GitHub release `v2026.5.7` unchanged, published 2026-05-07 20:57:43 UTC | **Validated against:** `v2026.5.7`
+
+### Corrections
+
+- **Release metadata:** corrected the upstream `v2026.5.5` GitHub release timestamp from `2026-05-06 08:12:30 UTC` to the published release timestamp `2026-05-06 09:00:55 UTC`.
+- **Prerelease exclusion note:** refreshed the stable-docs note to exclude current upstream prereleases through `v2026.5.10-beta.3`.
+- **Inventory:** corrected stable snapshot counts that reflected unreleased branch state; `v2026.5.7` has 125 top-level `extensions/` directories, 119 extension package manifests, and 87 released `SKILL.md` entrypoints.
+- **Stable docs:** corrected Slack `SLACK_USER_TOKEN` fallback docs, Plugin SDK export examples, `openclaw channels` subcommands, `config patch`, and Gateway `usage-cost`/`stability`/`diagnostics export` coverage against the `v2026.5.7` source.
+
+### Prerelease Note
+
+- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` through `v2026.5.10-beta.3` are prereleases. They are intentionally excluded from this stable docs snapshot.
+
+---
+
 ## OpenClaw v2026.5.7 — Fix Release Summary
 
 > **Released:** 2026-05-10 (docs release) | upstream GitHub release `v2026.5.7` published 2026-05-07 20:57:43 UTC | **Policy note:** latest *documented* released section stays at top.
@@ -33,7 +50,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ### Prerelease Note
 
-- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` are prereleases. They are intentionally excluded from this stable docs snapshot.
+- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` through `v2026.5.10-beta.3` are prereleases. They are intentionally excluded from this stable docs snapshot.
 
 ---
 
@@ -53,10 +70,10 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ## OpenClaw v2026.5.5 — Fix Release Summary
 
-> **Released:** 2026-05-06 (docs release) | upstream GitHub release `v2026.5.5` published 2026-05-06 08:12:30 UTC | **Policy note:** latest *documented* released section stays at top.
+> **Released:** 2026-05-06 (docs release) | upstream GitHub release `v2026.5.5` published 2026-05-06 09:00:55 UTC | **Policy note:** latest *documented* released section stays at top.
 > **Window analyzed:** `v2026.5.4..v2026.5.5` | 54 commits
 
-### Changes
+### Fixes
 
 - **Feishu (`v2026.5.5`):** hydrate missing native topic starter thread IDs before session routing so first turns and follow-ups stay in the same topic session. Fixes #78262. Thanks @joeyzenghuan.
 - **LINE (`v2026.5.5`):** reject `dmPolicy: "open"` configs without wildcard `allowFrom` so webhook DMs fail validation instead of being acknowledged and silently blocked. Fixes #78316.

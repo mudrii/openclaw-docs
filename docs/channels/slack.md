@@ -582,8 +582,8 @@ Surface different features that extend the above defaults.
 - `botToken`, `appToken`, `signingSecret`, and `userToken` accept plaintext
   strings or SecretRef objects.
 - Config tokens override env fallback.
-- `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN` env fallback applies only to the default account.
-- `userToken` (`xoxp-...`) is config-only (no env fallback) and defaults to read-only behavior (`userTokenReadOnly: true`).
+- `SLACK_BOT_TOKEN` / `SLACK_APP_TOKEN` / `SLACK_USER_TOKEN` env fallback applies only to the default account.
+- `userToken` (`xoxp-...`) defaults to read-only behavior (`userTokenReadOnly: true`).
 
 Status snapshot behavior:
 

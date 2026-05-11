@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.5.7 (2026-05-10).** Latest published upstream stable release: v2026.5.7 (published 2026-05-07 20:57:43 UTC).
+> **Current docs version: v2026.5.7-1 (2026-05-11).** Latest published upstream stable release: v2026.5.7 (published 2026-05-07 20:57:43 UTC).
 
 ---
 
@@ -74,7 +74,7 @@ Released channel implementations mostly live in `extensions/` (`telegram/`, `dis
 
 **v2026.5.5 additions (historical):**
 
-- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.5` (published 2026-05-06 08:12:30 UTC; window `v2026.5.4..v2026.5.5`, 54 commits). The release is a targeted fix release covering Feishu topic threading, LINE dmPolicy validation, Telegram/Codex progress rendering, Discord heartbeat and guild routing, Matrix approval retry, iOS LAN pairing, TUI session management, Doctor legacy route repair, Gateway shutdown hardening, Control UI responsiveness, session artifact pruning, and Fireworks/xAI provider reasoning controls.
+- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.5` (published 2026-05-06 09:00:55 UTC; window `v2026.5.4..v2026.5.5`, 54 commits). The release is a targeted fix release covering Feishu topic threading, LINE dmPolicy validation, Telegram/Codex progress rendering, Discord heartbeat and guild routing, Matrix approval retry, iOS LAN pairing, TUI session management, Doctor legacy route repair, Gateway shutdown hardening, Control UI responsiveness, session artifact pruning, and Fireworks/xAI provider reasoning controls.
 - **Behavioral change surface (`v2026.5.4..v2026.5.5`):** verify Doctor `openai-codex/*` route repair selects `agentRuntime.id: "codex"` only when the Codex plugin is installed/enabled/has usable OAuth; verify TUI session restore no longer uses heartbeat sessions as the remembered chat session; check exec-approvals.json Windows rename fallback when changing approval persistence paths; and treat session artifact pruning as active cleanup when touching session lifecycle code.
 
 **v2026.5.4 additions (historical):**
