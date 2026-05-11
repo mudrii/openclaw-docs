@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.5.7-1 (2026-05-11).** Latest published upstream stable release: v2026.5.7 (published 2026-05-07 20:57:43 UTC).
+> **Current docs version: v2026.5.7-2 (2026-05-11).** Latest published upstream stable release: v2026.5.7 (published 2026-05-07 20:57:43 UTC).
 
 ---
 

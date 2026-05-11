@@ -51,7 +51,7 @@ provider is configured.
 | BytePlus    |       |   ✓   |       |     |     |                |                     |
 | ComfyUI     |   ✓   |   ✓   |   ✓   |     |     |                |                     |
 | DeepInfra   |   ✓   |   ✓   |       |  ✓  |  ✓  |                |          ✓          |
-| Deepgram    |       |       |       |     |  ✓  |                |                     |
+| Deepgram    |       |       |       |     |  ✓  |       ✓        |                     |
 | ElevenLabs  |       |       |       |  ✓  |  ✓  |                |                     |
 | fal         |   ✓   |   ✓   |       |     |     |                |                     |
 | Google      |   ✓   |   ✓   |   ✓   |  ✓  |     |       ✓        |          ✓          |

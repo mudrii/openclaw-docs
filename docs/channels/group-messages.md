@@ -2,33 +2,16 @@
 summary: "Behavior and config for WhatsApp group message handling (mentionPatterns are shared across surfaces)"
 read_when:
   - Changing group message rules or mentions
-title: "Group Messages"
+title: "Group messages"
 ---
 
-# Group Messages Across Channels
+Goal: let Clawd sit in WhatsApp groups, wake up only when pinged, and keep that thread separate from the personal DM session.
 
-Goal: let OpenClaw sit in group surfaces, wake up only when allowed, and keep
-group/thread context separate from personal DM sessions.
+<Note>
+`agents.list[].groupChat.mentionPatterns` is also used by Telegram, Discord, Slack, and iMessage. This doc focuses on WhatsApp-specific behavior. For multi-agent setups, set `agents.list[].groupChat.mentionPatterns` per agent, or use `messages.groupChat.mentionPatterns` as a global fallback.
+</Note>
 
-`agents.list[].groupChat.mentionPatterns` is shared by Telegram, Discord,
-Slack, iMessage, and WhatsApp. For multi-agent setups, set
-`agents.list[].groupChat.mentionPatterns` per agent, or use
-`messages.groupChat.mentionPatterns` as a global fallback.
-
-## Shared behavior
-
-| Channel | Group allowlist surface | Mention/topic behavior |
-| --- | --- | --- |
-| Slack | channel allowlists and app scopes | Threaded replies can preserve one OpenClaw session per Slack thread. |
-| Feishu | `groupPolicy`, `groupAllowFrom`, `groups.<chat_id>` | Native topics can use `groupSessionScope` and `replyInThread`. |
-| Telegram | `groupPolicy`, `groupAllowFrom`, `groups.<chatId>` | Forum topics can have per-topic config and numeric topic targets. |
-| Discord | guild/channel allowlists | Threads, progress drafts, and voice-channel capability probes are channel-aware. |
-| WhatsApp | `groups`, `groupPolicy`, `groupAllowFrom` | Mentions and per-group sessions keep personal DMs separate. |
-
-Group checks run before mention activation. Replying to a bot message does not
-bypass sender allowlists such as `groupAllowFrom`.
-
-## WhatsApp behavior
+## Current implementation (2025-12-03)
 
 - Activation modes: `mention` (default) or `always`. `mention` requires a ping (real WhatsApp @-mentions via `mentionedJids`, safe regex patterns, or the bot’s E.164 anywhere in the text). `always` wakes the agent on every message but it should reply only when it can add meaningful value; otherwise it returns the exact silent token `NO_REPLY` / `no_reply`. Defaults can be set in config (`channels.whatsapp.groups`) and overridden per group via `/activation`. When `channels.whatsapp.groups` is set, it also acts as a group allowlist (include `"*"` to allow all).
 - Group policy: `channels.whatsapp.groupPolicy` controls whether group messages are accepted (`open|disabled|allowlist`). `allowlist` uses `channels.whatsapp.groupAllowFrom` (fallback: explicit `channels.whatsapp.allowFrom`). Default is `allowlist` (blocked until you add senders).
@@ -98,4 +81,10 @@ Only the owner number (from `channels.whatsapp.allowFrom`, or the bot’s own E.
 - Heartbeats are intentionally skipped for groups to avoid noisy broadcasts.
 - Echo suppression uses the combined batch string; if you send identical text twice without mentions, only the first will get a response.
 - Session store entries will appear as `agent:<agentId>:whatsapp:group:<jid>` in the session store (`~/.openclaw/agents/<agentId>/sessions/sessions.json` by default); a missing entry just means the group hasn’t triggered a run yet.
-- Typing indicators in groups follow `agents.defaults.typingMode` (default: `message` when unmentioned).
+- Typing indicators in groups follow `agents.defaults.typingMode`. When visible replies use the default message-tool-only mode, typing starts immediately by default so group members can see the agent is working even if no automatic final reply is posted. Explicit typing-mode config still wins.
+
+## Related
+
+- [Groups](/channels/groups)
+- [Channel routing](/channels/channel-routing)
+- [Broadcast groups](/channels/broadcast-groups)

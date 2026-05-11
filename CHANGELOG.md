@@ -6,6 +6,22 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.7-2 — Docs Correction Summary
+
+> **Released:** 2026-05-11 (docs correction) | upstream GitHub release `v2026.5.7` unchanged, published 2026-05-07 20:57:43 UTC | **Validated against:** `v2026.5.7`
+
+### Corrections
+
+- **Released docs sync:** restored missing or stale `v2026.5.7` documentation pages from the released source tree across channels, providers, plugins, CLI, reference, automation, concepts, gateway, tools, and web docs.
+- **CLI and runtime docs:** corrected released `channels list`, `models auth list`, cron model validation, Active Memory status/admin scope, memory search provider/config, media capability, video generation, and web provider validation docs by syncing to the stable source docs.
+- **Prerelease exclusion note:** refreshed the stable-docs note to exclude current upstream prerelease/source tags through `v2026.5.10-beta.4`; `v2026.5.10-beta.4` exists as a source tag, while GitHub releases currently list published prereleases through `v2026.5.10-beta.3`.
+
+### Prerelease Note
+
+- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` through source tag `v2026.5.10-beta.4` are prereleases. They are intentionally excluded from this stable docs snapshot.
+
+---
+
 ## OpenClaw v2026.5.7-1 — Docs Correction Summary
 
 > **Released:** 2026-05-11 (docs correction) | upstream GitHub release `v2026.5.7` unchanged, published 2026-05-07 20:57:43 UTC | **Validated against:** `v2026.5.7`
@@ -19,7 +35,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ### Prerelease Note
 
-- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` through `v2026.5.10-beta.3` are prereleases. They are intentionally excluded from this stable docs snapshot.
+- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` through source tag `v2026.5.10-beta.4` are prereleases. They are intentionally excluded from this stable docs snapshot.
 
 ---
 
@@ -50,7 +66,7 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ### Prerelease Note
 
-- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` through `v2026.5.10-beta.3` are prereleases. They are intentionally excluded from this stable docs snapshot.
+- Upstream `v2026.5.9-beta.1` and `v2026.5.10-beta.1` through source tag `v2026.5.10-beta.4` are prereleases. They are intentionally excluded from this stable docs snapshot.
 
 ---
 

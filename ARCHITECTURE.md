@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-05-11 (docs snapshot: v2026.5.7-1) | Released baseline: GitHub `v2026.5.7` (published 2026-05-07 20:57:43 UTC)
+> Updated: 2026-05-11 (docs snapshot: v2026.5.7-2) | Released baseline: GitHub `v2026.5.7` (published 2026-05-07 20:57:43 UTC)
 
 ---
 

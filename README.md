@@ -3,7 +3,7 @@
 Comprehensive codebase documentation for [OpenClaw](https://github.com/openclaw/openclaw) — the open-source AI agent platform.
 
 **Latest published upstream stable release: v2026.5.7 (published 2026-05-07 20:57:43 UTC).**
-**Current validated docs snapshot: v2026.5.7-1 (validated against `v2026.5.7`).**
+**Current validated docs snapshot: v2026.5.7-2 (validated against `v2026.5.7`).**
 
 **Scope policy:** this repository documents published releases only. It does not document unreleased `main` branch changes, betas, or speculative future behavior.
 
@@ -56,6 +56,7 @@ Both models independently confirmed the reference doc significantly reduced time
 ## Versioning
 
 Each documented release tracks an OpenClaw stable release line. Docs-only rereleases append a suffix like `-1`, `-2`, etc. while keeping the same validated upstream release; same-base npm correction builds are noted inside the matching docs snapshot rather than treated as separate published GitHub releases:
+- `v2026.5.7-2` (2026-05-11, docs correction) - Same upstream baseline as `v2026.5.7`; restored released `v2026.5.7` docs pages that were missing or stale in the publish repo across channels, providers, plugins, CLI, reference, automation, concepts, gateway, tools, and web docs; refreshed prerelease exclusion notes through source tag `v2026.5.10-beta.4`. No upstream stable behavior changes.
 - `v2026.5.7-1` (2026-05-11, docs correction) - Same upstream baseline as `v2026.5.7`; corrected release metadata for upstream `v2026.5.5` to use the GitHub `publishedAt` timestamp (`2026-05-06 09:00:55 UTC`), refreshed prerelease exclusion notes through `v2026.5.10-beta.3`, and corrected stable inventory counts to use the released `v2026.5.7` tag instead of unreleased branch data. No upstream behavior changes.
 - `v2026.5.7` (2026-05-10, docs release) - Synced snapshot to upstream `v2026.5.7` (published 2026-05-07 20:57:43 UTC; window `v2026.5.5..v2026.5.7`, 93 commits). Pure fix sync covering stable `v2026.5.6` and `v2026.5.7`. Key fixes: `openai/chat-latest` direct API-key model override; `cron list --json` and `cron show --json` computed `status`; `channels list` channel-only output plus `--all`; native command owner enforcement; admin-only global Active Memory toggles; stale skills snapshot clearing during `/new` and `sessions.reset`; before-tool-call authorization for inline skill dispatch; Tavily SecretRef runtime resolution; managed plugin npm override/peer handling; context-engine cache invalidation; Discord provider-prefixed channel targets and voice permission audits; compaction max-token clamping; cron doctor repair for invalid persisted model sentinels; Telegram access-group allowlists, polling watchdog, same-chat message delivery, and dotted provider-id model buttons; stale Gateway task/reload reconciliation; WhatsApp LID mapping and media directive dedupe; Codex/native approval decision validation; model provider replay and APNG/Gemini/custom-key fixes.
 - `v2026.5.6` (2026-05-10, docs release) - Included in the `v2026.5.7` docs sync. Upstream `v2026.5.6` was published 2026-05-06 17:51:03 UTC and fixes the 2026.5.5 Doctor/OpenAI Codex route regression, plugin/runtime fetch symbol metadata, debug proxy header replay, and guarded `web_fetch` dispatcher timeout cleanup.
