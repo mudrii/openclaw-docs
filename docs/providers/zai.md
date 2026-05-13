@@ -11,7 +11,7 @@ for authentication. Create your API key in the Z.AI console. OpenClaw uses the `
 with a Z.AI API key.
 
 - Provider: `zai`
-- Auth: `ZAI_API_KEY`
+- Auth: `ZAI_API_KEY` or `Z_AI_API_KEY`
 - API: Z.AI Chat Completions (Bearer auth)
 
 ## Getting started

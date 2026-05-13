@@ -117,6 +117,8 @@ Legacy aliases still normalize to the canonical bundled ids:
 | `grok-4-1-fast-reasoning` | `grok-4-1-fast`                       |
 | `grok-4.20-reasoning`     | `grok-4.20-beta-latest-reasoning`     |
 | `grok-4.20-non-reasoning` | `grok-4.20-beta-latest-non-reasoning` |
+| `grok-4.20-experimental-beta-0304-reasoning`     | `grok-4.20-beta-latest-reasoning`     |
+| `grok-4.20-experimental-beta-0304-non-reasoning` | `grok-4.20-beta-latest-non-reasoning` |
 
 ## Features
 
