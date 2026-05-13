@@ -1,7 +1,7 @@
 # OpenClaw Channels & Messaging — Comprehensive Analysis
 <!-- markdownlint-disable MD024 MD028 -->
 
-> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5`
+> Updated: 2026-05-13 | Version: v2026.5.7 | Codebase: OpenClaw release tag `v2026.5.7`
 > Modules analyzed: `extensions/telegram`, `extensions/discord`, `extensions/signal`, `extensions/slack`, `extensions/whatsapp`, `extensions/imessage`, `extensions/line`, `extensions/feishu`, `extensions/matrix`, `extensions/msteams`, `extensions/bluebubbles`, plus shared `src/channels` and `src/routing`
 
 > **Release boundary note:** current released implementations for Telegram, Discord, Slack, Signal, WhatsApp, iMessage, Feishu, Matrix, and QQ Bot live under `extensions/*`. Shared channel infrastructure remains in `src/channels`, `src/routing`, `src/line`, and adjacent core modules.

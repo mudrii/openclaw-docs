@@ -191,7 +191,7 @@ openclaw channels add bluebubbles --http-url http://192.168.1.100:1234 --passwor
 
 BlueBubbles group webhooks often only include raw participant addresses. If you want `GroupMembers` context to show local contact names instead, you can opt in to local Contacts enrichment on macOS:
 
-- `channels.bluebubbles.enrichGroupParticipantsFromContacts = true` enables the lookup. Default: `false`.
+- `channels.bluebubbles.enrichGroupParticipantsFromContacts = false` disables the lookup. Default: `true` (lookup enabled when running on macOS).
 - Lookups run only after group access, command authorization, and mention gating have allowed the message through.
 - Only unnamed phone participants are enriched.
 - Raw phone numbers remain as the fallback when no local match is found.
@@ -555,7 +555,7 @@ Full configuration: [Configuration](/gateway/configuration)
     - `channels.bluebubbles.allowFrom`: DM allowlist (handles, emails, E.164 numbers, `chat_id:*`, `chat_guid:*`).
     - `channels.bluebubbles.groupPolicy`: `open | allowlist | disabled` (default: `allowlist`).
     - `channels.bluebubbles.groupAllowFrom`: Group sender allowlist.
-    - `channels.bluebubbles.enrichGroupParticipantsFromContacts`: On macOS, optionally enrich unnamed group participants from local Contacts after gating passes. Default: `false`.
+    - `channels.bluebubbles.enrichGroupParticipantsFromContacts`: On macOS, enrich unnamed group participants from local Contacts after gating passes. Default: `true`.
     - `channels.bluebubbles.groups`: Per-group config (`requireMention`, etc.).
 
   </Accordion>

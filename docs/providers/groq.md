@@ -65,7 +65,7 @@ rows, or check
 | **Llama 3.3 70B Versatile** | General-purpose, large context     |
 | **Llama 3.1 8B Instant**    | Fast, lightweight                  |
 | **Gemma 2 9B**              | Compact, efficient                 |
-| **Mixtral 8x7B**            | MoE architecture, strong reasoning |
+| **Mistral Saba 24B**        | Multilingual reasoning             |
 
 <Tip>
 Use `openclaw models list --all --provider groq` for the manifest-backed Groq

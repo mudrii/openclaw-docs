@@ -48,7 +48,8 @@ pattern for new plugins.
 
 <Warning>
   Do not import provider- or channel-branded convenience seams (for example
-  `openclaw/plugin-sdk/slack`, `.../discord`, `.../signal`, `.../whatsapp`).
+  `openclaw/plugin-sdk/discord` or `.../matrix`). Only a few channel-branded
+  subpaths exist at all, and they are bundled-plugin internal seams.
   Bundled plugins compose generic SDK subpaths inside their own `api.ts` /
   `runtime-api.ts` barrels; core consumers should either use those plugin-local
   barrels or add a narrow generic SDK contract when a need is truly

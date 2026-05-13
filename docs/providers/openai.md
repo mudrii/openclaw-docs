@@ -516,7 +516,7 @@ Legacy `plugins.entries.openai.config.personality` is still read as a compatibil
     | Setting | Config path | Default |
     |---------|------------|---------|
     | Model | `messages.tts.providers.openai.model` | `gpt-4o-mini-tts` |
-    | Voice | `messages.tts.providers.openai.voice` | `coral` |
+    | Voice | `messages.tts.providers.openai.voice` | `alloy` |
     | Speed | `messages.tts.providers.openai.speed` | (unset) |
     | Instructions | `messages.tts.providers.openai.instructions` | (unset, `gpt-4o-mini-tts` only) |
     | Format | `messages.tts.providers.openai.responseFormat` | `opus` for voice notes, `mp3` for files |
@@ -533,7 +533,7 @@ Legacy `plugins.entries.openai.config.personality` is still read as a compatibil
       messages: {
         tts: {
           providers: {
-            openai: { model: "gpt-4o-mini-tts", voice: "coral" },
+            openai: { model: "gpt-4o-mini-tts", voice: "alloy" },
           },
         },
       },

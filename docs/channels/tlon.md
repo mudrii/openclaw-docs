@@ -74,7 +74,9 @@ you must explicitly opt in:
   channels: {
     tlon: {
       url: "http://localhost:8080",
-      allowPrivateNetwork: true,
+      network: {
+        dangerouslyAllowPrivateNetwork: true,
+      },
     },
   },
 }
@@ -255,7 +257,7 @@ Common failures:
 
 - **DMs ignored**: sender not in `dmAllowlist` and no `ownerShip` configured for approval flow.
 - **Group messages ignored**: channel not discovered or sender not authorized.
-- **Connection errors**: check ship URL is reachable; enable `allowPrivateNetwork` for local ships.
+- **Connection errors**: check ship URL is reachable; set `network.dangerouslyAllowPrivateNetwork: true` for local ships.
 - **Auth errors**: verify login code is current (codes rotate).
 
 ## Configuration reference
@@ -268,7 +270,7 @@ Provider options:
 - `channels.tlon.ship`: bot's Urbit ship name (e.g. `~sampel-palnet`).
 - `channels.tlon.url`: ship URL (e.g. `https://sampel-palnet.tlon.network`).
 - `channels.tlon.code`: ship login code.
-- `channels.tlon.allowPrivateNetwork`: allow localhost/LAN URLs (SSRF bypass).
+- `channels.tlon.network.dangerouslyAllowPrivateNetwork`: allow localhost/LAN URLs (SSRF bypass).
 - `channels.tlon.ownerShip`: owner ship for approval system (always authorized).
 - `channels.tlon.dmAllowlist`: ships allowed to DM (empty = none).
 - `channels.tlon.autoAcceptDmInvites`: auto-accept DMs from allowlisted ships.

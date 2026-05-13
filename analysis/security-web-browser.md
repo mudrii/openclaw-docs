@@ -1,7 +1,7 @@
 # OpenClaw Codebase Analysis: Security, Web Search, WhatsApp & Browser Cluster
 <!-- markdownlint-disable MD024 -->
 
-> Updated: 2026-05-06 | Version: v2026.5.5 | Codebase: OpenClaw release tag `v2026.5.5` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
+> Updated: 2026-05-13 | Version: v2026.5.7 | Codebase: OpenClaw release tag `v2026.5.7` | Modules: security, web-search, extensions/whatsapp, extensions/browser, canvas-host, plugins, plugin-sdk, acp
 
 ---
 

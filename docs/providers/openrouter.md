@@ -52,7 +52,8 @@ Model refs follow the pattern `openrouter/<provider>/<model>`. For the full list
 available providers and models, see [/concepts/model-providers](/concepts/model-providers).
 </Note>
 
-Bundled fallback examples:
+Example refs (illustrative — the OpenRouter manifest has no static catalog;
+any model OpenRouter exposes is reachable):
 
 | Model ref                         | Notes                        |
 | --------------------------------- | ---------------------------- |

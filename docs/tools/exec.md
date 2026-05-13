@@ -218,18 +218,24 @@ Background + poll:
 
 ```json
 {"tool":"exec","command":"npm run build","yieldMs":1000}
-{"tool":"process","action":"poll","sessionId":"<id>"}
+{"tool":"process","action":"poll","sessionId":"<id>","timeout":5000}
 ```
 
 Polling is for on-demand status, not waiting loops. If automatic completion wake
-is enabled, the command can wake the session when it emits output or fails.
+is enabled, the command can wake the session when it emits output or fails. The
+optional `timeout` on `poll` is the maximum milliseconds to wait for new output
+before returning; it is clamped to `30000`.
 
-Send keys (tmux-style):
+Send keys (tmux-style). The `process send-keys` action accepts one of three
+input forms — `keys` (array of tmux key tokens), `hex` (array of hex byte
+strings), or `literal` (single literal string):
 
 ```json
 {"tool":"process","action":"send-keys","sessionId":"<id>","keys":["Enter"]}
 {"tool":"process","action":"send-keys","sessionId":"<id>","keys":["C-c"]}
 {"tool":"process","action":"send-keys","sessionId":"<id>","keys":["Up","Up","Enter"]}
+{"tool":"process","action":"send-keys","sessionId":"<id>","hex":["1b","5b","41"]}
+{"tool":"process","action":"send-keys","sessionId":"<id>","literal":"hello world"}
 ```
 
 Submit (send CR only):

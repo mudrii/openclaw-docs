@@ -186,14 +186,14 @@ The inbound queue is per peer. Group peers get a larger queue cap, keep human
 messages ahead of bot-authored chatter when full, and merge bursts of normal
 group messages into one attributed turn. Slash commands still run one by one.
 
-### Voice (STT / TTS)
+### Voice (STT)
 
-STT and TTS support two-level configuration with priority fallback:
+QQ inbound voice messages are transcribed when STT is configured. STT supports
+two-level configuration with priority fallback:
 
-| Setting | Plugin-specific                                          | Framework fallback            |
-| ------- | -------------------------------------------------------- | ----------------------------- |
-| STT     | `channels.qqbot.stt`                                     | `tools.media.audio.models[0]` |
-| TTS     | `channels.qqbot.tts`, `channels.qqbot.accounts.<id>.tts` | `messages.tts`                |
+| Setting | Plugin-specific      | Framework fallback            |
+| ------- | -------------------- | ----------------------------- |
+| STT     | `channels.qqbot.stt` | `tools.media.audio.models[0]` |
 
 ```json5
 {
@@ -203,33 +203,17 @@ STT and TTS support two-level configuration with priority fallback:
         provider: "your-provider",
         model: "your-stt-model",
       },
-      tts: {
-        provider: "your-provider",
-        model: "your-tts-model",
-        voice: "your-voice",
-      },
-      accounts: {
-        "qq-main": {
-          tts: {
-            providers: {
-              openai: { voice: "shimmer" },
-            },
-          },
-        },
-      },
     },
   },
 }
 ```
 
-Set `enabled: false` on either to disable.
-Account-level TTS overrides use the same shape as `messages.tts` and deep-merge
-over the channel/global TTS config.
+Set `enabled: false` to disable STT.
 
-Inbound QQ voice attachments are exposed to agents as audio media metadata while
-keeping raw voice files out of generic `MediaPaths`. `[[audio_as_voice]]` plain
-text replies synthesize TTS and send a native QQ voice message when TTS is
-configured.
+Inbound QQ voice attachments are exposed to agents as audio media metadata
+while keeping raw voice files out of generic `MediaPaths`. The QQ Bot channel
+does not currently support outbound TTS; native voice replies are not produced
+even if framework-level `messages.tts` is configured.
 
 Outbound audio upload/transcode behavior can also be tuned with
 `channels.qqbot.audioFormatPolicy`:

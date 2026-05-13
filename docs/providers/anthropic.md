@@ -61,7 +61,7 @@ Anthropic's current public docs:
     ```json5
     {
       env: { ANTHROPIC_API_KEY: "sk-ant-..." },
-      agents: { defaults: { model: { primary: "anthropic/claude-opus-4-6" } } },
+      agents: { defaults: { model: { primary: "anthropic/claude-opus-4-7" } } },
     }
     ```
 
@@ -134,7 +134,7 @@ Override per-message with `/think:<level>` or in model params:
   agents: {
     defaults: {
       models: {
-        "anthropic/claude-opus-4-6": {
+        "anthropic/claude-opus-4-7": {
           params: { thinking: "adaptive" },
         },
       },
@@ -165,7 +165,7 @@ OpenClaw supports Anthropic's prompt caching feature for API-key auth.
   agents: {
     defaults: {
       models: {
-        "anthropic/claude-opus-4-6": {
+        "anthropic/claude-opus-4-7": {
           params: { cacheRetention: "long" },
         },
       },
@@ -182,9 +182,9 @@ OpenClaw supports Anthropic's prompt caching feature for API-key auth.
     {
       agents: {
         defaults: {
-          model: { primary: "anthropic/claude-opus-4-6" },
+          model: { primary: "anthropic/claude-opus-4-7" },
           models: {
-            "anthropic/claude-opus-4-6": {
+            "anthropic/claude-opus-4-7": {
               params: { cacheRetention: "long" },
             },
           },
@@ -255,7 +255,7 @@ OpenClaw supports Anthropic's prompt caching feature for API-key auth.
 
     | Property       | Value                |
     | -------------- | -------------------- |
-    | Default model  | `claude-opus-4-6`    |
+    | Default model  | `claude-opus-4-7`    |
     | Supported input | Images, PDF documents |
 
     When an image or PDF is attached to a conversation, OpenClaw automatically
@@ -271,7 +271,7 @@ OpenClaw supports Anthropic's prompt caching feature for API-key auth.
       agents: {
         defaults: {
           models: {
-            "anthropic/claude-opus-4-6": {
+            "anthropic/claude-opus-4-7": {
               params: { context1m: true },
             },
           },
@@ -293,7 +293,7 @@ OpenClaw supports Anthropic's prompt caching feature for API-key auth.
   </Accordion>
 
   <Accordion title="Claude Opus 4.7 1M context">
-    `anthropic/claude-opus-4.7` and its `claude-cli` variant have a 1M context
+    `anthropic/claude-opus-4-7` and its `claude-cli` variant have a 1M context
     window by default — no `params.context1m: true` needed.
   </Accordion>
 </AccordionGroup>

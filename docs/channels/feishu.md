@@ -44,7 +44,7 @@ Requires OpenClaw 2026.4.25 or above. Run `openclaw --version` to check. Upgrade
 Configure `dmPolicy` to control who can DM the bot:
 
 - `"pairing"` — unknown users receive a pairing code; approve via CLI
-- `"allowlist"` — only users listed in `allowFrom` can chat (default: bot owner only)
+- `"allowlist"` — only users listed in `allowFrom` can chat
 - `"open"` — allow public DMs only when `allowFrom` includes `"*"`; with restrictive entries, only matching users can chat
 - `"disabled"` — disable all DMs
 
@@ -418,14 +418,14 @@ Full configuration: [Gateway configuration](/gateway/configuration)
 | `channels.feishu.accounts.<id>.appSecret`         | App Secret                                                                       | —                |
 | `channels.feishu.accounts.<id>.domain`            | Per-account domain override                                                      | `feishu`         |
 | `channels.feishu.accounts.<id>.tts`               | Per-account TTS override                                                         | `messages.tts`   |
-| `channels.feishu.dmPolicy`                        | DM policy                                                                        | `allowlist`      |
-| `channels.feishu.allowFrom`                       | DM allowlist (open_id list)                                                      | [BotOwnerId]     |
+| `channels.feishu.dmPolicy`                        | DM policy                                                                        | `pairing`        |
+| `channels.feishu.allowFrom`                       | DM allowlist (open_id list)                                                      | —                |
 | `channels.feishu.groupPolicy`                     | Group policy                                                                     | `allowlist`      |
 | `channels.feishu.groupAllowFrom`                  | Group allowlist                                                                  | —                |
 | `channels.feishu.requireMention`                  | Require @mention in groups                                                       | `true`           |
 | `channels.feishu.groups.<chat_id>.requireMention` | Per-group @mention override; explicit IDs also admit the group in allowlist mode | inherited        |
 | `channels.feishu.groups.<chat_id>.enabled`        | Enable/disable a specific group                                                  | `true`           |
-| `channels.feishu.textChunkLimit`                  | Message chunk size                                                               | `2000`           |
+| `channels.feishu.textChunkLimit`                  | Message chunk size                                                               | `4000`           |
 | `channels.feishu.mediaMaxMb`                      | Media size limit                                                                 | `30`             |
 | `channels.feishu.streaming`                       | Streaming card output                                                            | `true`           |
 | `channels.feishu.blockStreaming`                  | Completed-block reply streaming                                                  | `false`          |
