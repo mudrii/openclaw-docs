@@ -6,6 +6,25 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.7-3 — Docs Correction Summary
+
+> **Released:** 2026-05-13 (docs correction) | upstream GitHub release `v2026.5.7` unchanged, published 2026-05-07 20:57:43 UTC | **Validated against:** `v2026.5.7`
+
+### Corrections
+
+- **Channels (`v2026.5.7`):** corrected `telegram` error policy enum (`always|once|silent`) and the 14400000 ms (4 h) default cooldown; `feishu` outbound chunking default raised to `4000` chars and pairing default flagged; `matrix` streaming mode enum now lists `progress`; `tlon` private-network knob renamed to `network.dangerouslyAllowPrivateNetwork`; `bluebubbles` audio fallback default flipped to `true`; `qqbot` voice docs narrowed to STT-only (no TTS in v2026.5.7 source).
+- **Providers (`v2026.5.7`):** Anthropic CLI default model bumped to `claude-opus-4-7`; OpenAI default TTS voice corrected from `coral` to `alloy`; Groq catalog example replaced (`Mixtral 8x7B` → `Mistral Saba 24B`); Mistral page stray Z.AI auth line removed; Moonshot endpoint table accepts both `MOONSHOT_API_KEY` and `KIMI_API_KEY`; Z.AI auth surface adds `Z_AI_API_KEY` alias; xAI legacy `grok-4.20-experimental-beta-0304-{reasoning,non-reasoning}` aliases restored; OpenRouter ref list reworded as illustrative (manifest has no static catalog).
+- **Plugins/SDK (`v2026.5.7`):** added 5 missing source-only plugins (active-memory, device-pair, phone-control, talk-voice, thread-ownership) to plugin inventory and reference tables; SDK overview tightened to clarify channel-branded subpaths (`discord`, `matrix`, `telegram-account`, `telegram-command-config`) are bundled-plugin internal seams — Slack/Signal/WhatsApp seams do not exist.
+- **Analysis snapshots:** restamped 10 analysis pages from the `v2026.5.5` baseline to `v2026.5.7` (2026-05-13), keeping in-body historical release-window references intact.
+- **Tools and snippets:** documented the `timeout` clamp on `exec` poll and the `hex`/`literal` send-keys variants per `bash-tools.schemas.ts`; refreshed `snippets/plugin-publish/minimal-package.json` to the `v2026.5.7` plugin manifest compat/build baseline.
+- **Prerelease exclusion note:** refreshed the stable-docs note to exclude current upstream prereleases through the latest GitHub-published prerelease `v2026.5.12-beta.3` (source tag `v2026.5.10-beta.6` exists in the upstream tree but is not published as a GitHub release).
+
+### Prerelease Note
+
+- Upstream `v2026.5.9-beta.1`, `v2026.5.10-beta.1` through `v2026.5.10-beta.5`, and `v2026.5.12-beta.1` through `v2026.5.12-beta.3` are prereleases. Source tag `v2026.5.10-beta.6` exists in the upstream git tree but is not a GitHub release. All are intentionally excluded from this stable docs snapshot.
+
+---
+
 ## OpenClaw v2026.5.7-2 — Docs Correction Summary
 
 > **Released:** 2026-05-11 (docs correction) | upstream GitHub release `v2026.5.7` unchanged, published 2026-05-07 20:57:43 UTC | **Validated against:** `v2026.5.7`
