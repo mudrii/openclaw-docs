@@ -843,8 +843,8 @@ When the agent encounters a delivery or provider error, Telegram can either repl
 
 | Key                                 | Values            | Default | Description                                                                                     |
 | ----------------------------------- | ----------------- | ------- | ----------------------------------------------------------------------------------------------- |
-| `channels.telegram.errorPolicy`     | `reply`, `silent` | `reply` | `reply` sends a friendly error message to the chat. `silent` suppresses error replies entirely. |
-| `channels.telegram.errorCooldownMs` | number (ms)       | `60000` | Minimum time between error replies to the same chat. Prevents error spam during outages.        |
+| `channels.telegram.errorPolicy`     | `always`, `once`, `silent` | `always`   | `always` replies on every error. `once` sends one notice then suppresses repeats until cooldown elapses. `silent` suppresses error replies entirely. |
+| `channels.telegram.errorCooldownMs` | number (ms)                | `14400000` | Minimum time between error replies to the same chat (4 h default). Prevents error spam during outages.                                               |
 
 Per-account, per-group, and per-topic overrides are supported (same inheritance as other Telegram config keys).
 
@@ -852,7 +852,7 @@ Per-account, per-group, and per-topic overrides are supported (same inheritance 
 {
   channels: {
     telegram: {
-      errorPolicy: "reply",
+      errorPolicy: "always",
       errorCooldownMs: 120000,
       groups: {
         "-1001234567890": {

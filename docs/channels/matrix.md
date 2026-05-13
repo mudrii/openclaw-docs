@@ -214,6 +214,7 @@ form:
 | `"off"` (default) | Wait for the full reply, send once. `true` ↔ `"partial"`, `false` ↔ `"off"`.                                                                                        |
 | `"partial"`       | Edit one normal text message in place as the model writes the current block. Stock Matrix clients may notify on the first preview, not the final edit.              |
 | `"quiet"`         | Same as `"partial"` but the message is a non-notifying notice. Recipients only get a notification once a per-user push rule matches the finalized edit (see below). |
+| `"progress"`      | Live "thinking" / tool-progress label edits in place (uses `streaming.progress.labels`, `maxLines`, `toolProgress`). Falls back to final-only delivery once the answer arrives.                                                                                                                                                                                                       |
 
 `blockStreaming` is independent of `streaming`:
 
