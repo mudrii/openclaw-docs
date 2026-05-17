@@ -155,7 +155,17 @@
 - Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
 - Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
 
-## Behavioral Changes in v2026.4.27–v2026.5.5
+## Behavioral Changes in v2026.4.27-v2026.5.12
+
+### v2026.5.12
+- **Provider/plugin dependency externalization:** Amazon Bedrock, Bedrock Mantle, Slack, OpenShell sandbox, Anthropic Vertex, and WhatsApp shifted more runtime dependency weight out of the core install. When changing install/update, plugin discovery, or package excludes, prove that configured providers/plugins still resolve from installed plugin roots and that core no longer depends on plugin-only packages.
+- **ACP fallback runtimes:** `acp.fallbacks` lets ACP turns try configured backup runtime backends before output is emitted. Code that treats ACP backend startup failure as terminal must check fallback behavior first.
+- **WebChat/TUI/source-reply delivery:** Codex `tools.message` source replies, rich-only block replies, button/card-only payloads, and source-reply media metadata now need to stay visible in WebChat/TUI/session history instead of being dropped as empty or non-targetable output.
+- **Per-sender and per-agent tool policies:** sender-scoped tool restrictions and per-agent `tools.message.crossContext` / `tools.message.actions.allow` overrides are released behavior. Tool visibility changes need requester identity, channel, group, agent, and plugin/core tool surfaces in scope.
+- **Telegram ingress isolation:** Bot API polling now runs through an isolated worker with durable local spool; liveness is tied to `getUpdates`, and `requireMention` skips unmentioned group media before download. Telegram refactors must cover worker/spool, offset, formatting, and media-skip paths.
+- **Structured provider credentials:** provider `apiKey` config values resolve through structured env SecretRefs (`secrets.providers[id]` / `secrets.defaults`) instead of broad all-caps env-var inference. Do not reintroduce ambiguous env-marker heuristics.
+- **Security hardening:** Windows `USERPROFILE` is a blocked sandbox home root; node/browser/control UI pairing and gateway command scopes are stricter; exported Markdown links and approval callbacks have additional authorization checks. Treat these as current baseline behavior.
+- **Config/update reliability:** semantic config mutations serialize and retry centrally; auth-profile lock files can be reclaimed from dead owners; update-time repair preserves plugin install records and takes config snapshots before writes. Command-local config write retries should not bypass the shared mutation path.
 
 ### v2026.5.5
 - **Targeted fix release:** covers Feishu topic starter thread hydration, LINE dmPolicy wildcard enforcement, Telegram/Codex progress rendering, Discord heartbeat ACK measurement and guild routing, Matrix approval retry, iOS LAN pairing, TUI session picker bounded, Doctor `openai-codex/*` route repair, Gateway shutdown maintenance cancel, exec-approvals.json Windows rename fallback, session artifact pruning, hook session-memory filename collision suffixes, Fireworks Kimi thinking-off, xAI reasoning controls stopped for Grok Responses, and video aspect-ratio normalization.

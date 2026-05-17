@@ -1,6 +1,6 @@
 # OpenClaw — Master Architecture Document
 
-> Updated: 2026-05-11 (docs snapshot: v2026.5.7-2) | Released baseline: GitHub `v2026.5.7` (published 2026-05-07 20:57:43 UTC)
+> Updated: 2026-05-17 (docs snapshot: v2026.5.12) | Released baseline: GitHub `v2026.5.12` (published 2026-05-14 18:28:04 UTC)
 
 ---
 
@@ -26,11 +26,11 @@
 
 ## 1. Executive Summary
 
-**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, BlueBubbles, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
+**OpenClaw** is an open-source, self-hosted AI agent platform that connects Large Language Models to messaging channels (Telegram, Discord, Slack, WhatsApp, Signal, iMessage, LINE, IRC, Synology Chat, QQ Bot, Feishu, and more). It runs as a persistent gateway daemon on macOS/Linux/Windows, accepting messages from any connected channel, routing them to configured AI agents, executing tool calls on behalf of the agent, and delivering responses back to users. OpenClaw supports multi-agent configurations, per-channel routing, sandboxed execution environments (Docker), browser automation, semantic memory search, scheduled cron jobs, a SQLite-backed background task control plane, mobile node pairing, and a rich plugin/extension ecosystem.
 
-Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation — nearly every module depends on it for typed configuration. On the current stable release line (`v2026.5.7`), the `agents` and `auto-reply` modules remain the top-sized core subtrees, while the `tasks` module (`src/tasks/`) continues to provide the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also adds first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
+Architecturally, OpenClaw follows a **hub-and-spoke model**: the `gateway` module is the central server process that orchestrates all subsystems. It exposes a WebSocket JSON-RPC API for CLI/TUI clients, an OpenAI-compatible HTTP API, and channel plugin connections. The `config` module provides the foundation - nearly every module depends on it for typed configuration. On the current stable release line (`v2026.5.12`), the `agents` and `auto-reply` modules remain the top-sized core subtrees, while the `tasks` module (`src/tasks/`) continues to provide the shared background-task control plane: a SQLite-backed registry that unifies ACP, subagent, cron, and CLI detached runs under one durable ledger with audit, maintenance, ownership, status, and Task Flow orchestration. The current stable line also keeps first-class media-generation surfaces (`src/music-generation/`, `src/video-generation/`, `src/media-generation/`) and splits the released memory surface between `src/memory-host-sdk/` (embeddings, dreaming, promotion, host/runtime helpers) and `extensions/memory-core/src/memory/` (QMD, search, and sync/index orchestration).
 
-The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (125 extension directories, 119 extension packages as of `v2026.5.7`). The v2026.5.7 release adds cron JSON computed status, channel-only `channels list` with `--all`, owner enforcement for native commands, admin-only Active Memory global toggles, session skill snapshot invalidation on `/new` and `sessions.reset`, and Codex route repair that preserves working PI OAuth routes while recovering the broken v2026.5.5 rewrites. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
+The codebase is written entirely in TypeScript (Node.js), uses Vitest for testing, and employs a plugin architecture where messaging channels, LLM providers, search providers, and feature extensions are loaded dynamically from an `extensions/` directory (134 extension directories, 121 extension packages as of `v2026.5.12`). The v2026.5.12 release externalizes several provider/plugin packages, adds ACP fallback runtimes, persists WebChat auto-scroll mode, forwards OpenAI-compatible token caps, expands per-sender and per-agent tool/message policy controls, strengthens Telegram polling isolation, and hardens SecretRef-backed provider credential handling. Configuration is stored in `openclaw.json` (JSON5), validated via Zod schemas, and supports hot-reload. The system is designed for single-user or small-team self-hosting with strong security defaults: exec approval workflows, tool policies, SSRF protection, timing-safe auth, and filesystem permission hardening.
 
 ---
 
@@ -184,7 +184,7 @@ The codebase is written entirely in TypeScript (Node.js), uses Vitest for testin
 | `plugin-sdk/` | 323 | ~22,000+ | Released SDK surface and runtime helpers for plugin authors; current public path is `openclaw/plugin-sdk/*`. The stable line includes `api.runtime.taskFlow`, generic reply-dispatch seams, and the provider/plugin runtime hooks used by newer media and ACPX flows | channels, config, routing, tasks |
 | `cli/` | 313 | ~35,900+ | CLI entry point (Commander.js), subcommands, argument parsing | commands, config, agents |
 | `commands/` | 469 | ~52,400+ | Command implementations: agent, doctor, onboard, configure, models, status | cli, config, agents, gateway, daemon |
-| `tui/` | 45 | ~7,500+ | Terminal UI (pi-tui): interactive chat, slash commands, streaming | @mariozechner/pi-tui, gateway |
+| `tui/` | 45 | ~7,500+ | Terminal UI (pi-tui): interactive chat, slash commands, streaming | @earendil-works/pi-tui, gateway |
 | `extensions/browser/` | 258 | ~34,000+ | Current released browser automation runtime: Chrome MCP attach, Playwright flows, session/runtime management, and browser tool surfaces | plugin-sdk, config, agents |
 | `media/` | 57 | ~3,800+ | Media handling: MIME detection, store with TTL, SSRF-safe fetch, image ops | file-type, sharp, express |
 | `media-understanding/` | 56 | ~6,300+ | AI media analysis: audio transcription, image/video description, multi-provider | agents (model-auth), media |
@@ -384,7 +384,7 @@ Step 1: LLM decides to call a tool (during streaming response)
         └─ pi-embedded-subscribe.handlers.tools.ts → Extract tool call from stream
 
 Step 2: agents/pi-tools.ts → Tool registry lookup
-        ├─ SDK tools (from @mariozechner/pi-coding-agent): read, write, edit, exec, process
+        ├─ SDK tools (from @earendil-works/pi-coding-agent): read, write, edit, exec, process
         ├─ OpenClaw tools (from openclaw-tools.ts): browser, canvas, cron, message,
         │    nodes, web_search, web_fetch, image, memory, tts, sessions, subagents
         └─ Plugin tools (from extensions): diffs (read-only diff viewer with gateway URLs)
@@ -623,7 +623,7 @@ openclaw.json defaults → per-agent config → session entry override → inlin
 
 - **Location:** `~/.openclaw/state/sessions/<sessionKey>.jsonl`
 - **Format:** JSONL — one JSON object per turn (user message, assistant response, tool calls/results)
-- **Managed by:** `@mariozechner/pi-coding-agent` SessionManager
+- **Managed by:** `@earendil-works/pi-coding-agent` SessionManager
 - **Events:** `sessions/transcript-events.ts` emits updates for memory indexing and UI refresh
 
 ### Media Files
@@ -719,7 +719,7 @@ Added in v2026.4.21. Captures reusable workflow corrections as pending or auto-a
 
 ### Architecture
 
-OpenClaw delegates LLM API calls to `@mariozechner/pi-ai` — the external AI agent framework. OpenClaw's role is:
+OpenClaw delegates LLM API calls to `@earendil-works/pi-ai` - the external AI agent framework. OpenClaw's role is:
 
 1. **Configuration** — Define available providers and models in `openclaw.json`
 2. **Authentication** — Resolve API keys via auth profiles (`agents/auth-profiles/`)
@@ -910,7 +910,7 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 | **Total source files** | 2,650+ `.ts` files (non-test) |
 | **Total test files** | 1,650+ `.test.ts` files |
 | **Total src lines** | 810,000+ (`src/**/*.ts`) |
-| **External framework** | @mariozechner/pi-ai, pi-agent-core, pi-coding-agent |
+| **External framework** | @earendil-works/pi-ai, pi-agent-core, pi-coding-agent |
 | **Language** | TypeScript (Node.js) |
 | **Test framework** | Vitest |
 | **Build** | TypeScript compiler (tsc) |
@@ -949,11 +949,20 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Metric | Count |
 |--------|-------|
-| Extension directories (`extensions/*`) | 125 |
-| Extension packages (`extensions/*/package.json`) | 119 |
-| Released skill entrypoints (`SKILL.md` across `skills/`, `.agents/skills/`, `extensions/`) | 87 |
+| Extension directories (`extensions/*`) | 134 |
+| Extension packages (`extensions/*/package.json`) | 121 |
+| Released skill entrypoints (`SKILL.md` across `skills/`, `.agents/skills/`, `extensions/`) | 91 |
 
-> Current analyzed source package: released `v2026.5.7`. Counts measured from the `v2026.5.7` released tree.
+> Current analyzed source package: released `v2026.5.12`. Counts measured from the `v2026.5.12` released tree.
+
+### v2026.5.8-v2026.5.12 Released Changes (2026-05-08 to 2026-05-14 upstream stable)
+
+- **14,071 TypeScript files** (`src/`, `extensions/`, `ui/`, `test/`, `scripts/`; validated against release tag `v2026.5.12`)
+- **134 extension directories**, **121 extension packages**, **91 bundled skill entrypoints** in the released tree
+- **Files changed v2026.5.7->v2026.5.12:** 8,900 files, +456,277/-324,231 lines
+- **v2026.5.7..v2026.5.12 window:** 6,844 commits
+- **Key changes:** provider/plugin dependency externalization for Amazon Bedrock, Bedrock Mantle, Slack, OpenShell sandbox, and Anthropic Vertex; persisted WebChat auto-scroll mode; ACP fallback runtimes; OpenAI-compatible token-cap forwarding; provider-specific onboarding auth flag forwarding; per-sender tool policies; ACP session lineage metadata; iMessage/BlueBubbles migration guidance; local model services docs; and pnpm 11 install/update surface.
+- **Key fixes:** Codex/source-reply message-tool delivery; Telegram isolated polling worker, HTML formatting, and `requireMention` media skip; Windows sandbox `USERPROFILE` blocking; structured SecretRef provider `apiKey` handling; semantic config mutation retries; stale auth file-lock recovery; plugin managed peer preservation; ACP session-kind/runtime reporting; and Gateway transcript sequence refresh.
 
 ### v2026.5.6–v2026.5.7 Released Changes (2026-05-06 to 2026-05-07 upstream stable)
 
@@ -977,10 +986,10 @@ Every channel implements `ChannelPlugin` (defined in `channels/plugins/types.plu
 
 | Package | Purpose | Used By |
 |---------|---------|---------|
-| `@mariozechner/pi-ai` | Core AI agent framework | agents |
-| `@mariozechner/pi-agent-core` | Agent core types | agents, auto-reply |
-| `@mariozechner/pi-coding-agent` | Coding agent tools + session manager | agents |
-| `@sinclair/typebox` | JSON schema builder | agents, gateway |
+| `@earendil-works/pi-ai` | Core AI agent framework | agents |
+| `@earendil-works/pi-agent-core` | Agent core types | agents, auto-reply |
+| `@earendil-works/pi-coding-agent` | Coding agent tools + session manager | agents |
+| `typebox` | JSON schema builder | agents, gateway |
 | `grammy` | Telegram Bot API | telegram |
 | `@buape/carbon` | Discord REST API | discord |
 | `@slack/web-api` | Slack API | slack |

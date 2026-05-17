@@ -6,6 +6,40 @@ Release policy: this file tracks published releases only (stable tags). It does 
 
 ---
 
+## OpenClaw v2026.5.12 - Release Summary
+
+> **Released:** 2026-05-17 (docs release) | upstream GitHub release `v2026.5.12` published 2026-05-14 18:28:04 UTC | npm `latest` is `openclaw@2026.5.12`.
+> **Window analyzed:** `v2026.5.7..v2026.5.12` | 6,844 commits | source package version `2026.5.12`
+
+### Changes
+
+- **Provider and plugin packaging:** externalized Amazon Bedrock, Bedrock Mantle, Slack, OpenShell sandbox, and Anthropic Vertex packages so core installs do not pull those dependency cones unless the matching provider or plugin is installed.
+- **Control UI/WebChat:** added a persisted auto-scroll mode selector for near-bottom, always-follow, or manual New messages behavior.
+- **ACP runtime fallback:** added `acp.fallbacks` so ACP turns can try configured backup runtime backends before any output is emitted.
+- **Gateway/OpenAI HTTP:** forwards `max_completion_tokens` and `max_tokens` through inbound OpenAI-compatible chat completion requests.
+- **Tool and message policy:** added per-sender tool policies, per-agent message cross-context/action controls, and ACP session lineage metadata for clients that render subagent graphs.
+- **Channel and provider docs:** documented the BlueBubbles-to-iMessage cutover path, iMessage status filtering, local model services, provider auth flag forwarding, and updated the tools navigation toward capabilities.
+
+### Fixes
+
+- **Codex and source replies:** fixed Codex message-tool availability warnings, source-reply delivery metadata, message-tool-only UI delivery, Codex OAuth refresh handling, app-server thread rotation, and official Codex package private SDK imports.
+- **Telegram:** moved polling ingress to an isolated worker with durable local spool, preserved supported HTML/Markdown formatting, skipped unmentioned group media when `requireMention` is active, localized command descriptions, and tightened polling offset/liveness handling.
+- **Security and auth:** blocked Windows `USERPROFILE` home-root binds in the sandbox, required additional pairing/admin scopes, hardened gateway/trusted-proxy/node/browser approval paths, restricted sender allowlist matching, and enforced exported Markdown link rendering checks.
+- **Config and updates:** centralized semantic config mutation retries, reclaimed stale auth file locks, preserved plugin install records through update-time repair, and prevented pinned source installs from moving during reinstall.
+- **Plugins and packaging:** refreshed managed peer dependency pins, preserved third-party peers, restored the deprecated memory-core plugin SDK subpath alias, and kept plugin help on a lightweight path.
+- **Gateway and sessions:** carried monotonic transcript sequence through live history updates, classified ACP spawn-child sessions correctly, reported ACP runtime ids from session keys, and kept active reply runs visible to stuck-session diagnostics.
+
+### Docs Sync
+
+- Synced the `docs/` mirror from source tag `v2026.5.12`, adding released pages such as `cli/path`, `gateway/local-model-services`, `plugins/codex-harness-runtime`, `plugins/codex-native-plugins`, `plugins/install-overrides`, `tools/tool-search`, BlueBubbles-to-iMessage guidance, and new plugin/channel SDK references.
+- Removed pages no longer present in the released source docs, including the old BlueBubbles channel/reference pages, stale superpower plan artifacts, and the removed file-transfer plugin page.
+
+### Prerelease Note
+
+- Upstream `v2026.5.14-beta.*` and `v2026.5.16-beta.*` are prereleases. They are intentionally excluded from this stable docs snapshot.
+
+---
+
 ## OpenClaw v2026.5.7-2 — Docs Correction Summary
 
 > **Released:** 2026-05-11 (docs correction) | upstream GitHub release `v2026.5.7` unchanged, published 2026-05-07 20:57:43 UTC | **Validated against:** `v2026.5.7`

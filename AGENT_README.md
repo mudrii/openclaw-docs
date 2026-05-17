@@ -4,7 +4,7 @@
 > Designed for AI agents and human contributors.
 > This document **complements** `AGENTS.md` (the repo's canonical agent guidelines file, symlinked as `CLAUDE.md`). Load both before starting work. When build/test commands differ, `AGENTS.md` is authoritative.
 > Tracks published OpenClaw releases. Current package version: check `package.json` (`"version"`). Gotchas are versioned — read only the sections that apply to the release you are targeting.
-> **Current docs version: v2026.5.7-2 (2026-05-11).** Latest published upstream stable release: v2026.5.7 (published 2026-05-07 20:57:43 UTC).
+> **Current docs version: v2026.5.12 (2026-05-17).** Latest published upstream stable release: v2026.5.12 (published 2026-05-14 18:28:04 UTC).
 
 ---
 
@@ -67,7 +67,12 @@ Fast rule: identify module in §1, then run only the matching impact row in §3 
 
 Released channel implementations mostly live in `extensions/` (`telegram/`, `discord/`, `slack/`, `signal/`, `whatsapp/`, `imessage/`, `feishu/`, `matrix/`, `qqbot/`, etc.); `src/channels/`, `src/routing/`, `src/line/`, `src/tasks/`, `src/web-fetch/`, and `src/web-search/` remain the shared/core surfaces. Browser automation on the current release line lives in `extensions/browser/`. Channel/plugin implementations are leaf-heavy with 🟢 risk once you are below the shared routing/config layers.
 
-**v2026.5.7 (current release line):**
+**v2026.5.12 (current release line):**
+
+- **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.12` (published 2026-05-14 18:28:04 UTC; npm `latest` is `2026.5.12`; window `v2026.5.7..v2026.5.12`, 6,844 commits). The stable window covers provider/plugin dependency externalization for Amazon Bedrock, Bedrock Mantle, Slack, OpenShell sandbox, and Anthropic Vertex; persisted WebChat auto-scroll modes; ACP runtime fallbacks; OpenAI-compatible token-cap forwarding; provider-specific onboarding auth flag forwarding; per-sender tool policies; ACP session lineage metadata; iMessage/BlueBubbles cutover docs; local model-service docs; pnpm 11 install/update behavior; and Gateway/session history sequence fixes.
+- **Behavioral change surface (`v2026.5.7..v2026.5.12`):** verify externalized providers/plugins install and load only when configured; test `acp.fallbacks` before assuming ACP turns fail after a primary backend outage; keep per-sender and per-agent message-tool policy checks in scope when changing tool visibility; verify source-reply rich/message-tool delivery in WebChat, TUI, cron, heartbeat, and ACP paths; check Telegram polling worker/spool behavior before changing Telegram ingress; preserve structured SecretRef provider `apiKey` handling; and treat iMessage/BlueBubbles migration docs as the current operator path.
+
+**v2026.5.7 (historical):**
 
 - **Current release-line checks:** this docs snapshot is aligned to upstream `v2026.5.7` (published 2026-05-07 20:57:43 UTC; window `v2026.5.5..v2026.5.7`, 93 commits). The stable fix window covers `openai/chat-latest`, cron JSON computed status, channel-only `channels list --all`, native command owner enforcement, admin-only Active Memory global toggles, stale skill snapshot clearing during `/new` and `sessions.reset`, before-tool-call authorization for inline skill dispatch, Tavily SecretRef runtime resolution, managed plugin npm override/peer handling, context-engine cache invalidation, Discord channel/voice fixes, cron doctor persisted-model repair, Telegram allowlist/polling/model-button fixes, task/reload reconciliation, WhatsApp LID/media fixes, and Codex/native approval hardening.
 - **Behavioral change surface (`v2026.5.5..v2026.5.7`):** verify `openai-codex/*` PI OAuth routes are preserved unless a safe native-Codex or direct OpenAI route is available; check cron JSON consumers for the new computed `status`; use `openclaw models auth list` instead of `channels list` for provider auth; keep global memory toggles/admin-only and native commands owner-only; and treat stale child-session rows as insufficient proof for CLI tasks with live run identity.
